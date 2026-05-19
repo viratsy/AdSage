@@ -11,7 +11,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
 
   useEffect(() => {
-    if (!isLoggedIn) router.push('/login');
+    if (!isLoggedIn) router.replace('/login');
   }, [isLoggedIn, router]);
 
   if (!isLoggedIn) return null;
