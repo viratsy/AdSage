@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.aws-sam/
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Environment files — never commit secrets
+.env
+.env.local
+.env.*.local
+infrastructure/env/*.env
+
+# SAM build artifacts
+.aws-sam/
+
+# AWS credentials
+.aws/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Chrome extension build
+chrome-extension/dist/

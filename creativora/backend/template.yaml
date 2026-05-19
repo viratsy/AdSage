@@ -1,0 +1,622 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Creativora — AI Ad Intelligence SaaS Backend
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        DYNAMODB_TABLE_ADS: !Ref AdsTable
+        DYNAMODB_TABLE_AI: !Ref AiAnalysisTable
+        ADS_BUCKET: !Ref MediaBucket
+        CLOUDFRONT_URL: !Sub "https://${MediaDistribution.DomainName}"
+        COGNITO_USER_POOL_ID: !Ref UserPool
+        COGNITO_CLIENT_ID: !Ref UserPoolClient
+        AI_QUEUE_URL: !Ref AiQueue
+    Layers:
+      - !Ref SharedLayer
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  OpenAIApiKey:
+    Type: String
+    NoEcho: true
+  ClaudeApiKey:
+    Type: String
+    NoEcho: true
+  RazorpayKey:
+    Type: String
+    NoEcho: true
+  RazorpaySecret:
+    Type: String
+    NoEcho: true
+  RazorpayWebhookSecret:
+    Type: String
+    NoEcho: true
+
+# ─────────────────────────────────────────────
+# API GATEWAY
+# ─────────────────────────────────────────────
+Resources:
+
+  CreativoraApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "creativora-api-${Stage}"
+      StageName: !Ref Stage
+      Cors:
+        AllowMethods: "'GET,POST,PATCH,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
+
+# ─────────────────────────────────────────────
+# COGNITO
+# ─────────────────────────────────────────────
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "creativora-users-${Stage}"
+      AutoVerifiedAttributes: [email]
+      UsernameAttributes: [email]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: false
+        - Name: full_name
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub "creativora-client-${Stage}"
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+      AccessTokenValidity: 1
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: hours
+        RefreshToken: days
+
+# ─────────────────────────────────────────────
+# DYNAMODB
+# ─────────────────────────────────────────────
+
+  AdsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "creativora-ads-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: ad_id
+          AttributeType: S
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: S
+        - AttributeName: advertiser_name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ad_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: user-created-index
+          KeySchema:
+            - AttributeName: user_id
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: user-advertiser-index
+          KeySchema:
+            - AttributeName: user_id
+              KeyType: HASH
+            - AttributeName: advertiser_name
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  AiAnalysisTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "creativora-ai-analysis-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: analysis_id
+          AttributeType: S
+        - AttributeName: ad_id
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: S
+      KeySchema:
+        - AttributeName: analysis_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ad-created-index
+          KeySchema:
+            - AttributeName: ad_id
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "creativora-users-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+
+# ─────────────────────────────────────────────
+# S3 + CLOUDFRONT
+# ─────────────────────────────────────────────
+
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "creativora-media-632320832903-${Stage}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: ['*']
+            AllowedMethods: [GET, PUT, POST]
+            AllowedHeaders: ['*']
+            MaxAge: 3600
+
+  MediaBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MediaBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${MediaBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${MediaDistribution}"
+
+  MediaOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "creativora-oac-${Stage}"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  MediaDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultCacheBehavior:
+          TargetOriginId: MediaBucketOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # CachingOptimized
+          OriginRequestPolicyId: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf # CORS-S3Origin
+        Origins:
+          - Id: MediaBucketOrigin
+            DomainName: !GetAtt MediaBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt MediaOriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+
+  SelectorConfigBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "creativora-selector-config-632320832903-${Stage}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+# ─────────────────────────────────────────────
+# SQS + EVENTBRIDGE
+# ─────────────────────────────────────────────
+
+  AiQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "creativora-ai-queue-${Stage}"
+      VisibilityTimeout: 300
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AiDLQ.Arn
+        maxReceiveCount: 3
+
+  AiDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "creativora-ai-dlq-${Stage}"
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  AdSavedEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub "creativora-events-${Stage}"
+
+# ─────────────────────────────────────────────
+# SHARED LAYER
+# ─────────────────────────────────────────────
+
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "creativora-shared-${Stage}"
+      ContentUri: src/shared/
+      CompatibleRuntimes: [nodejs20.x]
+    Metadata:
+      BuildMethod: nodejs20.x
+
+# ─────────────────────────────────────────────
+# LAMBDA — AUTH
+# ─────────────────────────────────────────────
+
+  AuthSignupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-auth-signup-${Stage}"
+      CodeUri: src/auth/
+      Handler: signup.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /auth/signup
+            Method: POST
+            Auth:
+              Authorizer: NONE
+
+  AuthLoginFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-auth-login-${Stage}"
+      CodeUri: src/auth/
+      Handler: login.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /auth/login
+            Method: POST
+            Auth:
+              Authorizer: NONE
+
+  AuthRefreshFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-auth-refresh-${Stage}"
+      CodeUri: src/auth/
+      Handler: refresh.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /auth/refresh
+            Method: POST
+            Auth:
+              Authorizer: NONE
+
+# ─────────────────────────────────────────────
+# LAMBDA — ADS
+# ─────────────────────────────────────────────
+
+  SaveAdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-save-ad-${Stage}"
+      CodeUri: src/ads/
+      Handler: saveAd.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AdsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - S3WritePolicy:
+            BucketName: !Ref MediaBucket
+        - EventBridgePutEventsPolicy:
+            EventBusName: !Ref AdSavedEventBus
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /ads/save
+            Method: POST
+
+  GetAdsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-get-ads-${Stage}"
+      CodeUri: src/ads/
+      Handler: getAds.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AdsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /ads
+            Method: GET
+
+  GetAdDetailsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-get-ad-details-${Stage}"
+      CodeUri: src/ads/
+      Handler: getAdDetails.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AdsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /ads/{id}
+            Method: GET
+
+  DeleteAdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-delete-ad-${Stage}"
+      CodeUri: src/ads/
+      Handler: deleteAd.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AdsTable
+        - S3CrudPolicy:
+            BucketName: !Ref MediaBucket
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /ads/{id}
+            Method: DELETE
+
+  UpdateAdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-update-ad-${Stage}"
+      CodeUri: src/ads/
+      Handler: updateAd.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AdsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /ads/{id}
+            Method: PATCH
+
+# ─────────────────────────────────────────────
+# LAMBDA — AI
+# ─────────────────────────────────────────────
+
+  TriggerAiAnalysisFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-trigger-ai-${Stage}"
+      CodeUri: src/ai/
+      Handler: triggerAnalysis.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AdsTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AiQueue.QueueName
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /ai/analyze/{ad_id}
+            Method: POST
+
+  ProcessAiAnalysisFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-process-ai-${Stage}"
+      CodeUri: src/ai/
+      Handler: processAnalysis.handler
+      Timeout: 120
+      MemorySize: 512
+      Environment:
+        Variables:
+          OPENAI_API_KEY: !Ref OpenAIApiKey
+          CLAUDE_API_KEY: !Ref ClaudeApiKey
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AiAnalysisTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AdsTable
+        - SQSPollerPolicy:
+            QueueName: !GetAtt AiQueue.QueueName
+      Events:
+        SQSTrigger:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AiQueue.Arn
+            BatchSize: 1
+
+  GetAiResultFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-get-ai-result-${Stage}"
+      CodeUri: src/ai/
+      Handler: getResult.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AiAnalysisTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /ai/result/{ad_id}
+            Method: GET
+
+# ─────────────────────────────────────────────
+# LAMBDA — MEDIA
+# ─────────────────────────────────────────────
+
+  OptimizeImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-optimize-image-${Stage}"
+      CodeUri: src/media/
+      Handler: optimizeImage.handler
+      Timeout: 60
+      MemorySize: 512
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref MediaBucket
+      Events:
+        S3Trigger:
+          Type: S3
+          Properties:
+            Bucket: !Ref MediaBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: .jpg
+                  - Name: suffix
+                    Value: .png
+
+# ─────────────────────────────────────────────
+# LAMBDA — BILLING
+# ─────────────────────────────────────────────
+
+  CreatePaymentOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-create-payment-order-${Stage}"
+      CodeUri: src/billing/
+      Handler: createOrder.handler
+      Environment:
+        Variables:
+          RAZORPAY_KEY: !Ref RazorpayKey
+          RAZORPAY_SECRET: !Ref RazorpaySecret
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /billing/create-order
+            Method: POST
+
+  PaymentWebhookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-payment-webhook-${Stage}"
+      CodeUri: src/billing/
+      Handler: webhook.handler
+      Environment:
+        Variables:
+          RAZORPAY_WEBHOOK_SECRET: !Ref RazorpayWebhookSecret
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /billing/webhook
+            Method: POST
+            Auth:
+              Authorizer: NONE
+
+  GetBillingStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "creativora-billing-status-${Stage}"
+      CodeUri: src/billing/
+      Handler: getStatus.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CreativoraApi
+            Path: /billing/status
+            Method: GET
+
+# ─────────────────────────────────────────────
+# OUTPUTS
+# ─────────────────────────────────────────────
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint
+    Value: !Sub "https://${CreativoraApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: Cognito Client ID
+    Value: !Ref UserPoolClient
+  MediaBucketName:
+    Description: S3 media bucket
+    Value: !Ref MediaBucket
+  CloudFrontUrl:
+    Description: CloudFront distribution URL
+    Value: !Sub "https://${MediaDistribution.DomainName}"
+  AiQueueUrl:
+    Description: SQS AI queue URL
+    Value: !Ref AiQueue

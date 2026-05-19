@@ -1,0 +1,37 @@
+[default]
+[default.global.parameters]
+stack_name = "creativora-dev"
+region = "ap-south-1"
+profile = "navin"
+
+[default.deploy.parameters]
+stack_name = "creativora-dev"
+s3_bucket = ""
+s3_prefix = "creativora"
+region = "ap-south-1"
+profile = "navin"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = [
+  "Stage=dev"
+]
+confirm_changeset = true
+resolve_s3 = true
+
+[staging.deploy.parameters]
+stack_name = "creativora-staging"
+region = "ap-south-1"
+profile = "navin"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = [
+  "Stage=staging"
+]
+
+[prod.deploy.parameters]
+stack_name = "creativora-prod"
+region = "ap-south-1"
+profile = "navin"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = [
+  "Stage=prod"
+]
+confirm_changeset = true
