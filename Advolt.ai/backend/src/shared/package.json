@@ -1,5 +1,5 @@
 {
-  "name": "creativora-shared",
+  "name": "advolt-shared",
   "version": "1.0.0",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.600.0",
