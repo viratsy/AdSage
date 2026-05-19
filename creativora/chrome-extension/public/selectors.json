@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-05-19",
+  "selectors": {
+    "feedAd": "[data-testid='story-subtitle'] span",
+    "feedAdContainer": "div[data-pagelet^='FeedUnit']",
+    "adLibraryCard": "div[class*='x1dr75xp']",
+    "adLibrarySponsored": "span[class*='x193iq5w']",
+    "primaryText": "div[data-ad-preview='message']",
+    "headline": "div[class*='xdj266r']",
+    "cta": "div[class*='x1i10hfl'] a",
+    "advertiserName": "strong a, h2 a",
+    "advertiserAvatar": "image[preserveAspectRatio]",
+    "images": "img[class*='x1ey2m1c'], img[class*='xz74otr']"
+  }
+}

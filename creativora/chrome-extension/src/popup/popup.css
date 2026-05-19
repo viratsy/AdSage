@@ -1,0 +1,174 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 320px;
+  min-height: 200px;
+  background: #0f0f13;
+  color: #f1f1f1;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+}
+
+#app {
+  padding: 16px;
+}
+
+.view { display: block; }
+.hidden { display: none !important; }
+
+/* ── Logo ── */
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: #818cf8;
+  margin-bottom: 4px;
+}
+.logo-sm {
+  font-size: 14px;
+  font-weight: 700;
+  color: #818cf8;
+}
+.tagline {
+  color: #6b7280;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+/* ── Login form ── */
+#login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+input {
+  background: #1c1c24;
+  border: 1px solid #2d2d3a;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #f1f1f1;
+  font-size: 13px;
+  outline: none;
+}
+input:focus { border-color: #6366f1; }
+
+button[type="submit"], .btn-primary {
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  margin-top: 4px;
+}
+button[type="submit"]:hover, .btn-primary:hover { background: #4f46e5; }
+
+.btn-ghost {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn-ghost:hover { color: #f1f1f1; }
+
+.error {
+  color: #f87171;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+/* ── Stats ── */
+.stats {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.stat {
+  flex: 1;
+  background: #1c1c24;
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+.stat span {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #818cf8;
+}
+.stat label {
+  font-size: 10px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Recent ads ── */
+.section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+.ad-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.ad-item {
+  background: #1c1c24;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.ad-item .advertiser {
+  font-weight: 600;
+  color: #c7d2fe;
+  margin-bottom: 2px;
+}
+.ad-item .preview {
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.empty {
+  color: #4b5563;
+  font-size: 12px;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* ── Spinner ── */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #2d2d3a;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 40px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
