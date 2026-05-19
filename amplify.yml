@@ -3,10 +3,10 @@ frontend:
   phases:
     preBuild:
       commands:
-        - cd Advolt.ai/frontend && npm ci
+        - npm ci --prefix Advolt.ai/frontend
     build:
       commands:
-        - cd Advolt.ai/frontend && npm run build
+        - npm run build --prefix Advolt.ai/frontend
   artifacts:
     baseDirectory: Advolt.ai/frontend/.next
     files:
