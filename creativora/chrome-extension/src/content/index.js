@@ -1,5 +1,5 @@
 /**
- * Creativora Content Script
+ * Advolt.ai Content Script
  * Detects Meta ads, extracts data, injects Save buttons.
  */
 
@@ -55,13 +55,13 @@ const extractAdData = (container) => {
 
 // ─── Inject Save Ad button into a container ──────────────────────────────────
 const injectButton = (container) => {
-  if (container.querySelector('.creativora-btn')) return; // already injected
+  if (container.querySelector('.Advolt.ai-btn')) return; // already injected
 
   const adData = extractAdData(container);
   const adKey = `${adData.advertiser_name}__${adData.primary_text}`.slice(0, 80);
 
   const wrapper = document.createElement('div');
-  wrapper.className = 'creativora-btn-wrapper';
+  wrapper.className = 'Advolt.ai-btn-wrapper';
   wrapper.style.cssText = `
     position: absolute;
     top: 8px;
@@ -70,7 +70,7 @@ const injectButton = (container) => {
   `;
 
   const btn = document.createElement('button');
-  btn.className = 'creativora-btn';
+  btn.className = 'Advolt.ai-btn';
   btn.dataset.adKey = adKey;
   btn.innerText = savedAdIds.has(adKey) ? '✓ Saved' : '⚡ Save Ad';
   btn.style.cssText = `

@@ -35,7 +35,7 @@ exports.handler = async (event) => {
 
   if (eventType === 'payment.captured') {
     await ddb.send(new UpdateCommand({
-      TableName: `creativora-users-${process.env.STAGE || 'dev'}`,
+      TableName: `advolt-users-${process.env.STAGE || 'dev'}`,
       Key: { user_id },
       UpdateExpression: 'SET subscription_plan = :plan, ai_credits = :credits, ads_saved_count = :zero',
       ExpressionAttributeValues: {
@@ -49,7 +49,7 @@ exports.handler = async (event) => {
 
   if (eventType === 'subscription.cancelled') {
     await ddb.send(new UpdateCommand({
-      TableName: `creativora-users-${process.env.STAGE || 'dev'}`,
+      TableName: `advolt-users-${process.env.STAGE || 'dev'}`,
       Key: { user_id },
       UpdateExpression: 'SET subscription_plan = :plan, ai_credits = :credits',
       ExpressionAttributeValues: {

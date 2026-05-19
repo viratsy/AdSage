@@ -24,7 +24,7 @@ exports.handler = async (event) => {
 
   // Check save limit
   const userRecord = await ddb.send(new GetCommand({
-    TableName: `creativora-users-${process.env.STAGE || 'dev'}`,
+    TableName: `advolt-users-${process.env.STAGE || 'dev'}`,
     Key: { user_id: user.user_id },
   }));
 
@@ -62,7 +62,7 @@ exports.handler = async (event) => {
 
   // Increment user ad count atomically
   await ddb.send(new UpdateCommand({
-    TableName: `creativora-users-${process.env.STAGE || 'dev'}`,
+    TableName: `advolt-users-${process.env.STAGE || 'dev'}`,
     Key: { user_id: user.user_id },
     UpdateExpression: 'ADD ads_saved_count :inc',
     ExpressionAttributeValues: { ':inc': 1 },
@@ -72,7 +72,7 @@ exports.handler = async (event) => {
   await eb.send(new PutEventsCommand({
     Entries: [{
       EventBusName: process.env.EVENT_BUS_NAME,
-      Source: 'creativora.ads',
+      Source: 'Advolt.ads',
       DetailType: 'AdSaved',
       Detail: JSON.stringify({ ad_id, user_id: user.user_id }),
     }],

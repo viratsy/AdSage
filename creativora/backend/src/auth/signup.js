@@ -31,7 +31,7 @@ exports.handler = async (event) => {
 
     // Create user record in DynamoDB
     await ddb.send(new PutCommand({
-      TableName: process.env.DYNAMODB_TABLE_USERS || `creativora-users-${process.env.STAGE || 'dev'}`,
+      TableName: process.env.DYNAMODB_TABLE_USERS || `advolt-users-${process.env.STAGE || 'dev'}`,
       Item: {
         user_id,
         email,

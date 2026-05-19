@@ -24,7 +24,7 @@ exports.handler = async (event) => {
   // Check and decrement AI credits atomically
   try {
     await ddb.send(new UpdateCommand({
-      TableName: `creativora-users-${process.env.STAGE || 'dev'}`,
+      TableName: `advolt-users-${process.env.STAGE || 'dev'}`,
       Key: { user_id: user.user_id },
       UpdateExpression: 'ADD ai_credits :dec',
       ConditionExpression: 'ai_credits > :zero',

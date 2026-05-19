@@ -43,7 +43,7 @@ exports.handler = async (event) => {
 
   // Decrement user ad count
   await ddb.send(new UpdateCommand({
-    TableName: `creativora-users-${process.env.STAGE || 'dev'}`,
+    TableName: `advolt-users-${process.env.STAGE || 'dev'}`,
     Key: { user_id: user.user_id },
     UpdateExpression: 'ADD ads_saved_count :dec',
     ExpressionAttributeValues: { ':dec': -1 },

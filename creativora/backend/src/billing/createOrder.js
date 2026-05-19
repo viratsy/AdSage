@@ -26,7 +26,7 @@ exports.handler = async (event) => {
     body: JSON.stringify({
       amount,
       currency,
-      receipt: `creativora_${user.user_id}_${Date.now()}`,
+      receipt: `Advolt_${user.user_id}_${Date.now()}`,
       notes: { user_id: user.user_id, plan },
     }),
   });

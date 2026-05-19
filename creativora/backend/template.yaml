@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Creativora — AI Ad Intelligence SaaS Backend
+Description: Advolt.ai — AI Ad Intelligence SaaS Backend
 
 Globals:
   Function:
@@ -48,7 +48,7 @@ Resources:
   CreativoraApi:
     Type: AWS::Serverless::Api
     Properties:
-      Name: !Sub "creativora-api-${Stage}"
+      Name: !Sub "advolt-api-${Stage}"
       StageName: !Ref Stage
       Cors:
         AllowMethods: "'GET,POST,PATCH,DELETE,OPTIONS'"
@@ -67,7 +67,7 @@ Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: !Sub "creativora-users-${Stage}"
+      UserPoolName: !Sub "advolt-users-${Stage}"
       AutoVerifiedAttributes: [email]
       UsernameAttributes: [email]
       Policies:
@@ -90,7 +90,7 @@ Resources:
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: !Sub "creativora-client-${Stage}"
+      ClientName: !Sub "advolt-client-${Stage}"
       UserPoolId: !Ref UserPool
       GenerateSecret: false
       ExplicitAuthFlows:
@@ -110,7 +110,7 @@ Resources:
   AdsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "creativora-ads-${Stage}"
+      TableName: !Sub "advolt-ads-${Stage}"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: ad_id
@@ -145,7 +145,7 @@ Resources:
   AiAnalysisTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "creativora-ai-analysis-${Stage}"
+      TableName: !Sub "advolt-ai-analysis-${Stage}"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: analysis_id
@@ -170,7 +170,7 @@ Resources:
   UsersTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "creativora-users-${Stage}"
+      TableName: !Sub "advolt-users-${Stage}"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: user_id
@@ -186,7 +186,7 @@ Resources:
   MediaBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "creativora-media-632320832903-${Stage}"
+      BucketName: !Sub "advolt-media-971598352248-${Stage}"
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -201,6 +201,7 @@ Resources:
 
   MediaBucketPolicy:
     Type: AWS::S3::BucketPolicy
+    DependsOn: MediaDistribution
     Properties:
       Bucket: !Ref MediaBucket
       PolicyDocument:
@@ -212,13 +213,15 @@ Resources:
             Resource: !Sub "${MediaBucket.Arn}/*"
             Condition:
               StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${MediaDistribution}"
+                AWS:SourceArn: !Sub
+                  - "arn:aws:cloudfront::${AWS::AccountId}:distribution/${DistId}"
+                  - DistId: !Ref MediaDistribution
 
   MediaOriginAccessControl:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
       OriginAccessControlConfig:
-        Name: !Sub "creativora-oac-${Stage}"
+        Name: !Sub "advolt-oac-${Stage}"
         OriginAccessControlOriginType: s3
         SigningBehavior: always
         SigningProtocol: sigv4
@@ -243,7 +246,7 @@ Resources:
   SelectorConfigBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "creativora-selector-config-632320832903-${Stage}"
+      BucketName: !Sub "advolt-selector-config-971598352248-${Stage}"
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
@@ -257,7 +260,7 @@ Resources:
   AiQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub "creativora-ai-queue-${Stage}"
+      QueueName: !Sub "advolt-ai-queue-${Stage}"
       VisibilityTimeout: 300
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt AiDLQ.Arn
@@ -266,13 +269,13 @@ Resources:
   AiDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub "creativora-ai-dlq-${Stage}"
+      QueueName: !Sub "advolt-ai-dlq-${Stage}"
       MessageRetentionPeriod: 1209600 # 14 days
 
   AdSavedEventBus:
     Type: AWS::Events::EventBus
     Properties:
-      Name: !Sub "creativora-events-${Stage}"
+      Name: !Sub "advolt-events-${Stage}"
 
 # ─────────────────────────────────────────────
 # SHARED LAYER
@@ -281,7 +284,7 @@ Resources:
   SharedLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: !Sub "creativora-shared-${Stage}"
+      LayerName: !Sub "advolt-shared-${Stage}"
       ContentUri: src/shared/
       CompatibleRuntimes: [nodejs20.x]
     Metadata:
@@ -294,7 +297,7 @@ Resources:
   AuthSignupFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-auth-signup-${Stage}"
+      FunctionName: !Sub "advolt-auth-signup-${Stage}"
       CodeUri: src/auth/
       Handler: signup.handler
       Events:
@@ -310,7 +313,7 @@ Resources:
   AuthLoginFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-auth-login-${Stage}"
+      FunctionName: !Sub "advolt-auth-login-${Stage}"
       CodeUri: src/auth/
       Handler: login.handler
       Events:
@@ -326,7 +329,7 @@ Resources:
   AuthRefreshFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-auth-refresh-${Stage}"
+      FunctionName: !Sub "advolt-auth-refresh-${Stage}"
       CodeUri: src/auth/
       Handler: refresh.handler
       Events:
@@ -346,7 +349,7 @@ Resources:
   SaveAdFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-save-ad-${Stage}"
+      FunctionName: !Sub "advolt-save-ad-${Stage}"
       CodeUri: src/ads/
       Handler: saveAd.handler
       Policies:
@@ -369,7 +372,7 @@ Resources:
   GetAdsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-get-ads-${Stage}"
+      FunctionName: !Sub "advolt-get-ads-${Stage}"
       CodeUri: src/ads/
       Handler: getAds.handler
       Policies:
@@ -386,7 +389,7 @@ Resources:
   GetAdDetailsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-get-ad-details-${Stage}"
+      FunctionName: !Sub "advolt-get-ad-details-${Stage}"
       CodeUri: src/ads/
       Handler: getAdDetails.handler
       Policies:
@@ -403,7 +406,7 @@ Resources:
   DeleteAdFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-delete-ad-${Stage}"
+      FunctionName: !Sub "advolt-delete-ad-${Stage}"
       CodeUri: src/ads/
       Handler: deleteAd.handler
       Policies:
@@ -422,7 +425,7 @@ Resources:
   UpdateAdFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-update-ad-${Stage}"
+      FunctionName: !Sub "advolt-update-ad-${Stage}"
       CodeUri: src/ads/
       Handler: updateAd.handler
       Policies:
@@ -443,7 +446,7 @@ Resources:
   TriggerAiAnalysisFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-trigger-ai-${Stage}"
+      FunctionName: !Sub "advolt-trigger-ai-${Stage}"
       CodeUri: src/ai/
       Handler: triggerAnalysis.handler
       Policies:
@@ -464,7 +467,7 @@ Resources:
   ProcessAiAnalysisFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-process-ai-${Stage}"
+      FunctionName: !Sub "advolt-process-ai-${Stage}"
       CodeUri: src/ai/
       Handler: processAnalysis.handler
       Timeout: 120
@@ -490,7 +493,7 @@ Resources:
   GetAiResultFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-get-ai-result-${Stage}"
+      FunctionName: !Sub "advolt-get-ai-result-${Stage}"
       CodeUri: src/ai/
       Handler: getResult.handler
       Policies:
@@ -511,7 +514,7 @@ Resources:
   OptimizeImageFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-optimize-image-${Stage}"
+      FunctionName: !Sub "advolt-optimize-image-${Stage}"
       CodeUri: src/media/
       Handler: optimizeImage.handler
       Timeout: 60
@@ -519,19 +522,36 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref MediaBucket
-      Events:
-        S3Trigger:
-          Type: S3
-          Properties:
-            Bucket: !Ref MediaBucket
-            Events: s3:ObjectCreated:*
+
+  OptimizeImageFunctionInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt OptimizeImageFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !GetAtt MediaBucket.Arn
+
+  MediaBucketNotification:
+    Type: AWS::S3::BucketNotification
+    DependsOn: OptimizeImageFunctionInvokePermission
+    Properties:
+      Bucket: !Ref MediaBucket
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
             Filter:
               S3Key:
                 Rules:
                   - Name: suffix
                     Value: .jpg
+            Function: !GetAtt OptimizeImageFunction.Arn
+          - Event: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
                   - Name: suffix
                     Value: .png
+            Function: !GetAtt OptimizeImageFunction.Arn
 
 # ─────────────────────────────────────────────
 # LAMBDA — BILLING
@@ -540,7 +560,7 @@ Resources:
   CreatePaymentOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-create-payment-order-${Stage}"
+      FunctionName: !Sub "advolt-create-payment-order-${Stage}"
       CodeUri: src/billing/
       Handler: createOrder.handler
       Environment:
@@ -561,7 +581,7 @@ Resources:
   PaymentWebhookFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-payment-webhook-${Stage}"
+      FunctionName: !Sub "advolt-payment-webhook-${Stage}"
       CodeUri: src/billing/
       Handler: webhook.handler
       Environment:
@@ -583,7 +603,7 @@ Resources:
   GetBillingStatusFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "creativora-billing-status-${Stage}"
+      FunctionName: !Sub "advolt-billing-status-${Stage}"
       CodeUri: src/billing/
       Handler: getStatus.handler
       Policies:

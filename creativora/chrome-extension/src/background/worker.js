@@ -11,14 +11,14 @@ const loadSelectorConfig = async () => {
     if (res.ok) {
       selectorConfig = await res.json();
       await chrome.storage.local.set({ selectorConfig, selectorConfigFetchedAt: Date.now() });
-      console.log('[Creativora] Selector config loaded');
+      console.log('[Advolt.ai] Selector config loaded');
     }
   } catch (err) {
     // Fall back to cached config
     const cached = await chrome.storage.local.get('selectorConfig');
     if (cached.selectorConfig) {
       selectorConfig = cached.selectorConfig;
-      console.log('[Creativora] Using cached selector config');
+      console.log('[Advolt.ai] Using cached selector config');
     }
   }
 };
@@ -123,7 +123,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   };
 
   handle().then(sendResponse).catch((err) => {
-    console.error('[Creativora worker error]', err);
+    console.error('[Advolt.ai worker error]', err);
     sendResponse({ error: err.message });
   });
 

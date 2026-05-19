@@ -8,7 +8,7 @@ exports.handler = async (event) => {
   if (!user) return res.unauthorized();
 
   const result = await ddb.send(new GetCommand({
-    TableName: `creativora-users-${process.env.STAGE || 'dev'}`,
+    TableName: `advolt-users-${process.env.STAGE || 'dev'}`,
     Key: { user_id: user.user_id },
   }));
 

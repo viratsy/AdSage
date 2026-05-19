@@ -1,10 +1,10 @@
-# Creativora — Build Progress
+# Advolt.ai — Build Progress
 
 ## Project Info
 
-- Product: Creativora (AI Ad Intelligence SaaS)
-- AWS Account: 632320832903
-- AWS Profile: navin
+- Product: Advolt.ai (AI Ad Intelligence SaaS)
+- AWS Account: 971598352248
+- AWS profile: voltai
 - Region: TBD (set before first deploy)
 - Architecture: Fully serverless, AWS SAM + Amplify
 
@@ -53,9 +53,9 @@
 
 ### 2026-05-19
 
-- Project scaffolded under `/creativora`
-- Architecture doc moved to `/creativora/docs/phase_1_architecture.md`
-- AWS account verified (Account: 632320832903, Profile: navin)
+- Project scaffolded under `/Advolt.ai`
+- Architecture doc moved to `/Advolt.ai/docs/phase_1_architecture.md`
+- AWS account verified (Account: 971598352248, profile: voltai)
 - Folder structure created:
   - `/backend/src/{auth,ads,ai,billing,media,shared}`
   - `/frontend`
@@ -119,7 +119,7 @@ Key implementation details:
 1. Replace `YOUR_API_GATEWAY_URL` in `worker.js`, `api.js`, `auth.js`, `popup.js` with real API URL after SAM deploy
 2. Replace `YOUR_CLOUDFRONT_URL` in `worker.js` with real CloudFront URL
 3. Replace `YOUR_DASHBOARD_URL` in `popup.html` with real dashboard URL
-4. Upload `public/selectors.json` to the `creativora-selector-config` S3 bucket at path `config/selectors.json`
+4. Upload `public/selectors.json` to the `Advolt.ai-selector-config` S3 bucket at path `config/selectors.json`
 5. Add real icon PNGs to `public/icons/` (16x16, 48x48, 128x128)
 
 **Next:** Phase 1C — AI Analysis Engine (already built in 1A, needs prompt tuning + testing)
@@ -144,16 +144,16 @@ Key implementation details:
 
 | Resource | Name | Status |
 |---|---|---|
-| Cognito User Pool | creativora-users | ✅ In template |
-| DynamoDB Table | creativora-ads | ✅ In template |
-| DynamoDB Table | creativora-ai-analysis | ✅ In template |
-| S3 Bucket | creativora-media-{account_id} | ✅ In template |
-| S3 Bucket | creativora-selector-config | ✅ In template |
+| Cognito User Pool | Advolt.ai-users | ✅ In template |
+| DynamoDB Table | Advolt.ai-ads | ✅ In template |
+| DynamoDB Table | Advolt.ai-ai-analysis | ✅ In template |
+| S3 Bucket | Advolt.ai-media-{account_id} | ✅ In template |
+| S3 Bucket | Advolt.ai-selector-config | ✅ In template |
 | CloudFront Distribution | media CDN | ✅ In template |
-| SQS Queue | creativora-ai-queue | ✅ In template |
+| SQS Queue | Advolt.ai-ai-queue | ✅ In template |
 | EventBridge Rule | ad-saved-trigger | ✅ In template |
 | SES Identity | (sender email) | 🔲 |
-| Amplify App | creativora-frontend | 🔲 |
+| Amplify App | Advolt.ai-frontend | 🔲 |
 
 ---
 
