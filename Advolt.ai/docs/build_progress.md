@@ -44,7 +44,7 @@
 | 1A | Cognito auth, Backend APIs, DynamoDB schema, S3 upload flow | ✅ Complete |
 | 1B | Chrome extension, Meta extraction, Save ad flow | ✅ Complete |
 | 1C | AI analysis engine, Prompt engineering, AI results storage | 🔲 Not started |
-| 1D | Dashboard UI, Ad library, Filters/search, Ad details page | 🔲 Not started |
+| 1D | Dashboard UI, Ad library, Filters/search, Ad details page | ✅ Complete |
 | 1E | Billing, Limits enforcement, Production hardening | 🔲 Not started |
 
 ---
