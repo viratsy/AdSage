@@ -1,0 +1,18 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd Advolt.ai/frontend
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: Advolt.ai/frontend/.next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - Advolt.ai/frontend/node_modules/**/*
+      - Advolt.ai/frontend/.next/cache/**/*
