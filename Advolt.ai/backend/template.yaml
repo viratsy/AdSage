@@ -11,11 +11,14 @@ Globals:
       Variables:
         DYNAMODB_TABLE_ADS: !Ref AdsTable
         DYNAMODB_TABLE_AI: !Ref AiAnalysisTable
+        DYNAMODB_TABLE_USERS: !Ref UsersTable
         ADS_BUCKET: !Ref MediaBucket
         CLOUDFRONT_URL: !Sub "https://${MediaDistribution.DomainName}"
         COGNITO_USER_POOL_ID: !Ref UserPool
         COGNITO_CLIENT_ID: !Ref UserPoolClient
         AI_QUEUE_URL: !Ref AiQueue
+        STAGE: !Ref Stage
+        EVENT_BUS_NAME: !Ref AdSavedEventBus
     Layers:
       - !Ref SharedLayer
 
@@ -59,6 +62,11 @@ Resources:
         Authorizers:
           CognitoAuthorizer:
             UserPoolArn: !GetAtt UserPool.Arn
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingBurstLimit: 50
+          ThrottlingRateLimit: 20
 
 # ─────────────────────────────────────────────
 # COGNITO
@@ -582,6 +590,105 @@ Resources:
             Method: GET
 
 # ─────────────────────────────────────────────
+# SECRETS MANAGER
+# ─────────────────────────────────────────────
+
+  ApiSecrets:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "advolt/${Stage}/api-keys"
+      Description: Advolt.ai API keys for AI and payment providers
+      SecretString: !Sub |
+        {
+          "OPENAI_API_KEY": "${OpenAIApiKey}",
+          "CLAUDE_API_KEY": "${ClaudeApiKey}",
+          "RAZORPAY_KEY": "${RazorpayKey}",
+          "RAZORPAY_SECRET": "${RazorpaySecret}",
+          "RAZORPAY_WEBHOOK_SECRET": "${RazorpayWebhookSecret}"
+        }
+
+# ─────────────────────────────────────────────
+# SES — EMAIL
+# ─────────────────────────────────────────────
+
+  SesConfigSet:
+    Type: AWS::SES::ConfigurationSet
+    Properties:
+      Name: !Sub "advolt-ses-${Stage}"
+
+# ─────────────────────────────────────────────
+# CLOUDWATCH ALARMS
+# ─────────────────────────────────────────────
+
+  AiQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "advolt-ai-queue-depth-${Stage}"
+      AlarmDescription: AI queue depth is high — processing may be backed up
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AiQueue.QueueName
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 50
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  AiDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "advolt-ai-dlq-messages-${Stage}"
+      AlarmDescription: Messages in AI dead-letter queue — AI processing is failing
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AiDLQ.QueueName
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  ProcessAiErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "advolt-process-ai-errors-${Stage}"
+      AlarmDescription: AI processing Lambda is throwing errors
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ProcessAiAnalysisFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 3
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  ApiGateway5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "advolt-api-5xx-${Stage}"
+      AlarmDescription: API Gateway 5xx error rate is elevated
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub "advolt-api-${Stage}"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+# ─────────────────────────────────────────────
 # OUTPUTS
 # ─────────────────────────────────────────────
 
@@ -604,3 +711,6 @@ Outputs:
   AiQueueUrl:
     Description: SQS AI queue URL
     Value: !Ref AiQueue
+  SecretsArn:
+    Description: Secrets Manager ARN for API keys
+    Value: !Ref ApiSecrets

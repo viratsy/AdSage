@@ -45,7 +45,7 @@
 | 1B | Chrome extension, Meta extraction, Save ad flow | ✅ Complete |
 | 1C | AI analysis engine, Prompt engineering, AI results storage | 🔲 Not started |
 | 1D | Dashboard UI, Ad library, Filters/search, Ad details page | ✅ Complete |
-| 1E | Billing, Limits enforcement, Production hardening | 🔲 Not started |
+| 1E | Billing, Limits enforcement, Production hardening | ✅ Complete |
 
 ---
 
@@ -123,6 +123,36 @@ Key implementation details:
 5. Add real icon PNGs to `public/icons/` (16x16, 48x48, 128x128)
 
 **Next:** Phase 1C — AI Analysis Engine (already built in 1A, needs prompt tuning + testing)
+
+---
+
+### 2026-05-20 — Phase 1E Complete
+
+Production hardening deployed to advolt-dev stack.
+
+Backend changes:
+- API Gateway rate limiting: 20 req/s sustained, 50 burst per route
+- `DYNAMODB_TABLE_USERS`, `STAGE`, `EVENT_BUS_NAME` added to Lambda globals
+- Secrets Manager secret created: `advolt/dev/api-keys` (ARN in outputs)
+- SES ConfigurationSet created: `advolt-ses-dev`
+- 4 CloudWatch alarms: AI queue depth, AI DLQ messages, AI Lambda errors, API 5xx rate
+- Shared layer SDK dependency conflict fixed — uses Node 20 runtime SDK, only bundles `uuid`
+
+Frontend changes:
+- `middleware.ts` — server-side route protection, redirects unauthenticated users to /login
+- `authStore.ts` — sets `id_token` cookie on login so middleware can read it
+- `LimitBanner` component — shows warning when ads or AI credits near limit, with upgrade link
+- LimitBanner added to dashboard layout (visible on all dashboard pages)
+
+**All 5 phases complete. Stack is live.**
+
+Next steps before launch:
+1. Replace dummy API keys in Secrets Manager with real values
+2. Verify SES sender email identity
+3. Upload `selectors.json` to selector-config S3 bucket
+4. Replace placeholder URLs in Chrome extension with live API/CloudFront URLs
+5. Deploy frontend to Amplify
+6. Load Chrome extension in developer mode and test end-to-end
 
 ---
 
