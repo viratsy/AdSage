@@ -1,7 +1,7 @@
 import { getTokens, setTokens, clearTokens, isTokenExpired } from '../lib/storage.js';
 import { loginRequest, refreshRequest } from '../lib/auth.js';
 
-const SELECTOR_CONFIG_URL = 'https://YOUR_CLOUDFRONT_URL/config/selectors.json';
+const SELECTOR_CONFIG_URL = 'https://d37anhmjei4vts.cloudfront.net/config/selectors.json';
 let selectorConfig = null;
 
 // ─── Fetch remote selector config on startup ───────────────────────────────
@@ -80,8 +80,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const token = await getValidToken();
         if (!token) return { success: false, error: 'Not authenticated' };
 
-        const API_BASE = 'https://YOUR_API_GATEWAY_URL';
-        const response = await fetch(`${API_BASE}/ads/save`, {
+        const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev';
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -107,7 +106,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const token = await getValidToken();
         if (!token) return { ads: [] };
 
-        const API_BASE = 'https://YOUR_API_GATEWAY_URL';
+        const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev';
         const response = await fetch(`${API_BASE}/ads?limit=5`, {
           headers: { Authorization: `Bearer ${token}` },
         });

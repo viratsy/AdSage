@@ -3,7 +3,7 @@
  * to ensure token refresh happens in one place.
  */
 
-const API_BASE = 'https://YOUR_API_GATEWAY_URL'; // replaced post-deploy
+const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev'; // replaced post-deploy
 
 export const apiCall = async (path, options = {}) => {
   // Ask background worker for a valid token

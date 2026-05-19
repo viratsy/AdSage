@@ -28,7 +28,7 @@ const loadMainView = async () => {
   // Load billing status
   try {
     const { token } = await chrome.runtime.sendMessage({ type: 'GET_TOKEN' });
-    const API_BASE = 'https://YOUR_API_GATEWAY_URL';
+    const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev';
 
     const statusRes = await fetch(`${API_BASE}/billing/status`, {
       headers: { Authorization: `Bearer ${token}` },

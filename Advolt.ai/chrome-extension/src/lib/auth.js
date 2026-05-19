@@ -2,7 +2,7 @@
  * Auth helpers used by the background worker.
  */
 
-const API_BASE = 'https://YOUR_API_GATEWAY_URL'; // replaced post-deploy
+const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev'; // replaced post-deploy
 
 export const loginRequest = async (email, password) => {
   const response = await fetch(`${API_BASE}/auth/login`, {

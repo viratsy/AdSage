@@ -116,10 +116,10 @@ Key implementation details:
 - All API calls go through background worker (single token refresh point)
 
 **TODO before loading in Chrome:**
-1. Replace `YOUR_API_GATEWAY_URL` in `worker.js`, `api.js`, `auth.js`, `popup.js` with real API URL after SAM deploy
-2. Replace `YOUR_CLOUDFRONT_URL` in `worker.js` with real CloudFront URL
-3. Replace `YOUR_DASHBOARD_URL` in `popup.html` with real dashboard URL
-4. Upload `public/selectors.json` to the `Advolt.ai-selector-config` S3 bucket at path `config/selectors.json`
+1. ✅ Replace `YOUR_API_GATEWAY_URL` in `worker.js`, `api.js`, `auth.js`, `popup.js` — done
+2. ✅ Replace `YOUR_CLOUDFRONT_URL` in `worker.js` — done
+3. ✅ Replace `YOUR_DASHBOARD_URL` in `popup.html` — done
+4. Upload `public/selectors.json` to the `advolt-selector-config-971598352248-dev` S3 bucket at path `config/selectors.json`
 5. Add real icon PNGs to `public/icons/` (16x16, 48x48, 128x128)
 
 **Next:** Phase 1C — AI Analysis Engine (already built in 1A, needs prompt tuning + testing)
