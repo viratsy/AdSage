@@ -45,7 +45,7 @@ Parameters:
 # ─────────────────────────────────────────────
 Resources:
 
-  CreativoraApi:
+  AdvoltApi:
     Type: AWS::Serverless::Api
     Properties:
       Name: !Sub "advolt-api-${Stage}"
@@ -201,7 +201,6 @@ Resources:
 
   MediaBucketPolicy:
     Type: AWS::S3::BucketPolicy
-    DependsOn: MediaDistribution
     Properties:
       Bucket: !Ref MediaBucket
       PolicyDocument:
@@ -211,11 +210,6 @@ Resources:
               Service: cloudfront.amazonaws.com
             Action: s3:GetObject
             Resource: !Sub "${MediaBucket.Arn}/*"
-            Condition:
-              StringEquals:
-                AWS:SourceArn: !Sub
-                  - "arn:aws:cloudfront::${AWS::AccountId}:distribution/${DistId}"
-                  - DistId: !Ref MediaDistribution
 
   MediaOriginAccessControl:
     Type: AWS::CloudFront::OriginAccessControl
@@ -304,7 +298,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /auth/signup
             Method: POST
             Auth:
@@ -320,7 +314,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /auth/login
             Method: POST
             Auth:
@@ -336,7 +330,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /auth/refresh
             Method: POST
             Auth:
@@ -365,7 +359,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /ads/save
             Method: POST
 
@@ -382,7 +376,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /ads
             Method: GET
 
@@ -399,7 +393,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /ads/{id}
             Method: GET
 
@@ -418,7 +412,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /ads/{id}
             Method: DELETE
 
@@ -435,7 +429,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /ads/{id}
             Method: PATCH
 
@@ -460,7 +454,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /ai/analyze/{ad_id}
             Method: POST
 
@@ -503,7 +497,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /ai/result/{ad_id}
             Method: GET
 
@@ -522,36 +516,6 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref MediaBucket
-
-  OptimizeImageFunctionInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt OptimizeImageFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: s3.amazonaws.com
-      SourceArn: !GetAtt MediaBucket.Arn
-
-  MediaBucketNotification:
-    Type: AWS::S3::BucketNotification
-    DependsOn: OptimizeImageFunctionInvokePermission
-    Properties:
-      Bucket: !Ref MediaBucket
-      NotificationConfiguration:
-        LambdaConfigurations:
-          - Event: s3:ObjectCreated:*
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: suffix
-                    Value: .jpg
-            Function: !GetAtt OptimizeImageFunction.Arn
-          - Event: s3:ObjectCreated:*
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: suffix
-                    Value: .png
-            Function: !GetAtt OptimizeImageFunction.Arn
 
 # ─────────────────────────────────────────────
 # LAMBDA — BILLING
@@ -574,7 +538,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /billing/create-order
             Method: POST
 
@@ -594,7 +558,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /billing/webhook
             Method: POST
             Auth:
@@ -613,7 +577,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref CreativoraApi
+            RestApiId: !Ref AdvoltApi
             Path: /billing/status
             Method: GET
 
@@ -624,7 +588,7 @@ Resources:
 Outputs:
   ApiUrl:
     Description: API Gateway endpoint
-    Value: !Sub "https://${CreativoraApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+    Value: !Sub "https://${AdvoltApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
   UserPoolId:
     Description: Cognito User Pool ID
     Value: !Ref UserPool

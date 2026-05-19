@@ -140,38 +140,55 @@ Key implementation details:
 
 ---
 
-## AWS Resources (to be created)
+## AWS Resources (deployed — stack: advolt-dev, region: ap-south-1)
 
 | Resource | Name | Status |
 |---|---|---|
-| Cognito User Pool | Advolt.ai-users | ✅ In template |
-| DynamoDB Table | Advolt.ai-ads | ✅ In template |
-| DynamoDB Table | Advolt.ai-ai-analysis | ✅ In template |
-| S3 Bucket | Advolt.ai-media-{account_id} | ✅ In template |
-| S3 Bucket | Advolt.ai-selector-config | ✅ In template |
-| CloudFront Distribution | media CDN | ✅ In template |
-| SQS Queue | Advolt.ai-ai-queue | ✅ In template |
-| EventBridge Rule | ad-saved-trigger | ✅ In template |
+| Cognito User Pool | ap-south-1_NVeGCpEng | ✅ Live |
+| Cognito Client | 4jav1gv3vd5ehf7cmc11mf6vk1 | ✅ Live |
+| DynamoDB Table | advolt-ads-dev | ✅ Live |
+| DynamoDB Table | advolt-ai-analysis-dev | ✅ Live |
+| DynamoDB Table | advolt-users-dev | ✅ Live |
+| S3 Bucket | advolt-media-971598352248-dev | ✅ Live |
+| S3 Bucket | advolt-selector-config-971598352248-dev | ✅ Live |
+| CloudFront Distribution | https://d37anhmjei4vts.cloudfront.net | ✅ Live |
+| SQS Queue | advolt-ai-queue-dev | ✅ Live |
+| SQS DLQ | advolt-ai-dlq-dev | ✅ Live |
+| EventBridge Bus | advolt-events-dev | ✅ Live |
+| API Gateway | https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev | ✅ Live |
 | SES Identity | (sender email) | 🔲 |
-| Amplify App | Advolt.ai-frontend | 🔲 |
+| Amplify App | advolt-frontend | 🔲 |
+
+---
+
+## Live Endpoints (dev)
+
+| Key | Value |
+|---|---|
+| API URL | https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev |
+| CloudFront URL | https://d37anhmjei4vts.cloudfront.net |
+| Cognito User Pool ID | ap-south-1_NVeGCpEng |
+| Cognito Client ID | 4jav1gv3vd5ehf7cmc11mf6vk1 |
+| Media S3 Bucket | advolt-media-971598352248-dev |
+| AI Queue URL | https://sqs.ap-south-1.amazonaws.com/971598352248/advolt-ai-queue-dev |
 
 ---
 
 ## Environment Variables Needed
 
 ```
-OPENAI_API_KEY
-CLAUDE_API_KEY
-COGNITO_USER_POOL_ID
-COGNITO_CLIENT_ID
-ADS_BUCKET
-CLOUDFRONT_URL
-DYNAMODB_TABLE_ADS
-DYNAMODB_TABLE_AI
-RAZORPAY_KEY
-RAZORPAY_SECRET
-RAZORPAY_WEBHOOK_SECRET
-SELECTOR_CONFIG_URL
+OPENAI_API_KEY=<replace with real key>
+CLAUDE_API_KEY=<replace with real key>
+COGNITO_USER_POOL_ID=ap-south-1_NVeGCpEng
+COGNITO_CLIENT_ID=4jav1gv3vd5ehf7cmc11mf6vk1
+ADS_BUCKET=advolt-media-971598352248-dev
+CLOUDFRONT_URL=https://d37anhmjei4vts.cloudfront.net
+DYNAMODB_TABLE_ADS=advolt-ads-dev
+DYNAMODB_TABLE_AI=advolt-ai-analysis-dev
+RAZORPAY_KEY=<replace with real key>
+RAZORPAY_SECRET=<replace with real key>
+RAZORPAY_WEBHOOK_SECRET=<replace with real key>
+SELECTOR_CONFIG_URL=https://d37anhmjei4vts.cloudfront.net/config/selectors.json
 ```
 
 ---
