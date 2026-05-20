@@ -1,12 +1,15 @@
 /**
  * Extracts authenticated user info from API Gateway event.
- * Cognito authorizer injects claims into requestContext.
+ * Works with both Cognito authorizer and custom Lambda authorizer.
  */
 exports.getUserFromEvent = (event) => {
-  const claims = event?.requestContext?.authorizer?.claims;
-  if (!claims) return null;
-  return {
-    user_id: claims.sub,
-    email: claims.email,
-  };
+  const ctx = event?.requestContext?.authorizer;
+  if (!ctx) return null;
+
+  // Lambda authorizer puts claims directly in context
+  const sub = ctx.sub || ctx.claims?.sub;
+  const email = ctx.email || ctx.claims?.email;
+
+  if (!sub) return null;
+  return { user_id: sub, email: email || '' };
 };

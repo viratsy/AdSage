@@ -59,11 +59,16 @@ Resources:
         AllowOrigin: "'*'"
         AllowCredentials: false
       Auth:
-        DefaultAuthorizer: CognitoAuthorizer
+        DefaultAuthorizer: LambdaAuthorizer
         AddDefaultAuthorizerToCorsPreflight: false
         Authorizers:
-          CognitoAuthorizer:
-            UserPoolArn: !GetAtt UserPool.Arn
+          LambdaAuthorizer:
+            FunctionArn: !GetAtt AuthorizerFunction.Arn
+            FunctionPayloadType: REQUEST
+            Identity:
+              Headers:
+                - Authorization
+            AuthorizerResultTtlInSeconds: 0
       MethodSettings:
         - ResourcePath: "/*"
           HttpMethod: "*"
@@ -293,6 +298,18 @@ Resources:
       CompatibleRuntimes: [nodejs20.x]
     Metadata:
       BuildMethod: nodejs20.x
+
+# ─────────────────────────────────────────────
+# LAMBDA — AUTHORIZER
+# ─────────────────────────────────────────────
+
+  AuthorizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-authorizer-${Stage}"
+      CodeUri: src/auth/
+      Handler: authorizer.handler
+      Timeout: 10
 
 # ─────────────────────────────────────────────
 # LAMBDA — AUTH
