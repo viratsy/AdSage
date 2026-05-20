@@ -1,60 +1,37 @@
 /**
  * Advolt.ai Content Script
- * Detects Meta ads in Facebook Ad Library, injects one Save button per ad.
+ * Injects Save Ad buttons on Facebook Ad Library.
  */
 
-let SELECTORS = {
-  primaryText: "div[data-ad-preview='message']",
-  advertiserName: "strong a, h2 a",
-  images: "img[class*='x1ey2m1c'], img[class*='xz74otr'], img[class*='x168nmei']",
-};
+const savedAdKeys = new Set();
+const injectedCards = new WeakSet();
 
-const savedAdIds = new Set();
-
-// ─── Load remote selector config ─────────────────────────────────────────────
-const loadSelectors = async () => {
-  try {
-    const { config } = await chrome.runtime.sendMessage({ type: 'GET_SELECTOR_CONFIG' });
-    if (config?.selectors) SELECTORS = { ...SELECTORS, ...config.selectors };
-  } catch (_) {}
-};
-
-// ─── Extract ad data from a card ─────────────────────────────────────────────
+// ─── Extract ad data from a card element ─────────────────────────────────────
 const extractAdData = (card) => {
-  const text = (sel) => {
-    for (const s of sel.split(',')) {
-      const t = card.querySelector(s.trim())?.innerText?.trim();
-      if (t) return t;
-    }
-    return '';
-  };
-
-  const images = [];
-  card.querySelectorAll('img').forEach((img) => {
-    if (img.src && !img.src.includes('data:') && img.width > 50) images.push(img.src);
-  });
-
-  // Advertiser name — look for the page name link near the top of the card
-  const advertiserEl =
-    card.querySelector('a[href*="facebook.com/"] span') ||
-    card.querySelector('strong a') ||
-    card.querySelector('h2 a') ||
-    card.querySelector('a[role="link"]');
-  const advertiser_name = advertiserEl?.innerText?.trim() || 'Unknown';
-
-  // Primary text — largest text block
-  const allText = [...card.querySelectorAll('div, span, p')]
-    .filter((el) => el.children.length === 0 && el.innerText?.trim().length > 30)
+  // Get all text nodes, pick the longest as primary text
+  const textNodes = [...card.querySelectorAll('div, span, p')]
+    .filter((el) => !el.children.length && (el.innerText?.trim().length ?? 0) > 20)
     .sort((a, b) => b.innerText.length - a.innerText.length);
-  const primary_text = allText[0]?.innerText?.trim() || '';
+
+  const primary_text = textNodes[0]?.innerText?.trim() || '';
+
+  // Advertiser name — find a link near the top of the card
+  const links = [...card.querySelectorAll('a[href*="facebook.com"]')];
+  const advertiser_name = links[0]?.innerText?.trim() || 'Unknown';
+
+  // Images
+  const image_urls = [...card.querySelectorAll('img')]
+    .filter((img) => img.src && !img.src.includes('data:') && img.naturalWidth > 50)
+    .map((img) => img.src)
+    .slice(0, 3);
 
   return {
     advertiser_name,
     primary_text,
-    headline: text(SELECTORS.primaryText),
+    headline: '',
     cta: '',
     landing_page: '',
-    image_urls: images.slice(0, 3),
+    image_urls,
     video_urls: [],
     platform: 'facebook',
     source_url: window.location.href,
@@ -62,61 +39,62 @@ const extractAdData = (card) => {
   };
 };
 
-// ─── Inject one Save button per ad card ──────────────────────────────────────
+// ─── Inject button into a card ────────────────────────────────────────────────
 const injectButton = (card) => {
-  if (card.querySelector('.advolt-btn')) return; // already has button
+  if (injectedCards.has(card)) return;
+  injectedCards.add(card);
 
   const adData = extractAdData(card);
   const adKey = `${adData.advertiser_name}__${adData.primary_text}`.slice(0, 100);
 
   const btn = document.createElement('button');
   btn.className = 'advolt-btn';
-  btn.dataset.adKey = adKey;
-  btn.innerText = savedAdIds.has(adKey) ? '✓ Saved' : '⚡ Save Ad';
+  btn.innerText = '⚡ Save Ad';
   btn.style.cssText = `
     position: absolute;
     top: 8px;
     right: 8px;
     z-index: 2147483647;
-    background: ${savedAdIds.has(adKey) ? '#22c55e' : '#6366f1'};
-    color: white;
+    background: #6366f1;
+    color: #fff;
     border: none;
     border-radius: 6px;
-    padding: 6px 14px;
-    font-size: 13px;
-    font-weight: 600;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 700;
     cursor: pointer;
     font-family: system-ui, sans-serif;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-    pointer-events: all;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    letter-spacing: 0.2px;
   `;
 
   btn.addEventListener('click', async (e) => {
     e.stopPropagation();
     e.preventDefault();
-    if (savedAdIds.has(adKey)) return;
+    if (savedAdKeys.has(adKey)) return;
 
     btn.innerText = '⏳ Saving...';
     btn.disabled = true;
+    btn.style.background = '#4f46e5';
 
     const result = await chrome.runtime.sendMessage({ type: 'SAVE_AD', payload: adData });
 
     if (result?.success) {
-      savedAdIds.add(adKey);
+      savedAdKeys.add(adKey);
       btn.innerText = '✓ Saved';
       btn.style.background = '#22c55e';
     } else if (result?.error === 'limit_reached') {
-      btn.innerText = '🔒 Limit reached';
+      btn.innerText = '🔒 Limit';
       btn.style.background = '#f59e0b';
       btn.disabled = false;
     } else {
-      console.error('[Advolt] Save failed:', result?.error);
       btn.innerText = '✗ Failed';
       btn.style.background = '#ef4444';
       btn.disabled = false;
       setTimeout(() => {
         btn.innerText = '⚡ Save Ad';
         btn.style.background = '#6366f1';
+        btn.disabled = false;
       }, 2000);
     }
   });
@@ -127,65 +105,56 @@ const injectButton = (card) => {
   card.appendChild(btn);
 };
 
-// ─── Find ad cards on the Ad Library page ────────────────────────────────────
-const findAdCards = () => {
-  const cards = [];
-
-  // Strategy: find all divs that contain "Sponsored" text AND an image
-  // and are not nested inside another such div
-  const candidates = document.querySelectorAll('div[role="article"], div[data-testid]');
-
-  if (candidates.length > 0) {
-    candidates.forEach((el) => {
-      if (el.querySelector('img') && !el.closest('[data-testid]')?.isSameNode(el)) {
-        cards.push(el);
-      }
-    });
+// ─── Find the ad card ancestor of a "Sponsored" element ──────────────────────
+const findCardFromSponsored = (sponsoredEl) => {
+  let el = sponsoredEl.parentElement;
+  for (let i = 0; i < 10; i++) {
+    if (!el || el === document.body) break;
+    // A card has an image, reasonable size, and is not too deep
+    if (
+      el.querySelector('img') &&
+      el.offsetHeight > 100 &&
+      el.offsetWidth > 150
+    ) {
+      return el;
+    }
+    el = el.parentElement;
   }
-
-  // Fallback for Ad Library grid cards
-  if (cards.length === 0) {
-    // Each ad card in the library is a sibling div at the same level
-    // Find the grid container and get its direct children
-    const sponsored = [...document.querySelectorAll('*')].filter(
-      (el) => el.children.length === 0 && el.innerText?.trim() === 'Sponsored'
-    );
-
-    sponsored.forEach((sponsoredEl) => {
-      // Walk up to find the card container (has image + text)
-      let el = sponsoredEl.parentElement;
-      for (let i = 0; i < 8; i++) {
-        if (!el) break;
-        if (el.querySelector('img') && el.offsetHeight > 100 && el.offsetWidth > 150) {
-          if (!cards.includes(el)) cards.push(el);
-          break;
-        }
-        el = el.parentElement;
-      }
-    });
-  }
-
-  return cards;
+  return null;
 };
 
-// ─── Scan ─────────────────────────────────────────────────────────────────────
-const scanForAds = () => {
-  const cards = findAdCards();
+// ─── Main scan ────────────────────────────────────────────────────────────────
+const scan = () => {
+  // Find all "Sponsored" text nodes on the page
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (node) => {
+        const t = node.textContent?.trim();
+        return (t === 'Sponsored' || t === 'Sponsorisé' || t === 'Patrocinado')
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_SKIP;
+      },
+    }
+  );
+
+  const cards = new Set();
+  let node;
+  while ((node = walker.nextNode())) {
+    const card = findCardFromSponsored(node.parentElement);
+    if (card) cards.add(card);
+  }
+
   cards.forEach(injectButton);
 };
 
 // ─── MutationObserver ─────────────────────────────────────────────────────────
-let scanTimer = null;
-const observer = new MutationObserver(() => {
-  clearTimeout(scanTimer);
-  scanTimer = setTimeout(scanForAds, 800);
-});
+let timer = null;
+new MutationObserver(() => {
+  clearTimeout(timer);
+  timer = setTimeout(scan, 600);
+}).observe(document.body, { childList: true, subtree: true });
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-const init = async () => {
-  await loadSelectors();
-  scanForAds();
-  observer.observe(document.body, { childList: true, subtree: true });
-};
-
-init();
+scan();
