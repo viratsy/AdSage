@@ -1,52 +1,67 @@
-import { getTokens, setTokens, clearTokens, isTokenExpired } from '../lib/storage.js';
-import { loginRequest, refreshRequest } from '../lib/auth.js';
+/**
+ * Advolt.ai Background Service Worker
+ * Self-contained — no ES module imports (MV3 compatibility)
+ */
 
+const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev';
 const SELECTOR_CONFIG_URL = 'https://d37anhmjei4vts.cloudfront.net/config/selectors.json';
-let selectorConfig = null;
 
-// ─── Fetch remote selector config on startup ───────────────────────────────
+// ─── Storage helpers ──────────────────────────────────────────────────────────
+const getTokens = () => chrome.storage.local.get(['id_token', 'refresh_token', 'token_expiry']);
+const setTokens = (t) => chrome.storage.local.set({
+  id_token: t.id_token,
+  refresh_token: t.refresh_token || undefined,
+  token_expiry: t.expires_in ? Date.now() + t.expires_in * 1000 : undefined,
+});
+const clearTokens = () => chrome.storage.local.remove(['id_token', 'refresh_token', 'token_expiry']);
+
+// ─── Token refresh ────────────────────────────────────────────────────────────
+const getValidToken = async () => {
+  const { id_token, refresh_token, token_expiry } = await getTokens();
+  if (!id_token && !refresh_token) return null;
+
+  // Refresh if expiring within 2 minutes
+  const needsRefresh = !token_expiry || Date.now() > token_expiry - 120_000;
+  if (needsRefresh && refresh_token) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        await setTokens({ ...data, refresh_token });
+        return data.id_token;
+      }
+    } catch (e) {
+      console.error('[Advolt] Token refresh failed', e.message);
+    }
+    await clearTokens();
+    return null;
+  }
+
+  return id_token || null;
+};
+
+// ─── Load selector config on startup ─────────────────────────────────────────
 const loadSelectorConfig = async () => {
   try {
     const res = await fetch(SELECTOR_CONFIG_URL);
     if (res.ok) {
-      selectorConfig = await res.json();
-      await chrome.storage.local.set({ selectorConfig, selectorConfigFetchedAt: Date.now() });
-      console.log('[Advolt.ai] Selector config loaded');
+      const config = await res.json();
+      await chrome.storage.local.set({ selectorConfig: config });
     }
-  } catch (err) {
-    // Fall back to cached config
-    const cached = await chrome.storage.local.get('selectorConfig');
-    if (cached.selectorConfig) {
-      selectorConfig = cached.selectorConfig;
-      console.log('[Advolt.ai] Using cached selector config');
-    }
+  } catch (_) {
+    // use cached
   }
 };
-
 loadSelectorConfig();
 
-// ─── Token management ───────────────────────────────────────────────────────
-const getValidToken = async () => {
-  const { access_token, id_token, refresh_token, token_expiry } = await getTokens();
-
-  if (!refresh_token) return null;
-
-  if (isTokenExpired(token_expiry)) {
-    try {
-      const refreshed = await refreshRequest(refresh_token);
-      await setTokens({ ...refreshed, refresh_token });
-      return refreshed.id_token;
-    } catch {
-      await clearTokens();
-      return null;
-    }
-  }
-
-  return id_token;
-};
-
-// ─── Message handler ────────────────────────────────────────────────────────
+// ─── Message handler ──────────────────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('[Advolt worker] received:', message.type);
+
   const handle = async () => {
     switch (message.type) {
 
@@ -57,7 +72,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       case 'LOGIN': {
         const { email, password } = message.payload;
-        const tokens = await loginRequest(email, password);
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          return { success: false, error: err.error || 'Login failed' };
+        }
+        const tokens = await res.json();
         await setTokens(tokens);
         return { success: true };
       }
@@ -73,19 +97,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       case 'GET_SELECTOR_CONFIG': {
-        return { config: selectorConfig };
+        const { selectorConfig } = await chrome.storage.local.get('selectorConfig');
+        return { config: selectorConfig || null };
       }
 
       case 'SAVE_AD': {
         const token = await getValidToken();
         if (!token) {
-          console.error('[Advolt] SAVE_AD: No token — user not authenticated');
+          console.error('[Advolt] SAVE_AD: not authenticated');
           return { success: false, error: 'Not authenticated' };
         }
 
-        const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev';
-        console.log('[Advolt] SAVE_AD: Sending to API', message.payload?.advertiser_name);
-        const response = await fetch(`${API_BASE}/ads/save`, {
+        console.log('[Advolt] SAVE_AD: calling API for', message.payload?.advertiser_name);
+        const res = await fetch(`${API_BASE}/ads/save`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -94,34 +118,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           body: JSON.stringify(message.payload),
         });
 
-        console.log('[Advolt] SAVE_AD: Response status', response.status);
+        console.log('[Advolt] SAVE_AD: status', res.status);
 
-        if (response.status === 402) {
-          return { success: false, error: 'limit_reached' };
-        }
-
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({}));
-          console.error('[Advolt] SAVE_AD: API error', response.status, err);
+        if (res.status === 402) return { success: false, error: 'limit_reached' };
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error('[Advolt] SAVE_AD: error', err);
           return { success: false, error: err.error || 'Save failed' };
         }
 
-        const data = await response.json();
-        console.log('[Advolt] SAVE_AD: Success', data.ad_id);
+        const data = await res.json();
         return { success: true, ad_id: data.ad_id };
       }
 
       case 'GET_RECENT_ADS': {
         const token = await getValidToken();
         if (!token) return { ads: [] };
-
-        const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev';
-        const response = await fetch(`${API_BASE}/ads?limit=5`, {
+        const res = await fetch(`${API_BASE}/ads?limit=5`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
-        if (!response.ok) return { ads: [] };
-        const data = await response.json();
+        if (!res.ok) return { ads: [] };
+        const data = await res.json();
         return { ads: data.ads || [] };
       }
 
@@ -130,10 +147,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   };
 
-  handle().then(sendResponse).catch((err) => {
-    console.error('[Advolt.ai worker error]', err);
-    sendResponse({ error: err.message });
-  });
+  handle()
+    .then((result) => { console.log('[Advolt worker] responding:', result); sendResponse(result); })
+    .catch((err) => { console.error('[Advolt worker] error:', err); sendResponse({ error: err.message }); });
 
-  return true; // keep channel open for async response
+  return true;
 });
