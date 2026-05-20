@@ -110,14 +110,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         // Decode JWT to check expiry
         try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          const exp = payload.exp * 1000;
-          const now = Date.now();
-          console.log('[Advolt] Token exp:', new Date(exp).toISOString(), 'now:', new Date(now).toISOString(), 'valid:', exp > now);
-          console.log('[Advolt] Token sub:', payload.sub, 'iss:', payload.iss);
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            const exp = payload.exp * 1000;
+            console.log('[Advolt] Token valid:', exp > Date.now(), 'sub:', payload.sub, 'iss:', payload.iss);
+          }
         } catch (e) {
-          console.error('[Advolt] Could not decode token', e.message);
+          console.warn('[Advolt] Could not decode token:', e.message);
         }
+
+        console.log('[Advolt] SAVE_AD: calling API for', message.payload?.advertiser_name);
         const res = await fetch(`${API_BASE}/ads/save`, {
           method: 'POST',
           headers: {

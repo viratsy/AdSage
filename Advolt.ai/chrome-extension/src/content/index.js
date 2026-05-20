@@ -77,7 +77,18 @@ const injectButton = (card) => {
     btn.disabled = true;
     btn.style.background = '#4f46e5';
 
-    const result = await chrome.runtime.sendMessage({ type: 'SAVE_AD', payload: adData });
+    let result;
+    try {
+      result = await chrome.runtime.sendMessage({ type: 'SAVE_AD', payload: adData });
+    } catch (err) {
+      // Worker may have been inactive — wait and retry once
+      await new Promise((r) => setTimeout(r, 500));
+      try {
+        result = await chrome.runtime.sendMessage({ type: 'SAVE_AD', payload: adData });
+      } catch (err2) {
+        result = { success: false, error: err2.message || 'Extension error' };
+      }
+    }
 
     if (result?.success) {
       savedAdKeys.add(adKey);
