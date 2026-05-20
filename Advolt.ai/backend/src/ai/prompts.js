@@ -10,8 +10,16 @@ const PROMPT_VERSION = 'v2';
  * @param {object} ad - ad record from DynamoDB
  * @param {object|null} businessProfile - user's business profile
  */
-exports.buildAnalysisPrompt = (ad, businessProfile = null) => {
-  const businessContext = businessProfile
+exports.buildAnalysisPrompt = (ad, businessProfile = null, businessPersona = null) => {
+  const businessContext = businessPersona
+    ? `
+USER'S BUSINESS PERSONA (adapt all generated content for this business):
+${businessPersona}
+
+IMPORTANT: Generate all hooks, CTAs, and copy variations specifically for the user's business above.
+Do NOT generate content for the advertiser's business. Use the ad only as inspiration for structure and psychology.
+`
+    : businessProfile
     ? `
 USER'S BUSINESS CONTEXT (adapt all generated content for this business):
 - Business/Niche: ${businessProfile.niche || 'Not specified'}

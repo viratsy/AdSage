@@ -47,14 +47,16 @@ exports.handler = async (event) => {
 
       const ad = adResult.Item;
       const businessProfile = userResult.Item?.business_profile || null;
+      const businessPersona = userResult.Item?.business_persona || null;
 
       console.log('Starting analysis', {
         ad_id,
         advertiser: ad.advertiser_name,
         has_business_profile: !!businessProfile,
+        has_persona: !!businessPersona,
       });
 
-      const prompt = buildAnalysisPrompt(ad, businessProfile);
+      const prompt = buildAnalysisPrompt(ad, businessProfile, businessPersona);
       const aiOptions = use_own_key && own_api_key_encrypted
         ? { ownApiKey: own_api_key_encrypted }
         : {};

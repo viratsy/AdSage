@@ -64,4 +64,8 @@ export const billingApi = {
 export const profileApi = {
   updateBusiness: (business_profile: Record<string, string>) =>
     api.post('/auth/profile', { business_profile }),
+  generatePersona: (answers: Record<string, string>) =>
+    api.post('/auth/persona', { answers }),
+  savePersona: (answers: Record<string, string>, persona: Record<string, unknown>) =>
+    api.post('/auth/persona', { answers, persona, save_final: true }),
 };

@@ -394,6 +394,24 @@ Resources:
             Path: /auth/profile
             Method: POST
 
+  GeneratePersonaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-generate-persona-${Stage}"
+      CodeUri: src/auth/
+      Handler: generatePersona.handler
+      Timeout: 30
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /auth/persona
+            Method: POST
+
 # ─────────────────────────────────────────────
 # LAMBDA — ADS
 # ─────────────────────────────────────────────
