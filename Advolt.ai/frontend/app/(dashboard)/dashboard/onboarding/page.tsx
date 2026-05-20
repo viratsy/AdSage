@@ -7,13 +7,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Zap, CheckCircle, Loader2 } from 'lucide-react';
 
 const QUESTIONS = [
-  { key: 'niche', label: 'What is your business or niche?', placeholder: 'e.g. Dental clinic, Online coaching, SaaS tool...' },
-  { key: 'target_customer', label: 'Who is your ideal customer?', placeholder: 'e.g. Working professionals aged 25-40...' },
-  { key: 'product_service', label: 'What is your main product or service?', placeholder: 'e.g. Painless dental treatments, 1:1 coaching...' },
-  { key: 'pain_point', label: "What problem do you solve for customers?", placeholder: 'e.g. Fear of dentists, Struggling to get clients...' },
-  { key: 'price_range', label: 'What is your price range?', placeholder: 'e.g. ₹500-2000, $29/month...' },
-  { key: 'location', label: 'Where do you serve customers?', placeholder: 'e.g. Mumbai, Pan-India, Global...' },
+  { key: 'niche', label: 'What is your business or niche?', placeholder: 'e.g. Dental clinic, Online coaching, SaaS tool...', type: 'text' },
+  { key: 'target_customer', label: 'Who is your ideal customer?', placeholder: 'e.g. Working professionals aged 25-40...', type: 'text' },
+  { key: 'product_service', label: 'What is your main product or service?', placeholder: 'e.g. Painless dental treatments, 1:1 coaching...', type: 'text' },
+  { key: 'pain_point', label: "What problem do you solve for customers?", placeholder: 'e.g. Fear of dentists, Struggling to get clients...', type: 'text' },
+  { key: 'price_range', label: 'What is your price range?', placeholder: 'e.g. 500-2000 per visit, 29/month...', type: 'price' },
+  { key: 'location', label: 'Where do you serve customers?', placeholder: 'e.g. Mumbai, Pan-India, Global...', type: 'text' },
 ];
+
+const CURRENCIES = ['₹ INR', '$ USD', '€ EUR', '£ GBP', 'AED', 'A$ AUD', 'S$ SGD'];
 
 type Phase = 'questions' | 'generating' | 'review' | 'follow_up' | 'saving' | 'done';
 
@@ -24,6 +26,7 @@ export default function OnboardingPage() {
   const [phase, setPhase] = useState<Phase>('questions');
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [currency, setCurrency] = useState('₹ INR');
   const [persona, setPersona] = useState<Record<string, unknown> | null>(null);
   const [followUpAnswers, setFollowUpAnswers] = useState('');
   const [error, setError] = useState('');
@@ -36,7 +39,12 @@ export default function OnboardingPage() {
     if (!answers[current.key]?.trim()) { setError('Please fill this in.'); return; }
     setError('');
     if (isLast) {
-      generatePersona(answers);
+      // Prepend currency to price_range
+      const finalAnswers = { ...answers };
+      if (finalAnswers.price_range && !finalAnswers.price_range.includes(currency.split(' ')[0])) {
+        finalAnswers.price_range = `${currency.split(' ')[0]}${finalAnswers.price_range}`;
+      }
+      generatePersona(finalAnswers);
     } else {
       setStep(step + 1);
     }
@@ -113,15 +121,37 @@ export default function OnboardingPage() {
             </div>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Step {step + 1} of {QUESTIONS.length}</p>
             <h2 className="text-sm font-semibold">{current.label}</h2>
-            <textarea
-              rows={2}
-              placeholder={current.placeholder}
-              value={answers[current.key] || ''}
-              onChange={(e) => setAnswers({ ...answers, [current.key]: e.target.value })}
-              className="w-full px-4 py-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-              autoFocus
-            />
+            {current.type === 'price' ? (
+              <div className="flex gap-2">
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="px-3 py-3 rounded-lg text-sm outline-none"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                >
+                  {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <textarea
+                  rows={2}
+                  placeholder={current.placeholder}
+                  value={answers[current.key] || ''}
+                  onChange={(e) => setAnswers({ ...answers, [current.key]: e.target.value })}
+                  className="flex-1 px-4 py-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <textarea
+                rows={2}
+                placeholder={current.placeholder}
+                value={answers[current.key] || ''}
+                onChange={(e) => setAnswers({ ...answers, [current.key]: e.target.value })}
+                className="w-full px-4 py-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                autoFocus
+              />
+            )}
             {error && <p className="text-xs text-red-400">{error}</p>}
             <div className="flex gap-3">
               {step > 0 && (
