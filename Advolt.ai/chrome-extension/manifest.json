@@ -12,7 +12,10 @@
 
   "host_permissions": [
     "https://www.facebook.com/*",
-    "https://www.instagram.com/*"
+    "https://www.instagram.com/*",
+    "https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/*",
+    "https://cognito-idp.ap-south-1.amazonaws.com/*",
+    "https://d37anhmjei4vts.cloudfront.net/*"
   ],
 
   "background": {
