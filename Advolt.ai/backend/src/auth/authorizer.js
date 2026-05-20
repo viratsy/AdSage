@@ -89,15 +89,19 @@ const generatePolicy = (principalId, effect, resource, context) => ({
 });
 
 exports.handler = async (event) => {
-  const token = event.authorizationToken?.replace('Bearer ', '');
-
-  if (!token) {
-    throw new Error('Unauthorized');
-  }
+  // REQUEST type authorizer — token is in headers
+  const authHeader = event.headers?.Authorization || event.headers?.authorization || '';
+  const token = authHeader.replace('Bearer ', '').trim();
+  console.log('Authorizer: token present:', !!token, 'length:', token.length);
 
   try {
+    if (!token) throw new Error('No token');
     const payload = await verifyJwt(token);
-    return generatePolicy(payload.sub, 'Allow', event.methodArn + '/*', {
+    const arnParts = event.methodArn.split(':');
+    const apiGatewayArn = arnParts.slice(0, 6).join(':');
+    const [, , , , , restApiStage] = apiGatewayArn.split('/');
+    const wildcardArn = event.methodArn.replace(/\/[^/]+\/[^/]+$/, '/*/*');
+    return generatePolicy(payload.sub, 'Allow', wildcardArn, {
       sub: payload.sub,
       email: payload.email || '',
       cognito_username: payload['cognito:username'] || payload.sub,
