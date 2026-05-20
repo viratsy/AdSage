@@ -81,6 +81,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (!token) return { success: false, error: 'Not authenticated' };
 
         const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev';
+        const response = await fetch(`${API_BASE}/ads/save`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
