@@ -2,7 +2,33 @@ const { UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 const ddb = require('/opt/nodejs/lib/dynamo');
 const res = require('/opt/nodejs/lib/response');
 const { getUserFromEvent } = require('/opt/nodejs/lib/getUserFromEvent');
-const { callAi } = require('../ai/aiProvider');
+
+const callGroq = async (prompt) => {
+  const key = process.env.GROQ_API_KEY;
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        { role: 'system', content: 'You are a business strategist. Always respond with valid JSON only.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 2048,
+      response_format: { type: 'json_object' },
+    }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(`Groq error: ${response.status} — ${JSON.stringify(err)}`);
+  }
+  const data = await response.json();
+  return data.choices[0].message.content;
+};
 
 const PERSONA_PROMPT = (answers) => `You are a business strategist and marketing expert. A user has described their business. Your job is to:
 
@@ -63,7 +89,7 @@ exports.handler = async (event) => {
   // Call AI to generate persona
   try {
     const prompt = PERSONA_PROMPT(answers);
-    const rawResponse = await callAi(prompt);
+    const rawResponse = await callGroq(prompt);
 
     // Parse response
     let cleaned = rawResponse;
