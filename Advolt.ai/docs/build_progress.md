@@ -146,6 +146,20 @@ Frontend changes:
 
 **All 5 phases complete. Stack is live.**
 
+### 2026-05-20 — End-to-end ad saving working
+
+After extensive debugging, the full save flow is working:
+- Chrome extension detects Facebook Ad Library ads via TreeWalker on "Sponsored" text
+- Custom Lambda authorizer validates Cognito JWT (replaced Cognito authorizer which had scope issues)
+- `saveAd` Lambda writes to DynamoDB and fires EventBridge event
+- Ad appears in extension popup Recent Saves
+
+Key fixes applied:
+- Custom Lambda authorizer (REQUEST type, reads from headers, validates JWKS)
+- `host_permissions` in manifest updated to include API Gateway domain
+- User DynamoDB record created manually (signup DynamoDB write was failing due to missing IAM policy — now fixed)
+- Token expiry checked by decoding JWT directly, not relying on stored `token_expiry`
+
 Next steps before launch:
 1. Replace dummy API keys in Secrets Manager with real values
 2. Verify SES sender email identity
