@@ -1,10 +1,11 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { billingApi } from '@/lib/api';
+import { billingApi, profileApi } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
-import { CreditCard, Zap, LogOut, ShoppingCart } from 'lucide-react';
+import { CreditCard, Zap, LogOut, ShoppingCart, User, Pencil } from 'lucide-react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const TOKEN_PACKS = [
   { id: 'starter', tokens: '1,000', price: '₹99', label: 'Starter' },
@@ -14,8 +15,11 @@ const TOKEN_PACKS = [
 
 export default function ProfilePage() {
   const logout = useAuthStore((s) => s.logout);
+  const router = useRouter();
   const qc = useQueryClient();
   const [buyingPack, setBuyingPack] = useState<string | null>(null);
+  const [editingPersona, setEditingPersona] = useState(false);
+  const [personaText, setPersonaText] = useState('');
 
   const { data: billing, isLoading } = useQuery({
     queryKey: ['billing'],
@@ -141,6 +145,70 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Business Persona */}
+      <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <User size={16} className="text-indigo-400" />
+            <span className="font-semibold text-sm">Business Persona</span>
+          </div>
+          {billing?.business_profile && !editingPersona && (
+            <button onClick={() => { setEditingPersona(true); setPersonaText(typeof billing.business_persona === 'string' ? billing.business_persona : ''); }}
+              className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300">
+              <Pencil size={12} /> Edit
+            </button>
+          )}
+        </div>
+
+        {!billing?.business_profile ? (
+          <div className="text-center py-4">
+            <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>No business persona set up yet.</p>
+            <button onClick={() => router.push('/dashboard/onboarding')}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ background: 'var(--accent)' }}>
+              Set Up Business Persona
+            </button>
+          </div>
+        ) : editingPersona ? (
+          <div className="space-y-3">
+            <textarea
+              rows={4}
+              value={personaText}
+              onChange={(e) => setPersonaText(e.target.value)}
+              placeholder="Edit your business persona summary..."
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none focus:ring-1 focus:ring-indigo-500"
+              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setEditingPersona(false)} className="px-3 py-1.5 rounded-lg text-xs text-gray-400" style={{ border: '1px solid var(--border)' }}>Cancel</button>
+              <button onClick={async () => {
+                await profileApi.updateBusiness({ ...billing.business_profile, persona_override: personaText });
+                qc.invalidateQueries({ queryKey: ['billing'] });
+                setEditingPersona(false);
+              }} className="px-3 py-1.5 rounded-lg text-xs font-medium text-white" style={{ background: 'var(--accent)' }}>Save</button>
+              <button onClick={() => router.push('/dashboard/onboarding')} className="px-3 py-1.5 rounded-lg text-xs text-indigo-400" style={{ border: '1px solid var(--border)' }}>
+                Redo Full Setup
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {billing.business_persona && (
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{String(billing.business_persona)}</p>
+            )}
+            {billing.business_profile && typeof billing.business_profile === 'object' && (
+              <div className="grid grid-cols-2 gap-2 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+                {Object.entries(billing.business_profile).filter(([k]) => k !== 'persona_override').map(([key, value]) => (
+                  <div key={key}>
+                    <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>{key.replace(/_/g, ' ')}</p>
+                    <p className="text-xs font-medium">{typeof value === 'object' ? JSON.stringify(value) : String(value || '')}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Logout */}
       <div className="rounded-xl p-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>

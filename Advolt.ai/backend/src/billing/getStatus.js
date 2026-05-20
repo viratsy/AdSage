@@ -29,5 +29,6 @@ exports.handler = async (event) => {
     ai_provider: u.ai_provider || 'platform',
     has_own_key: !!u.own_api_key_encrypted,
     business_profile: u.business_profile || null,
+    business_persona: u.business_persona || null,
   });
 };
