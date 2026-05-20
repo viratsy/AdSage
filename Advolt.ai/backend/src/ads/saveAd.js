@@ -11,7 +11,9 @@ const FREE_LIMIT = 5;
 const PRO_LIMIT = 40;
 
 exports.handler = async (event) => {
+  console.log('saveAd event requestContext:', JSON.stringify(event.requestContext?.authorizer));
   const user = getUserFromEvent(event);
+  console.log('saveAd user:', JSON.stringify(user));
   if (!user) return res.unauthorized();
 
   const body = JSON.parse(event.body || '{}');

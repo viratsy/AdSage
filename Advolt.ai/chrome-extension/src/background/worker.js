@@ -123,6 +123,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
 
         console.log('[Advolt] SAVE_AD: calling API for', message.payload?.advertiser_name);
+        console.log('[Advolt] Auth header:', `Bearer ${token.substring(0,20)}...${token.slice(-10)}`);
         const res = await fetch(`${API_BASE}/ads/save`, {
           method: 'POST',
           headers: {
