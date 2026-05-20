@@ -23,7 +23,6 @@ exports.handler = async (event) => {
       Password: password,
       UserAttributes: [
         { Name: 'email', Value: email },
-        { Name: 'custom:full_name', Value: full_name },
       ],
     }));
 
@@ -50,6 +49,6 @@ exports.handler = async (event) => {
     if (err.name === 'UsernameExistsException') {
       return res.badRequest('Email already registered');
     }
-    return res.serverError();
+    return res.serverError(err.message);
   }
 };
