@@ -13,6 +13,8 @@ export default function AdDetailsPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const [copied, setCopied] = useState('');
+  const [notes, setNotes] = useState('');
+  const [notesSaved, setNotesSaved] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['ad', id],
@@ -44,6 +46,16 @@ export default function AdDetailsPage() {
   const deleteAd = useMutation({
     mutationFn: () => adsApi.delete(id),
     onSuccess: () => router.push('/dashboard/library'),
+  });
+
+  const saveNotes = useMutation({
+    mutationFn: () => adsApi.update(id, { notes }),
+    onSuccess: () => { setNotesSaved(true); setTimeout(() => setNotesSaved(false), 2000); },
+  });
+
+  const generateSimilar = useMutation({
+    mutationFn: () => aiApi.trigger(id, ['full_analysis']),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ad', id] }),
   });
 
   const copyText = (text: string, key: string) => {
@@ -102,6 +114,39 @@ export default function AdDetailsPage() {
               <p className="text-xs capitalize">{ad.platform || 'facebook'}</p></div>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Saved {formatDate(ad.created_at)}</p>
           </div>
+
+          {/* Notes */}
+          <div className="rounded-xl p-5 space-y-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Notes</p>
+            <textarea
+              rows={3}
+              placeholder="Add your notes about this ad..."
+              value={notes || ad.notes || ''}
+              onChange={(e) => { setNotes(e.target.value); setNotesSaved(false); }}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none focus:ring-1 focus:ring-indigo-500"
+              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+            />
+            <button
+              onClick={() => saveNotes.mutate()}
+              disabled={saveNotes.isPending}
+              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
+              style={{ background: notesSaved ? 'rgba(34,197,94,0.2)' : 'var(--surface-2)', color: notesSaved ? '#22c55e' : 'var(--text-muted)', border: '1px solid var(--border)' }}
+            >
+              {saveNotes.isPending ? 'Saving...' : notesSaved ? '✓ Saved' : 'Save Notes'}
+            </button>
+          </div>
+
+          {/* Generate Similar Ad */}
+          {ai_analysis && (
+            <button
+              onClick={() => generateSimilar.mutate()}
+              disabled={generateSimilar.isPending}
+              className="w-full py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-colors"
+              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+            >
+              {generateSimilar.isPending ? '⏳ Generating...' : '✨ Generate Similar Ad for My Business'}
+            </button>
+          )}
         </div>
 
         <div className="space-y-4">

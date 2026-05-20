@@ -8,42 +8,82 @@ const injectedCards = new WeakSet();
 
 // ─── Extract ad data from a card element ─────────────────────────────────────
 const extractAdData = (card) => {
-  // Get all meaningful text blocks (not tiny labels)
-  const textNodes = [...card.querySelectorAll('div, span, p')]
-    .filter((el) => !el.children.length && (el.innerText?.trim().length ?? 0) > 20)
+  // ─── Full ad copy: get ALL text content from the ad card ───────────────────
+  // Find the "Sponsored" label and get everything below it as ad copy
+  const allTextEls = [...card.querySelectorAll('div, span, p')]
+    .filter((el) => {
+      if (el.children.length > 3) return false; // skip containers
+      const text = el.innerText?.trim();
+      if (!text || text.length < 10) return false;
+      // Skip metadata like "Library ID", "Started running", "Platforms"
+      if (/^(Library ID|Started running|Platforms|Active|See (ad|summary))/i.test(text)) return false;
+      return true;
+    })
     .sort((a, b) => b.innerText.length - a.innerText.length);
 
-  const primary_text = textNodes[0]?.innerText?.trim() || '';
-  const headline = textNodes[1]?.innerText?.trim() || '';
+  // Primary text = longest text block (the full ad copy)
+  const primary_text = allTextEls[0]?.innerText?.trim() || '';
+  // Headline = second longest or a shorter distinct block
+  const headline = allTextEls[1]?.innerText?.trim() || '';
 
-  // Advertiser name — find a link near the top
-  const links = [...card.querySelectorAll('a[href*="facebook.com"]')];
-  const advertiser_name = links[0]?.innerText?.trim() || 'Unknown';
+  // ─── Advertiser name ───────────────────────────────────────────────────────
+  // Look for the page name — usually a bold link near "Sponsored"
+  let advertiser_name = 'Unknown';
+  const sponsoredEl = [...card.querySelectorAll('*')].find(
+    (el) => el.children.length === 0 && el.innerText?.trim() === 'Sponsored'
+  );
+  if (sponsoredEl) {
+    // Walk up and look for a sibling/parent with a name link
+    let parent = sponsoredEl.parentElement;
+    for (let i = 0; i < 5; i++) {
+      if (!parent) break;
+      const nameEl = parent.querySelector('a[href*="facebook.com"] span, strong, a[role="link"]');
+      if (nameEl?.innerText?.trim() && nameEl.innerText.trim() !== 'Sponsored') {
+        advertiser_name = nameEl.innerText.trim();
+        break;
+      }
+      parent = parent.parentElement;
+    }
+  }
+  if (advertiser_name === 'Unknown') {
+    const links = [...card.querySelectorAll('a[href*="facebook.com"]')];
+    const nameLink = links.find((a) => a.innerText?.trim().length > 2 && a.innerText.trim() !== 'Sponsored');
+    if (nameLink) advertiser_name = nameLink.innerText.trim();
+  }
 
-  // CTA — look for button-like elements
-  const ctaEl = card.querySelector('a[role="button"], div[role="button"], button');
-  const cta = ctaEl?.innerText?.trim() || '';
+  // ─── CTA button ───────────────────────────────────────────────────────────
+  const ctaEls = [...card.querySelectorAll('a[role="button"], div[role="button"], button, a[class*="x1i10hfl"]')];
+  const cta = ctaEls
+    .map((el) => el.innerText?.trim())
+    .filter((t) => t && t.length > 2 && t.length < 40 && !/^(Like|Comment|Share|Save)$/i.test(t))
+    [0] || '';
 
-  // Landing page — external links
+  // ─── Landing page URL ─────────────────────────────────────────────────────
   const externalLinks = [...card.querySelectorAll('a[href]')]
-    .filter((a) => !a.href.includes('facebook.com') && a.href.startsWith('http'));
+    .filter((a) => {
+      const href = a.href || '';
+      return href.startsWith('http') && !href.includes('facebook.com') && !href.includes('instagram.com');
+    });
   const landing_page = externalLinks[0]?.href || '';
 
-  // Images
+  // Also check for URLs in the text itself
+  const urlInText = primary_text.match(/https?:\/\/[^\s]+/)?.[0] || '';
+
+  // ─── Images ────────────────────────────────────────────────────────────────
   const image_urls = [...card.querySelectorAll('img')]
-    .filter((img) => img.src && !img.src.includes('data:') && img.naturalWidth > 50)
+    .filter((img) => img.src && !img.src.includes('data:') && img.naturalWidth > 80)
     .map((img) => img.src)
-    .slice(0, 3);
+    .slice(0, 5);
 
   return {
     advertiser_name,
     primary_text,
     headline,
     cta,
-    landing_page,
+    landing_page: landing_page || urlInText,
     image_urls,
     video_urls: [],
-    platform: 'facebook',
+    platform: window.location.hostname.includes('instagram') ? 'instagram' : 'facebook',
     source_url: window.location.href,
     timestamp: new Date().toISOString(),
   };
