@@ -18,6 +18,7 @@ const setTokens = (t) => chrome.storage.local.set({
 // ─── Token refresh ────────────────────────────────────────────────────────────
 const getValidToken = async () => {
   const { id_token, refresh_token } = await getTokens();
+  console.log('[Advolt] getValidToken: id_token present:', !!id_token, 'refresh_token present:', !!refresh_token);
   if (!id_token && !refresh_token) return null;
 
   // Always check actual JWT expiry — don't trust stored token_expiry
