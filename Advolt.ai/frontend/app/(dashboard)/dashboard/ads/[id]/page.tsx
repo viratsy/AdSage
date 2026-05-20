@@ -95,14 +95,30 @@ export default function AdDetailsPage() {
             <div className="rounded-xl p-6 text-center space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <Zap size={24} className="text-indigo-400 mx-auto" />
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                {ad.ai_analysis_status === 'processing' ? 'AI analysis in progress…' : 'No AI analysis yet.'}
+                {ad.ai_analysis_status === 'processing'
+                  ? 'AI analysis in progress…'
+                  : ad.ai_analysis_status === 'failed'
+                  ? '⚠️ Analysis failed — tokens were refunded.'
+                  : 'No AI analysis yet.'}
               </p>
               {ad.ai_analysis_status !== 'processing' && (
-                <button onClick={() => triggerAi.mutate()} disabled={triggerAi.isPending}
+                <button
+                  onClick={() => triggerAi.mutate()}
+                  disabled={triggerAi.isPending}
                   className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
-                  style={{ background: 'var(--accent)' }}>
-                  {triggerAi.isPending ? 'Queuing…' : '⚡ Analyze with AI'}
+                  style={{ background: ad.ai_analysis_status === 'failed' ? '#f59e0b' : 'var(--accent)' }}
+                >
+                  {triggerAi.isPending
+                    ? 'Queuing…'
+                    : ad.ai_analysis_status === 'failed'
+                    ? '🔄 Retry Analysis'
+                    : '⚡ Analyze with AI'}
                 </button>
+              )}
+              {triggerAi.isError && (
+                <p className="text-xs text-red-400">
+                  {(triggerAi.error as any)?.response?.data?.error || 'Failed to trigger analysis'}
+                </p>
               )}
             </div>
           ) : (

@@ -513,6 +513,8 @@ Resources:
             TableName: !Ref AiAnalysisTable
         - DynamoDBCrudPolicy:
             TableName: !Ref AdsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
         - SQSPollerPolicy:
             QueueName: !GetAtt AiQueue.QueueName
       Events:
