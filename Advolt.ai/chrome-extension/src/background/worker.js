@@ -17,12 +17,27 @@ const setTokens = (t) => chrome.storage.local.set({
 
 // ─── Token refresh ────────────────────────────────────────────────────────────
 const getValidToken = async () => {
-  const { access_token, id_token, refresh_token, token_expiry } = await getTokens();
+  const { id_token, refresh_token } = await getTokens();
   if (!id_token && !refresh_token) return null;
 
-  const needsRefresh = !token_expiry || Date.now() > token_expiry - 120_000;
-  if (needsRefresh && refresh_token) {
+  // Always check actual JWT expiry — don't trust stored token_expiry
+  let tokenExpired = true;
+  if (id_token) {
     try {
+      const parts = id_token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        tokenExpired = Date.now() > (payload.exp * 1000) - 120_000;
+      }
+    } catch (_) { tokenExpired = true; }
+  }
+
+  if (!tokenExpired) return id_token;
+
+  // Token expired — try refresh
+  if (refresh_token) {
+    try {
+      console.log('[Advolt] Token expired, refreshing...');
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -31,16 +46,16 @@ const getValidToken = async () => {
       if (res.ok) {
         const data = await res.json();
         await setTokens({ ...data, refresh_token });
-        return data.id_token; // API Gateway Cognito authorizer requires id_token
+        console.log('[Advolt] Token refreshed');
+        return data.id_token;
       }
     } catch (e) {
       console.error('[Advolt] Token refresh failed', e.message);
     }
-    await clearTokens();
-    return null;
   }
 
-  return id_token || null;
+  await clearTokens();
+  return null;
 };
 
 // ─── Load selector config on startup ─────────────────────────────────────────
