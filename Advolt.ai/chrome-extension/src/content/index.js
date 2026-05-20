@@ -79,11 +79,13 @@ const injectButton = (card) => {
 
     let result;
     try {
+      if (!chrome?.runtime?.sendMessage) throw new Error('Extension context invalid');
       result = await chrome.runtime.sendMessage({ type: 'SAVE_AD', payload: adData });
     } catch (err) {
       // Worker may have been inactive — wait and retry once
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 800));
       try {
+        if (!chrome?.runtime?.sendMessage) throw new Error('Extension context invalid — reload the page');
         result = await chrome.runtime.sendMessage({ type: 'SAVE_AD', payload: adData });
       } catch (err2) {
         result = { success: false, error: err2.message || 'Extension error' };
