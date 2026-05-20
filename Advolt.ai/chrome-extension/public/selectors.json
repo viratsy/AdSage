@@ -1,16 +1,15 @@
 {
-  "version": "1.0.0",
-  "updatedAt": "2026-05-19",
+  "version": "1.1.0",
+  "updatedAt": "2026-05-20",
   "selectors": {
+    "adLibraryCard": "div[class*='_8nqq'], div[class*='x1dr75xp'], div[class*='xh8yej3']",
+    "adLibrarySponsored": "span[class*='x193iq5w'], div:contains('Sponsored'), span:contains('Sponsored')",
+    "feedAdContainer": "div[data-pagelet^='FeedUnit'], div[role='article']",
     "feedAd": "[data-testid='story-subtitle'] span",
-    "feedAdContainer": "div[data-pagelet^='FeedUnit']",
-    "adLibraryCard": "div[class*='x1dr75xp']",
-    "adLibrarySponsored": "span[class*='x193iq5w']",
-    "primaryText": "div[data-ad-preview='message']",
-    "headline": "div[class*='xdj266r']",
-    "cta": "div[class*='x1i10hfl'] a",
-    "advertiserName": "strong a, h2 a",
-    "advertiserAvatar": "image[preserveAspectRatio]",
-    "images": "img[class*='x1ey2m1c'], img[class*='xz74otr']"
+    "primaryText": "div[data-ad-preview='message'], div[class*='_4l5x'], div[class*='xdj266r']",
+    "headline": "div[class*='xdj266r'], div[class*='_4l5x'] h2, div[class*='x1lliihq']",
+    "cta": "div[class*='x1i10hfl'] a, a[role='button']",
+    "advertiserName": "strong a, h2 a, div[class*='x1heor9g'] span, a[class*='x1i10hfl'] span",
+    "images": "img[class*='x1ey2m1c'], img[class*='xz74otr'], img[class*='x168nmei']"
   }
 }

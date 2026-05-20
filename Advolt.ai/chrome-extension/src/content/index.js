@@ -3,44 +3,69 @@
  * Detects Meta ads, extracts data, injects Save buttons.
  */
 
-// Default selectors — overridden by remote config
 let SELECTORS = {
-  // Facebook feed sponsored posts
-  feedAd: '[data-testid="story-subtitle"] span',
-  feedAdContainer: 'div[data-pagelet^="FeedUnit"]',
-  // Ad Library
-  adLibraryCard: 'div[class*="x1dr75xp"]',
-  adLibrarySponsored: 'span[class*="x193iq5w"]',
-  // Ad content fields
-  primaryText: 'div[data-ad-preview="message"]',
-  headline: 'div[class*="xdj266r"]',
-  cta: 'div[class*="x1i10hfl"] a',
-  advertiserName: 'strong a, h2 a',
-  advertiserAvatar: 'image[preserveAspectRatio]',
-  images: 'img[class*="x1ey2m1c"], img[class*="xz74otr"]',
+  adLibraryCard: "div[class*='_8nqq'], div[class*='x1dr75xp']",
+  feedAdContainer: "div[data-pagelet^='FeedUnit'], div[role='article']",
+  feedAd: "[data-testid='story-subtitle'] span",
+  primaryText: "div[data-ad-preview='message'], div[class*='xdj266r']",
+  headline: "div[class*='xdj266r']",
+  cta: "div[class*='x1i10hfl'] a, a[role='button']",
+  advertiserName: "strong a, h2 a, a[class*='x1i10hfl'] span",
+  images: "img[class*='x1ey2m1c'], img[class*='xz74otr'], img[class*='x168nmei']",
 };
 
 let savedAdIds = new Set();
 
 // ─── Load remote selector config ────────────────────────────────────────────
 const loadSelectors = async () => {
-  const { config } = await chrome.runtime.sendMessage({ type: 'GET_SELECTOR_CONFIG' });
-  if (config?.selectors) {
-    SELECTORS = { ...SELECTORS, ...config.selectors };
+  try {
+    const { config } = await chrome.runtime.sendMessage({ type: 'GET_SELECTOR_CONFIG' });
+    if (config?.selectors) {
+      SELECTORS = { ...SELECTORS, ...config.selectors };
+    }
+  } catch (e) {
+    // use defaults
   }
 };
 
 // ─── Extract ad data from a container element ────────────────────────────────
 const extractAdData = (container) => {
-  const getText = (sel) => container.querySelector(sel)?.innerText?.trim() || '';
-  const getAttr = (sel, attr) => container.querySelector(sel)?.getAttribute(attr) || '';
-  const getImages = (sel) =>
-    [...container.querySelectorAll(sel)]
-      .map((img) => img.src)
-      .filter((src) => src && !src.includes('data:'));
+  const getText = (sel) => {
+    for (const s of sel.split(',')) {
+      const el = container.querySelector(s.trim());
+      if (el?.innerText?.trim()) return el.innerText.trim();
+    }
+    return '';
+  };
+
+  const getAttr = (sel, attr) => {
+    for (const s of sel.split(',')) {
+      const el = container.querySelector(s.trim());
+      if (el?.getAttribute(attr)) return el.getAttribute(attr);
+    }
+    return '';
+  };
+
+  const getImages = (sel) => {
+    const imgs = [];
+    for (const s of sel.split(',')) {
+      container.querySelectorAll(s.trim()).forEach((img) => {
+        if (img.src && !img.src.includes('data:') && !imgs.includes(img.src)) {
+          imgs.push(img.src);
+        }
+      });
+    }
+    return imgs;
+  };
+
+  // Try to get advertiser name from multiple places
+  const advertiserName =
+    getText(SELECTORS.advertiserName) ||
+    container.querySelector('a[href*="facebook.com"]')?.innerText?.trim() ||
+    'Unknown Advertiser';
 
   return {
-    advertiser_name: getText(SELECTORS.advertiserName),
+    advertiser_name: advertiserName,
     primary_text: getText(SELECTORS.primaryText),
     headline: getText(SELECTORS.headline),
     cta: getText(SELECTORS.cta),
@@ -53,24 +78,19 @@ const extractAdData = (container) => {
   };
 };
 
-// ─── Inject Save Ad button into a container ──────────────────────────────────
-const injectButton = (container) => {
-  if (container.querySelector('.Advolt.ai-btn')) return; // already injected
-
-  const adData = extractAdData(container);
-  const adKey = `${adData.advertiser_name}__${adData.primary_text}`.slice(0, 80);
-
+// ─── Create Save button ──────────────────────────────────────────────────────
+const createSaveButton = (adData, adKey) => {
   const wrapper = document.createElement('div');
-  wrapper.className = 'Advolt.ai-btn-wrapper';
+  wrapper.className = 'advolt-btn-wrapper';
   wrapper.style.cssText = `
     position: absolute;
     top: 8px;
     right: 8px;
-    z-index: 9999;
+    z-index: 2147483647;
   `;
 
   const btn = document.createElement('button');
-  btn.className = 'Advolt.ai-btn';
+  btn.className = 'advolt-save-btn';
   btn.dataset.adKey = adKey;
   btn.innerText = savedAdIds.has(adKey) ? '✓ Saved' : '⚡ Save Ad';
   btn.style.cssText = `
@@ -83,8 +103,9 @@ const injectButton = (container) => {
     font-weight: 600;
     cursor: pointer;
     font-family: system-ui, sans-serif;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    transition: background 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    white-space: nowrap;
+    line-height: 1;
   `;
 
   btn.addEventListener('click', async (e) => {
@@ -95,6 +116,7 @@ const injectButton = (container) => {
 
     btn.innerText = '⏳ Saving...';
     btn.disabled = true;
+    btn.style.background = '#4f46e5';
 
     const result = await chrome.runtime.sendMessage({
       type: 'SAVE_AD',
@@ -121,36 +143,92 @@ const injectButton = (container) => {
   });
 
   wrapper.appendChild(btn);
+  return wrapper;
+};
 
-  // Make container relative so button positions correctly
+// ─── Inject Save button into a container ─────────────────────────────────────
+const injectButton = (container) => {
+  if (container.querySelector('.advolt-btn-wrapper')) return;
+
+  const adData = extractAdData(container);
+  const adKey = `${adData.advertiser_name}__${adData.primary_text}`.slice(0, 80);
+
+  const btn = createSaveButton(adData, adKey);
+
   const currentPosition = window.getComputedStyle(container).position;
   if (currentPosition === 'static') container.style.position = 'relative';
 
-  container.appendChild(wrapper);
+  container.appendChild(btn);
+};
+
+// ─── Detect if element is an ad container ────────────────────────────────────
+const isAdContainer = (el) => {
+  // Ad Library page
+  if (window.location.href.includes('facebook.com/ads/library')) {
+    // Each ad card in the library is a direct child div with substantial content
+    return (
+      el.tagName === 'DIV' &&
+      el.offsetHeight > 100 &&
+      el.querySelector('img') &&
+      (el.innerText?.length > 20)
+    );
+  }
+
+  // Feed — look for "Sponsored" text
+  const text = el.innerText || '';
+  return text.includes('Sponsored') || text.includes('Sponsorisé') || text.includes('Patrocinado');
 };
 
 // ─── Scan DOM for ad containers ──────────────────────────────────────────────
 const scanForAds = () => {
-  // Facebook Ad Library
-  const adLibraryCards = document.querySelectorAll(SELECTORS.adLibraryCard);
-  adLibraryCards.forEach((card) => {
-    const isAd = card.querySelector(SELECTORS.adLibrarySponsored);
-    if (isAd) injectButton(card);
-  });
+  if (window.location.href.includes('facebook.com/ads/library')) {
+    // Ad Library — target the result cards
+    const candidates = document.querySelectorAll(
+      'div[class*="_8nqq"], div[class*="x1dr75xp"], div[class*="xh8yej3"], ' +
+      'div[data-testid="ad-archive-renderer"], div[class*="x78zum5"]'
+    );
 
-  // Facebook feed sponsored posts
-  const feedUnits = document.querySelectorAll(SELECTORS.feedAdContainer);
-  feedUnits.forEach((unit) => {
-    const isSponsored = unit.querySelector(SELECTORS.feedAd);
-    if (isSponsored?.innerText?.toLowerCase().includes('sponsored')) {
-      injectButton(unit);
+    candidates.forEach((el) => {
+      if (el.offsetHeight > 80 && el.querySelector('img')) {
+        injectButton(el);
+      }
+    });
+
+    // Fallback: scan all large divs on the library page
+    if (document.querySelectorAll('.advolt-btn-wrapper').length === 0) {
+      const allDivs = document.querySelectorAll('div');
+      allDivs.forEach((div) => {
+        if (
+          div.offsetHeight > 150 &&
+          div.offsetWidth > 200 &&
+          div.querySelector('img') &&
+          div.innerText?.length > 50 &&
+          !div.querySelector('.advolt-btn-wrapper') &&
+          !div.closest('.advolt-btn-wrapper')
+        ) {
+          const parent = div.parentElement;
+          if (parent && !parent.querySelector('.advolt-btn-wrapper')) {
+            injectButton(div);
+          }
+        }
+      });
     }
-  });
+  } else {
+    // Facebook feed
+    const feedUnits = document.querySelectorAll(
+      'div[data-pagelet^="FeedUnit"], div[role="article"]'
+    );
+    feedUnits.forEach((unit) => {
+      if (isAdContainer(unit)) injectButton(unit);
+    });
+  }
 };
 
-// ─── MutationObserver — watch for new ads loaded dynamically ─────────────────
+// ─── MutationObserver ────────────────────────────────────────────────────────
+let scanTimeout = null;
 const observer = new MutationObserver(() => {
-  scanForAds();
+  clearTimeout(scanTimeout);
+  scanTimeout = setTimeout(scanForAds, 500);
 });
 
 // ─── Init ────────────────────────────────────────────────────────────────────
