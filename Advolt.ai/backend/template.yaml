@@ -419,6 +419,8 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref AdsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref AiAnalysisTable
       Events:
         Api:
           Type: Api
