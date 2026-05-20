@@ -263,6 +263,37 @@ export default function AdDetailsPage() {
                 </div>
               )}
 
+              {/* Generated Ad Copy */}
+              {(ai_analysis.short_copy || ai_analysis.long_copy) && (
+                <div className="rounded-xl p-5 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Generated Ad Copy</p>
+                  {ai_analysis.short_copy && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Short Version</p>
+                        <button onClick={() => copyText(ai_analysis.short_copy!, 'short')} className="text-xs px-2 py-0.5 rounded"
+                          style={{ background: copied === 'short' ? 'rgba(34,197,94,0.2)' : 'var(--surface-2)', color: copied === 'short' ? '#22c55e' : 'var(--text-muted)' }}>
+                          {copied === 'short' ? '✓' : 'Copy'}
+                        </button>
+                      </div>
+                      <p className="text-sm leading-relaxed">{ai_analysis.short_copy}</p>
+                    </div>
+                  )}
+                  {ai_analysis.long_copy && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Long Version</p>
+                        <button onClick={() => copyText(ai_analysis.long_copy!, 'long')} className="text-xs px-2 py-0.5 rounded"
+                          style={{ background: copied === 'long' ? 'rgba(34,197,94,0.2)' : 'var(--surface-2)', color: copied === 'long' ? '#22c55e' : 'var(--text-muted)' }}>
+                          {copied === 'long' ? '✓' : 'Copy'}
+                        </button>
+                      </div>
+                      <p className="text-sm leading-relaxed">{ai_analysis.long_copy}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Image generation prompt */}
               {ai_analysis.image_prompt && (
                 <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
