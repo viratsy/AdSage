@@ -112,7 +112,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           if (parts.length === 3) {
             const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
             const exp = payload.exp * 1000;
-            console.log('[Advolt] id_token valid:', exp > Date.now(), 'sub:', payload.sub, 'token_use:', payload.token_use, 'aud:', payload.aud, 'iss:', payload.iss);
+            const now = Date.now();
+            console.log('[Advolt] id_token valid:', exp > now, 
+              'expires in:', Math.round((exp - now) / 60000), 'min',
+              'sub:', payload.sub, 'token_use:', payload.token_use, 
+              'aud:', payload.aud, 'iss:', payload.iss);
           }
         } catch (e) {
           console.warn('[Advolt] Could not decode token:', e.message);

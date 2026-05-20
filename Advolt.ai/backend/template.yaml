@@ -375,6 +375,8 @@ Resources:
             RestApiId: !Ref AdvoltApi
             Path: /ads/save
             Method: POST
+            Auth:
+              Authorizer: NONE
 
   GetAdsFunction:
     Type: AWS::Serverless::Function
