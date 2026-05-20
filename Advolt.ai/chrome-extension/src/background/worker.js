@@ -13,13 +13,12 @@ const setTokens = (t) => chrome.storage.local.set({
   id_token: t.id_token,
   refresh_token: t.refresh_token || undefined,
   token_expiry: t.expires_in ? Date.now() + t.expires_in * 1000 : undefined,
-});
-const clearTokens = () => chrome.storage.local.remove(['id_token', 'refresh_token', 'token_expiry']);
+});const clearTokens = () => chrome.storage.local.remove(['id_token', 'refresh_token', 'token_expiry']);
 
 // ─── Token refresh ────────────────────────────────────────────────────────────
 const getValidToken = async () => {
   const { access_token, id_token, refresh_token, token_expiry } = await getTokens();
-  if (!access_token && !refresh_token) return null;
+  if (!id_token && !refresh_token) return null;
 
   const needsRefresh = !token_expiry || Date.now() > token_expiry - 120_000;
   if (needsRefresh && refresh_token) {
@@ -32,7 +31,7 @@ const getValidToken = async () => {
       if (res.ok) {
         const data = await res.json();
         await setTokens({ ...data, refresh_token });
-        return data.access_token;
+        return data.id_token; // API Gateway Cognito authorizer requires id_token
       }
     } catch (e) {
       console.error('[Advolt] Token refresh failed', e.message);
@@ -41,7 +40,7 @@ const getValidToken = async () => {
     return null;
   }
 
-  return access_token || null;
+  return id_token || null;
 };
 
 // ─── Load selector config on startup ─────────────────────────────────────────
@@ -113,7 +112,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           if (parts.length === 3) {
             const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
             const exp = payload.exp * 1000;
-            console.log('[Advolt] access_token valid:', exp > Date.now(), 'sub:', payload.sub, 'token_use:', payload.token_use);
+            console.log('[Advolt] id_token valid:', exp > Date.now(), 'sub:', payload.sub, 'token_use:', payload.token_use);
           }
         } catch (e) {
           console.warn('[Advolt] Could not decode token:', e.message);
