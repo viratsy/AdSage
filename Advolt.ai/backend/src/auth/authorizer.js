@@ -97,10 +97,8 @@ exports.handler = async (event) => {
   try {
     if (!token) throw new Error('No token');
     const payload = await verifyJwt(token);
-    const arnParts = event.methodArn.split(':');
-    const apiGatewayArn = arnParts.slice(0, 6).join(':');
-    const [, , , , , restApiStage] = apiGatewayArn.split('/');
-    const wildcardArn = event.methodArn.replace(/\/[^/]+\/[^/]+$/, '/*/*');
+    const arnParts = event.methodArn.split('/');
+    const wildcardArn = arnParts[0] + '/*/*';
     return generatePolicy(payload.sub, 'Allow', wildcardArn, {
       sub: payload.sub,
       email: payload.email || '',
