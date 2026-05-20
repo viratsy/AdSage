@@ -90,12 +90,16 @@ export default function AdDetailsPage() {
           <div className="rounded-xl p-5 space-y-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <div><p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Advertiser</p>
               <p className="font-semibold text-indigo-400">{ad.advertiser_name}</p></div>
-            {ad.primary_text && <div><p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Primary Text</p>
-              <p className="text-sm leading-relaxed">{ad.primary_text}</p></div>}
-            {ad.headline && <div><p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Headline</p>
-              <p className="text-sm font-medium">{ad.headline}</p></div>}
-            {ad.cta && <div><p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>CTA</p>
-              <span className="text-xs px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-400">{ad.cta}</span></div>}
+            <div><p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Primary Text</p>
+              <p className="text-sm leading-relaxed">{ad.primary_text || 'Not captured'}</p></div>
+            <div><p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Headline</p>
+              <p className="text-sm font-medium">{ad.headline || 'Not captured'}</p></div>
+            <div><p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>CTA</p>
+              {ad.cta ? <span className="text-xs px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-400">{ad.cta}</span> : <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Not captured</p>}</div>
+            {ad.landing_page && <div><p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Landing Page</p>
+              <a href={ad.landing_page} target="_blank" rel="noopener" className="text-xs text-indigo-400 hover:underline break-all">{ad.landing_page}</a></div>}
+            <div><p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Platform</p>
+              <p className="text-xs capitalize">{ad.platform || 'facebook'}</p></div>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Saved {formatDate(ad.created_at)}</p>
           </div>
         </div>

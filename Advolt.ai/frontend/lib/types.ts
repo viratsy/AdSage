@@ -11,6 +11,8 @@ export interface Ad {
   tags?: string[];
   cta?: string;
   notes?: string;
+  landing_page?: string;
+  platform?: string;
 }
 
 export interface AiAnalysis {

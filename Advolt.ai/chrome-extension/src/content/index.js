@@ -8,16 +8,26 @@ const injectedCards = new WeakSet();
 
 // ─── Extract ad data from a card element ─────────────────────────────────────
 const extractAdData = (card) => {
-  // Get all text nodes, pick the longest as primary text
+  // Get all meaningful text blocks (not tiny labels)
   const textNodes = [...card.querySelectorAll('div, span, p')]
     .filter((el) => !el.children.length && (el.innerText?.trim().length ?? 0) > 20)
     .sort((a, b) => b.innerText.length - a.innerText.length);
 
   const primary_text = textNodes[0]?.innerText?.trim() || '';
+  const headline = textNodes[1]?.innerText?.trim() || '';
 
-  // Advertiser name — find a link near the top of the card
+  // Advertiser name — find a link near the top
   const links = [...card.querySelectorAll('a[href*="facebook.com"]')];
   const advertiser_name = links[0]?.innerText?.trim() || 'Unknown';
+
+  // CTA — look for button-like elements
+  const ctaEl = card.querySelector('a[role="button"], div[role="button"], button');
+  const cta = ctaEl?.innerText?.trim() || '';
+
+  // Landing page — external links
+  const externalLinks = [...card.querySelectorAll('a[href]')]
+    .filter((a) => !a.href.includes('facebook.com') && a.href.startsWith('http'));
+  const landing_page = externalLinks[0]?.href || '';
 
   // Images
   const image_urls = [...card.querySelectorAll('img')]
@@ -28,9 +38,9 @@ const extractAdData = (card) => {
   return {
     advertiser_name,
     primary_text,
-    headline: '',
-    cta: '',
-    landing_page: '',
+    headline,
+    cta,
+    landing_page,
     image_urls,
     video_urls: [],
     platform: 'facebook',
