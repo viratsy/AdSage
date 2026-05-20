@@ -30,7 +30,7 @@ exports.handler = async (event) => {
 
     // Create user record in DynamoDB
     await ddb.send(new PutCommand({
-      TableName: process.env.DYNAMODB_TABLE_USERS || `advolt-users-${process.env.STAGE || 'dev'}`,
+      TableName: process.env.DYNAMODB_TABLE_USERS,
       Item: {
         user_id,
         email,
@@ -39,7 +39,13 @@ exports.handler = async (event) => {
         subscription_plan: 'free',
         status: 'active',
         ads_saved_count: 0,
-        ai_credits: 5, // Free plan default
+        // Token wallet
+        monthly_tokens: 0,
+        monthly_tokens_expiry: null,
+        purchased_tokens: 0,
+        free_analyses_used: 0,   // Free plan: 1 lifetime analysis
+        ai_provider: 'platform',
+        own_api_key_encrypted: null,
       },
     }));
 

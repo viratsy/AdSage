@@ -19,7 +19,8 @@ parameter_overrides = [
   "ClaudeApiKey=dummy_claude_key",
   "RazorpayKey=dummy_razorpay_key",
   "RazorpaySecret=dummy_razorpay_secret",
-  "RazorpayWebhookSecret=dummy_webhook_secret"
+  "RazorpayWebhookSecret=dummy_webhook_secret",
+  "GeminiApiKey=dummy_gemini_key"
 ]
 confirm_changeset = true
 resolve_s3 = true

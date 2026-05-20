@@ -19,6 +19,8 @@ Globals:
         AI_QUEUE_URL: !Ref AiQueue
         STAGE: !Ref Stage
         EVENT_BUS_NAME: !Ref AdSavedEventBus
+        AI_PROVIDER: gemini
+        GEMINI_API_KEY: !Ref GeminiApiKey
     Layers:
       - !Ref SharedLayer
 
@@ -42,6 +44,10 @@ Parameters:
   RazorpayWebhookSecret:
     Type: String
     NoEcho: true
+  GeminiApiKey:
+    Type: String
+    NoEcho: true
+    Default: "dummy_gemini_key"
 
 # ─────────────────────────────────────────────
 # API GATEWAY
@@ -532,6 +538,23 @@ Resources:
             RestApiId: !Ref AdvoltApi
             Path: /ai/result/{ad_id}
             Method: GET
+
+  EstimateTokensFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-estimate-tokens-${Stage}"
+      CodeUri: src/ai/
+      Handler: estimateTokens.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /ai/estimate
+            Method: POST
 
 # ─────────────────────────────────────────────
 # LAMBDA — MEDIA

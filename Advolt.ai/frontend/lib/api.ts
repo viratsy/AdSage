@@ -47,12 +47,16 @@ export const adsApi = {
 
 // ── AI ────────────────────────────────────────────────────────────────────────
 export const aiApi = {
-  trigger: (ad_id: string) => api.post(`/ai/analyze/${ad_id}`),
+  trigger: (ad_id: string, operations: string[] = ['full_analysis']) =>
+    api.post(`/ai/analyze/${ad_id}`, { operations }),
   getResult: (ad_id: string) => api.get(`/ai/result/${ad_id}`),
+  estimate: (operations: string[] = ['full_analysis']) =>
+    api.post('/ai/estimate', { operations }),
 };
 
 // ── Billing ───────────────────────────────────────────────────────────────────
 export const billingApi = {
   status: () => api.get('/billing/status'),
-  createOrder: (plan: string) => api.post('/billing/create-order', { plan }),
+  createOrder: (data: { purchase_type: string; pack_id?: string }) =>
+    api.post('/billing/create-order', data),
 };
