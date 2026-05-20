@@ -187,8 +187,8 @@ Next steps before launch:
 | EventBridge Bus | advolt-events-dev | ✅ Live |
 | API Gateway | https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev | ✅ Live |
 | SES Identity | (sender email) | 🔲 |
-| Amplify App | advolt-frontend | 🔲 |
-
+| Amplify App | advolt-frontend | ❌ Replaced by Vercel |
+| Vercel Frontend | https://ad-sage-i4cs.vercel.app | ✅ Live |
 ---
 
 ## Live Endpoints (dev)
