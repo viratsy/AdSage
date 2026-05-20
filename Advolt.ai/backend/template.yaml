@@ -303,6 +303,9 @@ Resources:
       FunctionName: !Sub "advolt-auth-signup-${Stage}"
       CodeUri: src/auth/
       Handler: signup.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
       Events:
         Api:
           Type: Api
