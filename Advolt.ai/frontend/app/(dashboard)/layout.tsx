@@ -21,7 +21,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!isLoggedIn) { router.replace('/login'); return; }
-    // Redirect to onboarding if no business profile (skip if already on onboarding)
     if (billing && !billing.business_profile && !pathname.includes('/onboarding')) {
       router.replace('/dashboard/onboarding');
     }
@@ -29,7 +28,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!isLoggedIn) return null;
 
-  // Don't show sidebar on onboarding
   if (pathname.includes('/onboarding')) return <>{children}</>;
 
   return (
