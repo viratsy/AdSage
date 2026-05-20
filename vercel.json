@@ -1,7 +1,3 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "installCommand": "npm ci",
-  "framework": "nextjs",
-  "rootDirectory": "Advolt.ai/frontend"
+  "framework": "nextjs"
 }
