@@ -18,6 +18,11 @@ export default function AdDetailsPage() {
     queryKey: ['ad', id],
     queryFn: () => adsApi.get(id).then((r) => r.data),
     enabled: !!id,
+    // Poll every 3s while processing, stop when completed or failed
+    refetchInterval: (query) => {
+      const status = query.state.data?.ad?.ai_analysis_status;
+      return status === 'processing' ? 3000 : false;
+    },
   });
 
   const triggerAi = useMutation({
@@ -73,7 +78,6 @@ export default function AdDetailsPage() {
         <div className="space-y-4">
           {ad.image_urls?.[0] && (
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={ad.image_urls[0]} alt={ad.advertiser_name} className="w-full object-cover" />
             </div>
           )}
@@ -117,7 +121,7 @@ export default function AdDetailsPage() {
               )}
               {triggerAi.isError && (
                 <p className="text-xs text-red-400">
-                  {(triggerAi.error as any)?.response?.data?.error || 'Failed to trigger analysis'}
+                  {(triggerAi.error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to trigger analysis'}
                 </p>
               )}
             </div>
