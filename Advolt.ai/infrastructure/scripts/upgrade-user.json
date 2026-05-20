@@ -1,0 +1,15 @@
+{
+  "TableName": "advolt-users-dev",
+  "Key": {
+    "user_id": {"S": "61a3fd8a-e0d1-70d6-38c7-301a535d1ea4"}
+  },
+  "UpdateExpression": "SET subscription_plan = :plan, monthly_tokens = :mt, monthly_tokens_expiry = :exp, purchased_tokens = :pt, free_analyses_used = :fa, ai_provider = :ap",
+  "ExpressionAttributeValues": {
+    ":plan": {"S": "pro"},
+    ":mt": {"N": "5000"},
+    ":exp": {"S": "2026-06-20T00:00:00.000Z"},
+    ":pt": {"N": "0"},
+    ":fa": {"N": "0"},
+    ":ap": {"S": "platform"}
+  }
+}
