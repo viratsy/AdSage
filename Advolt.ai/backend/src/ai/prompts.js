@@ -66,11 +66,8 @@ Return ONLY a valid JSON object with this exact schema:
     "urgency": <number 0-25>
   },
   "ad_analysis": "<2-3 sentence analysis of why this ad works psychologically>",
-  "generated_hooks": [<10 hook variations adapted for user's business>],
+  "generated_hooks": [<5 hook variations adapted for user's business>],
   "generated_ctas": [<5 CTA variations adapted for user's business>],
-  "short_copy": "<short ad copy under 50 words adapted for user's business>",
-  "long_copy": "<long ad copy 100-150 words adapted for user's business>",
-  "image_prompt": "<detailed image generation prompt for an ad creative for user's business, inspired by the visual style of the saved ad. Include: subject, style, colors, mood, composition. Make it specific and actionable for Midjourney/DALL-E>",
   "prompt_version": "${PROMPT_VERSION}"
 }`;
 };

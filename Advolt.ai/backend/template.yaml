@@ -598,6 +598,26 @@ Resources:
             Path: /ai/estimate
             Method: POST
 
+  GenerateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-generate-${Stage}"
+      CodeUri: src/ai/
+      Handler: generate.handler
+      Timeout: 30
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AdsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /ai/generate
+            Method: POST
+
 # ─────────────────────────────────────────────
 # LAMBDA — MEDIA
 # ─────────────────────────────────────────────

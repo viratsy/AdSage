@@ -7,6 +7,7 @@ import { ArrowLeft, Zap, Heart, Trash2, Copy } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useState } from 'react';
 import type { Ad, AiAnalysis } from '@/lib/types';
+import GenerateSection from '@/components/GenerateSection';
 
 export default function AdDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -232,87 +233,27 @@ export default function AdDetailsPage() {
                   </div>
                 ))}
               </div>
-              {(ai_analysis.generated_hooks?.length ?? 0) > 0 && (
-                <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  <p className="text-xs uppercase tracking-wide mb-3" style={{ color: 'var(--text-muted)' }}>Generated Hooks</p>
-                  <ul className="space-y-2">
-                    {ai_analysis.generated_hooks!.map((hook, i) => (
-                      <li key={i} className="flex items-start justify-between gap-2 group">
-                        <p className="text-sm">{hook}</p>
-                        <button onClick={() => copyText(hook, `h${i}`)} className="shrink-0 opacity-0 group-hover:opacity-100" aria-label="Copy">
-                          <Copy size={12} className={copied === `h${i}` ? 'text-green-400' : 'text-gray-500'} />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {(ai_analysis.generated_ctas?.length ?? 0) > 0 && (
-                <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  <p className="text-xs uppercase tracking-wide mb-3" style={{ color: 'var(--text-muted)' }}>Generated CTAs</p>
-                  <div className="flex flex-wrap gap-2">
-                    {ai_analysis.generated_ctas!.map((cta, i) => (
-                      <button key={i} onClick={() => copyText(cta, `c${i}`)}
-                        className="text-xs px-3 py-1.5 rounded-full"
-                        style={{ background: copied === `c${i}` ? 'rgba(34,197,94,0.2)' : 'var(--surface-2)',
-                          color: copied === `c${i}` ? '#22c55e' : 'var(--text-muted)', border: '1px solid var(--border)' }}>
-                        {cta}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Hooks — with regenerate + generate more */}
+              <GenerateSection adId={id} operation="hooks" title="Generated Hooks" tokenCost={20}
+                initialData={ai_analysis.generated_hooks} type="list" canGenerateMore />
 
-              {/* Generated Ad Copy */}
-              {(ai_analysis.short_copy || ai_analysis.long_copy) && (
-                <div className="rounded-xl p-5 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Generated Ad Copy</p>
-                  {ai_analysis.short_copy && (
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Short Version</p>
-                        <button onClick={() => copyText(ai_analysis.short_copy!, 'short')} className="text-xs px-2 py-0.5 rounded"
-                          style={{ background: copied === 'short' ? 'rgba(34,197,94,0.2)' : 'var(--surface-2)', color: copied === 'short' ? '#22c55e' : 'var(--text-muted)' }}>
-                          {copied === 'short' ? '✓' : 'Copy'}
-                        </button>
-                      </div>
-                      <p className="text-sm leading-relaxed">{ai_analysis.short_copy}</p>
-                    </div>
-                  )}
-                  {ai_analysis.long_copy && (
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Long Version</p>
-                        <button onClick={() => copyText(ai_analysis.long_copy!, 'long')} className="text-xs px-2 py-0.5 rounded"
-                          style={{ background: copied === 'long' ? 'rgba(34,197,94,0.2)' : 'var(--surface-2)', color: copied === 'long' ? '#22c55e' : 'var(--text-muted)' }}>
-                          {copied === 'long' ? '✓' : 'Copy'}
-                        </button>
-                      </div>
-                      <p className="text-sm leading-relaxed">{ai_analysis.long_copy}</p>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* CTAs — with regenerate + generate more */}
+              <GenerateSection adId={id} operation="ctas" title="Generated CTAs" tokenCost={20}
+                initialData={ai_analysis.generated_ctas} type="list" canGenerateMore />
 
-              {/* Image generation prompt */}
-              {ai_analysis.image_prompt && (
-                <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Image Generation Prompt</p>
-                    <button onClick={() => copyText(ai_analysis.image_prompt!, 'img')}
-                      className="text-xs px-2 py-1 rounded"
-                      style={{ background: copied === 'img' ? 'rgba(34,197,94,0.2)' : 'var(--surface-2)', color: copied === 'img' ? '#22c55e' : 'var(--text-muted)' }}>
-                      {copied === 'img' ? '✓ Copied' : 'Copy'}
-                    </button>
-                  </div>
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{ai_analysis.image_prompt}</p>
-                  <p className="text-xs mt-2" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
-                    Use with Midjourney, DALL-E, or generate directly from Advolt.ai (coming soon)
-                  </p>
-                </div>
-              )}
+              {/* Short Copy — on-demand */}
+              <GenerateSection adId={id} operation="short_copy" title="Short Ad Copy" tokenCost={30}
+                initialData={ai_analysis.short_copy} type="text" />
 
-              {/* Ad analysis explanation */}
+              {/* Long Copy — on-demand */}
+              <GenerateSection adId={id} operation="long_copy" title="Long Ad Copy" tokenCost={50}
+                initialData={ai_analysis.long_copy} type="text" />
+
+              {/* Image Prompt — on-demand */}
+              <GenerateSection adId={id} operation="image_prompt" title="Image Generation Prompt" tokenCost={20}
+                initialData={ai_analysis.image_prompt} type="text" />
+
+              {/* Why This Ad Works */}
               {ai_analysis.ad_analysis && (
                 <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                   <p className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>Why This Ad Works</p>

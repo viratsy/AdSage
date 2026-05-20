@@ -52,6 +52,8 @@ export const aiApi = {
   getResult: (ad_id: string) => api.get(`/ai/result/${ad_id}`),
   estimate: (operations: string[] = ['full_analysis']) =>
     api.post('/ai/estimate', { operations }),
+  generate: (ad_id: string, operation: string, instruction?: string, count?: number) =>
+    api.post('/ai/generate', { ad_id, operation, instruction, count }),
 };
 
 // ── Billing ───────────────────────────────────────────────────────────────────
