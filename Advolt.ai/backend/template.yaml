@@ -19,8 +19,9 @@ Globals:
         AI_QUEUE_URL: !Ref AiQueue
         STAGE: !Ref Stage
         EVENT_BUS_NAME: !Ref AdSavedEventBus
-        AI_PROVIDER: gemini
+        AI_PROVIDER: groq
         GEMINI_API_KEY: !Ref GeminiApiKey
+        GROQ_API_KEY: !Ref GroqApiKey
     Layers:
       - !Ref SharedLayer
 
@@ -48,6 +49,10 @@ Parameters:
     Type: String
     NoEcho: true
     Default: "dummy_gemini_key"
+  GroqApiKey:
+    Type: String
+    NoEcho: true
+    Default: "dummy_groq_key"
 
 # ─────────────────────────────────────────────
 # API GATEWAY

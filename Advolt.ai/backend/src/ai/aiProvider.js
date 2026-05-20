@@ -31,6 +31,38 @@ const callGemini = async (prompt, apiKey) => {
   return data.candidates?.[0]?.content?.parts?.[0]?.text;
 };
 
+const callGroq = async (prompt, apiKey) => {
+  const key = apiKey || process.env.GROQ_API_KEY;
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert ad analyst. Always respond with valid JSON only.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 2048,
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(`Groq error: ${response.status} — ${JSON.stringify(err)}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+};
+
 const callOpenAI = async (prompt, apiKey) => {
   const key = apiKey || process.env.OPENAI_API_KEY;
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -60,11 +92,9 @@ const callOpenAI = async (prompt, apiKey) => {
  * @param {string} [options.ownApiKey] - user's own decrypted API key
  */
 exports.callAi = async (prompt, options = {}) => {
-  const provider = options.provider || process.env.AI_PROVIDER || 'gemini';
+  const provider = options.provider || process.env.AI_PROVIDER || 'groq';
 
-  if (provider === 'openai') {
-    return callOpenAI(prompt, options.ownApiKey);
-  }
-
-  return callGemini(prompt, options.ownApiKey);
+  if (provider === 'gemini') return callGemini(prompt, options.ownApiKey);
+  if (provider === 'openai') return callOpenAI(prompt, options.ownApiKey);
+  return callGroq(prompt, options.ownApiKey);
 };

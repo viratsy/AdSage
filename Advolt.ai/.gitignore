@@ -1,3 +1,6 @@
+# SAM config (contains secrets — never commit real keys)
+Advolt.ai/backend/samconfig.toml
+
 # Dependencies
 node_modules/
 .aws-sam/
