@@ -265,7 +265,10 @@ export default function OnboardingPage() {
             {refined && (
               <div className="rounded-xl p-5 grid grid-cols-2 gap-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 {Object.entries(refined).map(([key, value]) => (
-                  <div key={key}><p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--text-muted)' }}>{key.replace(/_/g, ' ')}</p><p className="text-xs font-medium">{value}</p></div>
+                  <div key={key}>
+                    <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--text-muted)' }}>{key.replace(/_/g, ' ')}</p>
+                    <p className="text-xs font-medium">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</p>
+                  </div>
                 ))}
               </div>
             )}
