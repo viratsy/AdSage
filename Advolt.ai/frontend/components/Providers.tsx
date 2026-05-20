@@ -1,7 +1,7 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 
 const queryClient = new QueryClient({
@@ -10,12 +10,17 @@ const queryClient = new QueryClient({
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const hydrate = useAuthStore((s) => s.hydrate);
+  const hydrated = useRef(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    hydrate();
+    if (!hydrated.current) {
+      hydrated.current = true;
+      hydrate();
+    }
     setMounted(true);
-  }, [hydrate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!mounted) return null;
 

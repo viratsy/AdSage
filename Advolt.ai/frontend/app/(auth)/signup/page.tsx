@@ -18,8 +18,8 @@ export default function SignupPage() {
     try {
       await authApi.signup(form);
       router.push('/login?verified=1');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Signup failed. Please try again.');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }

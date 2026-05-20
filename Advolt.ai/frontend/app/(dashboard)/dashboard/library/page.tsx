@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { adsApi } from '@/lib/api';
 import AdCard from '@/components/AdCard';
 import { Search, SlidersHorizontal } from 'lucide-react';
+import type { Ad } from '@/lib/types';
 
 export default function LibraryPage() {
   const [search, setSearch] = useState('');
@@ -17,7 +18,7 @@ export default function LibraryPage() {
   });
 
   const ads = data?.ads ?? [];
-  const filtered = filterFav ? ads.filter((a: any) => a.favorite) : ads;
+  const filtered: Ad[] = filterFav ? ads.filter((a: Ad) => a.favorite) : ads;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -70,7 +71,7 @@ export default function LibraryPage() {
         </div>
       ) : filtered.length ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map((ad: any) => (
+          {filtered.map((ad: Ad) => (
             <AdCard key={ad.ad_id} ad={ad} />
           ))}
         </div>

@@ -21,8 +21,8 @@ export default function LoginPage() {
       const { data } = await authApi.login(form);
       login(data);
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed. Check your credentials.');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Login failed. Check your credentials.');
     } finally {
       setLoading(false);
     }

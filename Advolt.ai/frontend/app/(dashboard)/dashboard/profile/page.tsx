@@ -27,7 +27,7 @@ export default function ProfilePage() {
         theme: { color: '#6366f1' },
         handler: () => window.location.reload(),
       };
-      // @ts-ignore — Razorpay loaded via script
+      // @ts-expect-error — Razorpay loaded via script tag
       new window.Razorpay(options).open();
     },
   });

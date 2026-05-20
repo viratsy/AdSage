@@ -8,10 +8,9 @@ frontend:
       commands:
         - npm run build --prefix Advolt.ai/frontend
   artifacts:
-    baseDirectory: Advolt.ai/frontend/.next
+    baseDirectory: Advolt.ai/frontend/out
     files:
       - '**/*'
   cache:
     paths:
       - Advolt.ai/frontend/node_modules/**/*
-      - Advolt.ai/frontend/.next/cache/**/*

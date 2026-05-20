@@ -2,9 +2,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { billingApi, adsApi } from '@/lib/api';
-import { Zap, BookImage, Star, CreditCard } from 'lucide-react';
+import { Zap, BookImage, CreditCard } from 'lucide-react';
 import AdCard from '@/components/AdCard';
 import { formatDate } from '@/lib/utils';
+import type { Ad } from '@/lib/types';
 
 export default function DashboardPage() {
   const { data: billing } = useQuery({
@@ -73,7 +74,7 @@ export default function DashboardPage() {
         </h2>
         {adsData?.ads?.length ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {adsData.ads.map((ad: any) => (
+            {adsData.ads.map((ad: Ad) => (
               <AdCard key={ad.ad_id} ad={ad} />
             ))}
           </div>
