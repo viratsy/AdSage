@@ -25,6 +25,12 @@ export default function AdDetailsPage() {
     },
   });
 
+  const { data: estimate } = useQuery({
+    queryKey: ['estimate', id],
+    queryFn: () => aiApi.estimate(['full_analysis']).then((r) => r.data),
+    enabled: !!id && !data?.ai_analysis,
+  });
+
   const triggerAi = useMutation({
     mutationFn: () => aiApi.trigger(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ad', id] }),
@@ -105,20 +111,50 @@ export default function AdDetailsPage() {
                   ? '⚠️ Analysis failed — tokens were refunded.'
                   : 'No AI analysis yet.'}
               </p>
+
+              {/* Token cost preview */}
+              {estimate && ad.ai_analysis_status !== 'processing' && (
+                <div className="rounded-lg p-3 text-left" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium">Full Analysis</span>
+                    <span className="text-xs font-bold text-indigo-400">{estimate.token_cost} tokens</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Your balance</span>
+                    <span className={`text-xs font-medium ${estimate.can_proceed ? 'text-green-400' : 'text-red-400'}`}>
+                      {estimate.balance?.total ?? '—'} tokens {estimate.can_proceed ? '✓' : '✗ insufficient'}
+                    </span>
+                  </div>
+                  {estimate.balance?.monthly > 0 && (
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                      {estimate.balance.monthly} monthly · {estimate.balance.purchased} purchased
+                    </p>
+                  )}
+                </div>
+              )}
+
               {ad.ai_analysis_status !== 'processing' && (
                 <button
                   onClick={() => triggerAi.mutate()}
-                  disabled={triggerAi.isPending}
-                  className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+                  disabled={triggerAi.isPending || (estimate && !estimate.can_proceed)}
+                  className="w-full py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
                   style={{ background: ad.ai_analysis_status === 'failed' ? '#f59e0b' : 'var(--accent)' }}
                 >
                   {triggerAi.isPending
                     ? 'Queuing…'
                     : ad.ai_analysis_status === 'failed'
                     ? '🔄 Retry Analysis'
-                    : '⚡ Analyze with AI'}
+                    : `⚡ Analyze with AI${estimate ? ` · ${estimate.token_cost} tokens` : ''}`}
                 </button>
               )}
+
+              {estimate && !estimate.can_proceed && (
+                <p className="text-xs text-red-400">
+                  Need {estimate.token_cost} tokens, you have {estimate.balance?.total ?? 0}.{' '}
+                  <a href="/dashboard/profile" className="underline text-indigo-400">Buy tokens →</a>
+                </p>
+              )}
+
               {triggerAi.isError && (
                 <p className="text-xs text-red-400">
                   {(triggerAi.error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to trigger analysis'}
@@ -175,6 +211,32 @@ export default function AdDetailsPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Image generation prompt */}
+              {ai_analysis.image_prompt && (
+                <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Image Generation Prompt</p>
+                    <button onClick={() => copyText(ai_analysis.image_prompt!, 'img')}
+                      className="text-xs px-2 py-1 rounded"
+                      style={{ background: copied === 'img' ? 'rgba(34,197,94,0.2)' : 'var(--surface-2)', color: copied === 'img' ? '#22c55e' : 'var(--text-muted)' }}>
+                      {copied === 'img' ? '✓ Copied' : 'Copy'}
+                    </button>
+                  </div>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{ai_analysis.image_prompt}</p>
+                  <p className="text-xs mt-2" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
+                    Use with Midjourney, DALL-E, or generate directly from Advolt.ai (coming soon)
+                  </p>
+                </div>
+              )}
+
+              {/* Ad analysis explanation */}
+              {ai_analysis.ad_analysis && (
+                <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <p className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>Why This Ad Works</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{ai_analysis.ad_analysis}</p>
                 </div>
               )}
             </>

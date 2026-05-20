@@ -60,3 +60,8 @@ export const billingApi = {
   createOrder: (data: { purchase_type: string; pack_id?: string }) =>
     api.post('/billing/create-order', data),
 };
+
+export const profileApi = {
+  updateBusiness: (business_profile: Record<string, string>) =>
+    api.post('/auth/profile', { business_profile }),
+};

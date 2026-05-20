@@ -28,5 +28,6 @@ exports.handler = async (event) => {
     total_tokens: balance.total,
     ai_provider: u.ai_provider || 'platform',
     has_own_key: !!u.own_api_key_encrypted,
+    business_profile: u.business_profile || null,
   });
 };

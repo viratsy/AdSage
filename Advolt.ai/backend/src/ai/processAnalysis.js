@@ -8,7 +8,6 @@ const refundTokens = async (user_id, token_cost, was_free_plan) => {
   if (!user_id || !token_cost) return;
   try {
     if (was_free_plan) {
-      // Refund the free analysis usage
       await ddb.send(new UpdateCommand({
         TableName: process.env.DYNAMODB_TABLE_USERS,
         Key: { user_id },
@@ -16,7 +15,6 @@ const refundTokens = async (user_id, token_cost, was_free_plan) => {
         ExpressionAttributeValues: { ':dec': -1 },
       }));
     } else {
-      // Refund to monthly tokens first (simpler — just add back to monthly)
       await ddb.send(new UpdateCommand({
         TableName: process.env.DYNAMODB_TABLE_USERS,
         Key: { user_id },
@@ -33,13 +31,14 @@ const refundTokens = async (user_id, token_cost, was_free_plan) => {
 exports.handler = async (event) => {
   for (const record of event.Records) {
     const { ad_id, user_id, token_cost, use_own_key, own_api_key_encrypted } = JSON.parse(record.body);
-    const was_free_plan = !token_cost; // free plan doesn't pass token_cost
+    const was_free_plan = !token_cost;
 
     try {
-      const adResult = await ddb.send(new GetCommand({
-        TableName: process.env.DYNAMODB_TABLE_ADS,
-        Key: { ad_id },
-      }));
+      // Fetch ad and user in parallel
+      const [adResult, userResult] = await Promise.all([
+        ddb.send(new GetCommand({ TableName: process.env.DYNAMODB_TABLE_ADS, Key: { ad_id } })),
+        ddb.send(new GetCommand({ TableName: process.env.DYNAMODB_TABLE_USERS, Key: { user_id } })),
+      ]);
 
       if (!adResult.Item) {
         console.error('Ad not found for analysis', { ad_id });
@@ -47,9 +46,15 @@ exports.handler = async (event) => {
       }
 
       const ad = adResult.Item;
-      const prompt = buildAnalysisPrompt(ad);
+      const businessProfile = userResult.Item?.business_profile || null;
 
-      // Use own key if provided (decrypt in future — for now pass as-is for dev)
+      console.log('Starting analysis', {
+        ad_id,
+        advertiser: ad.advertiser_name,
+        has_business_profile: !!businessProfile,
+      });
+
+      const prompt = buildAnalysisPrompt(ad, businessProfile);
       const aiOptions = use_own_key && own_api_key_encrypted
         ? { ownApiKey: own_api_key_encrypted }
         : {};
@@ -65,6 +70,7 @@ exports.handler = async (event) => {
           ad_id,
           user_id,
           ...analysis,
+          business_profile_used: !!businessProfile,
           created_at: new Date().toISOString(),
         },
       }));
@@ -76,12 +82,11 @@ exports.handler = async (event) => {
         ExpressionAttributeValues: { ':s': 'completed' },
       }));
 
-      console.log('AI analysis completed', { ad_id, analysis_id });
+      console.log('AI analysis completed', { ad_id, analysis_id, ai_score: analysis.ai_score });
 
     } catch (err) {
       console.error('AI analysis failed', { ad_id, error: err.message });
 
-      // Mark as failed
       await ddb.send(new UpdateCommand({
         TableName: process.env.DYNAMODB_TABLE_ADS,
         Key: { ad_id },
@@ -89,7 +94,6 @@ exports.handler = async (event) => {
         ExpressionAttributeValues: { ':s': 'failed' },
       }));
 
-      // Refund tokens — user shouldn't pay for a failed analysis
       await refundTokens(user_id, token_cost, was_free_plan);
     }
   }

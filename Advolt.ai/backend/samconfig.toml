@@ -20,8 +20,8 @@ parameter_overrides = [
   "RazorpayKey=dummy_razorpay_key",
   "RazorpaySecret=dummy_razorpay_secret",
   "RazorpayWebhookSecret=dummy_webhook_secret",
-  "GeminiApiKey=REPLACE_WITH_REAL_KEY",
-  "GroqApiKey=REPLACE_WITH_REAL_KEY"
+  "GeminiApiKey=AQ.Ab8RN6IXGtlCBc-Iv8BBOGJ2wM0nG1l24tWwNPkcbJAZugtqaQ",
+  "GroqApiKey=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"
 ]
 confirm_changeset = true
 resolve_s3 = true

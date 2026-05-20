@@ -26,6 +26,9 @@ export interface AiAnalysis {
   generated_ctas?: string[];
   short_copy?: string;
   long_copy?: string;
+  image_prompt?: string;
+  ad_analysis?: string;
+  business_profile_used?: boolean;
 }
 
 export interface BillingStatus {
