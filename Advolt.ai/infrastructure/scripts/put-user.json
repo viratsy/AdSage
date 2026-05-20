@@ -1,0 +1,10 @@
+{
+  "user_id": {"S": "61a3fd8a-e0d1-70d6-38c7-301a535d1ea4"},
+  "email": {"S": "viratsy51@gmail.com"},
+  "full_name": {"S": "Virat Sharma"},
+  "created_at": {"S": "2026-05-20T00:00:00.000Z"},
+  "subscription_plan": {"S": "free"},
+  "status": {"S": "active"},
+  "ads_saved_count": {"N": "0"},
+  "ai_credits": {"N": "5"}
+}
