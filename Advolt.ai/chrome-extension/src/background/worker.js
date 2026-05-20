@@ -78,9 +78,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       case 'SAVE_AD': {
         const token = await getValidToken();
-        if (!token) return { success: false, error: 'Not authenticated' };
+        if (!token) {
+          console.error('[Advolt] SAVE_AD: No token — user not authenticated');
+          return { success: false, error: 'Not authenticated' };
+        }
 
         const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev';
+        console.log('[Advolt] SAVE_AD: Sending to API', message.payload?.advertiser_name);
         const response = await fetch(`${API_BASE}/ads/save`, {
           method: 'POST',
           headers: {
@@ -90,16 +94,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           body: JSON.stringify(message.payload),
         });
 
+        console.log('[Advolt] SAVE_AD: Response status', response.status);
+
         if (response.status === 402) {
           return { success: false, error: 'limit_reached' };
         }
 
         if (!response.ok) {
           const err = await response.json().catch(() => ({}));
+          console.error('[Advolt] SAVE_AD: API error', response.status, err);
           return { success: false, error: err.error || 'Save failed' };
         }
 
         const data = await response.json();
+        console.log('[Advolt] SAVE_AD: Success', data.ad_id);
         return { success: true, ad_id: data.ad_id };
       }
 
