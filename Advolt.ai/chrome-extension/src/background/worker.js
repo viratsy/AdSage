@@ -7,8 +7,9 @@ const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev';
 const SELECTOR_CONFIG_URL = 'https://d37anhmjei4vts.cloudfront.net/config/selectors.json';
 
 // ─── Storage helpers ──────────────────────────────────────────────────────────
-const getTokens = () => chrome.storage.local.get(['id_token', 'refresh_token', 'token_expiry']);
+const getTokens = () => chrome.storage.local.get(['access_token', 'id_token', 'refresh_token', 'token_expiry']);
 const setTokens = (t) => chrome.storage.local.set({
+  access_token: t.access_token,
   id_token: t.id_token,
   refresh_token: t.refresh_token || undefined,
   token_expiry: t.expires_in ? Date.now() + t.expires_in * 1000 : undefined,
@@ -17,10 +18,9 @@ const clearTokens = () => chrome.storage.local.remove(['id_token', 'refresh_toke
 
 // ─── Token refresh ────────────────────────────────────────────────────────────
 const getValidToken = async () => {
-  const { id_token, refresh_token, token_expiry } = await getTokens();
-  if (!id_token && !refresh_token) return null;
+  const { access_token, id_token, refresh_token, token_expiry } = await getTokens();
+  if (!access_token && !refresh_token) return null;
 
-  // Refresh if expiring within 2 minutes
   const needsRefresh = !token_expiry || Date.now() > token_expiry - 120_000;
   if (needsRefresh && refresh_token) {
     try {
@@ -32,7 +32,7 @@ const getValidToken = async () => {
       if (res.ok) {
         const data = await res.json();
         await setTokens({ ...data, refresh_token });
-        return data.id_token;
+        return data.access_token;
       }
     } catch (e) {
       console.error('[Advolt] Token refresh failed', e.message);
@@ -41,7 +41,7 @@ const getValidToken = async () => {
     return null;
   }
 
-  return id_token || null;
+  return access_token || null;
 };
 
 // ─── Load selector config on startup ─────────────────────────────────────────
@@ -82,7 +82,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return { success: false, error: err.error || 'Login failed' };
         }
         const tokens = await res.json();
-        await setTokens(tokens);
+        await setTokens(tokens); // stores access_token, id_token, refresh_token
         return { success: true };
       }
 
@@ -108,13 +108,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return { success: false, error: 'Not authenticated' };
         }
 
-        // Decode JWT to check expiry
         try {
           const parts = token.split('.');
           if (parts.length === 3) {
             const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
             const exp = payload.exp * 1000;
-            console.log('[Advolt] Token valid:', exp > Date.now(), 'sub:', payload.sub, 'iss:', payload.iss);
+            console.log('[Advolt] access_token valid:', exp > Date.now(), 'sub:', payload.sub, 'token_use:', payload.token_use);
           }
         } catch (e) {
           console.warn('[Advolt] Could not decode token:', e.message);
