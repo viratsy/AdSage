@@ -69,13 +69,13 @@ export default function VideoTranscript({ adId, transcript }: Props) {
       // Countdown
       timerRef.current = setInterval(() => {
         setSeconds((s) => {
-          if (s >= 59) { stopRecording(); return 60; }
+          if (s >= 74) { stopRecording(); return 75; }
           return s + 1;
         });
       }, 1000);
 
-      // Auto-stop at 60s
-      setTimeout(() => stopRecording(), 60000);
+      // Auto-stop at 75s (1 min 15 sec)
+      setTimeout(() => stopRecording(), 75000);
     } catch (err) {
       console.error('Recording failed:', err);
     }
@@ -123,7 +123,7 @@ export default function VideoTranscript({ adId, transcript }: Props) {
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-            <p className="text-sm">Recording... {60 - seconds}s remaining</p>
+            <p className="text-sm">Recording... {75 - seconds}s remaining</p>
           </div>
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Go play the video ad, then come back and stop.</p>
           <button onClick={stopRecording} className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-white" style={{ background: '#ef4444' }}>
