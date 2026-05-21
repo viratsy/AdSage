@@ -53,6 +53,14 @@ Parameters:
     Type: String
     NoEcho: true
     Default: "dummy_groq_key"
+  PayUMerchantKey:
+    Type: String
+    NoEcho: true
+    Default: "dummy_payu_key"
+  PayUSalt:
+    Type: String
+    NoEcho: true
+    Default: "dummy_payu_salt"
 
 # ─────────────────────────────────────────────
 # API GATEWAY
