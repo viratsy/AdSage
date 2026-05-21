@@ -233,80 +233,76 @@ function ResultDisplay({ result, tool, copyText, copied }: {
 
   const data = result as Record<string, unknown>;
 
-  try {
-    // List results (hooks, ctas, copies, rewrites, prompts)
-    const listKey = Object.keys(data).find((k) => Array.isArray(data[k]));
-    if (listKey) {
-      const items = (data[listKey] as unknown[]).map((item) =>
-        typeof item === 'string' ? item : JSON.stringify(item)
-      );
-      return (
-        <div className="space-y-2">
-          {items.map((item, i) => (
-            <div key={i} className="flex items-start gap-2 p-3 rounded-lg group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-              <span className="text-xs font-mono text-indigo-400 mt-0.5 shrink-0">{i + 1}.</span>
-              <p className="text-sm flex-1 leading-relaxed whitespace-pre-wrap">{item}</p>
-              <button
-                onClick={() => copyText(item, `${i}`)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-white/10 cursor-pointer shrink-0"
-                aria-label="Copy"
-              >
-                {copied === `${i}` ? <Check size={12} className="text-green-400" /> : <Copy size={12} className="text-gray-400" />}
-              </button>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    // Text results (long_copy, video_script)
-    const textKey = Object.keys(data).find((k) => typeof data[k] === 'string');
-    if (textKey) {
-      const text = data[textKey] as string;
-      return (
-        <div className="relative group">
-          <div className="p-3 rounded-lg text-sm leading-relaxed whitespace-pre-wrap" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-            {text}
+  // List results (hooks, ctas, copies, rewrites, prompts)
+  const listKey = Object.keys(data).find((k) => Array.isArray(data[k]));
+  if (listKey) {
+    const items = (data[listKey] as unknown[]).map((item) =>
+      typeof item === 'string' ? item : JSON.stringify(item)
+    );
+    return (
+      <div className="space-y-2">
+        {items.map((item, i) => (
+          <div key={i} className="flex items-start gap-2 p-3 rounded-lg group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+            <span className="text-xs font-mono text-indigo-400 mt-0.5 shrink-0">{i + 1}.</span>
+            <p className="text-sm flex-1 leading-relaxed whitespace-pre-wrap">{item}</p>
+            <button
+              onClick={() => copyText(item, `${i}`)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-white/10 cursor-pointer shrink-0"
+              aria-label="Copy"
+            >
+              {copied === `${i}` ? <Check size={12} className="text-green-400" /> : <Copy size={12} className="text-gray-400" />}
+            </button>
           </div>
-          <button
-            onClick={() => copyText(text, 'text')}
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
-            aria-label="Copy"
-          >
-            {copied === 'text' ? <Check size={14} className="text-green-400" /> : <Copy size={14} className="text-gray-400" />}
-          </button>
-        </div>
-      );
-    }
+        ))}
+      </div>
+    );
+  }
 
-    // Object results (ad_brief)
-    if (data.brief) {
-      const brief = data.brief as Record<string, unknown>;
-      return (
-        <div className="space-y-3">
-          {Object.entries(brief).map(([key, value]) => (
-            <div key={key} className="p-3 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-              <p className="text-xs uppercase tracking-wide mb-1 font-medium" style={{ color: 'var(--text-muted)' }}>
-                {key.replace(/_/g, ' ')}
-              </p>
-              {Array.isArray(value) ? (
-                <ul className="space-y-1">
-                  {(value as unknown[]).map((v, i) => (
-                    <li key={i} className="text-sm flex items-start gap-2">
-                      <span className="text-indigo-400">•</span> {typeof v === 'string' ? v : JSON.stringify(v)}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm">{typeof value === 'string' ? value : JSON.stringify(value)}</p>
-              )}
-            </div>
-          ))}
+  // Text results (long_copy, video_script)
+  const textKey = Object.keys(data).find((k) => typeof data[k] === 'string');
+  if (textKey) {
+    const text = data[textKey] as string;
+    return (
+      <div className="relative group">
+        <div className="p-3 rounded-lg text-sm leading-relaxed whitespace-pre-wrap" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+          {text}
         </div>
-      );
-    }
-  } catch {
-    // Fallback for any rendering error
+        <button
+          onClick={() => copyText(text, 'text')}
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
+          aria-label="Copy"
+        >
+          {copied === 'text' ? <Check size={14} className="text-green-400" /> : <Copy size={14} className="text-gray-400" />}
+        </button>
+      </div>
+    );
+  }
+
+  // Object results (ad_brief)
+  if (data.brief && typeof data.brief === 'object') {
+    const brief = data.brief as Record<string, unknown>;
+    return (
+      <div className="space-y-3">
+        {Object.entries(brief).map(([key, value]) => (
+          <div key={key} className="p-3 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+            <p className="text-xs uppercase tracking-wide mb-1 font-medium" style={{ color: 'var(--text-muted)' }}>
+              {key.replace(/_/g, ' ')}
+            </p>
+            {Array.isArray(value) ? (
+              <ul className="space-y-1">
+                {(value as unknown[]).map((v, i) => (
+                  <li key={i} className="text-sm flex items-start gap-2">
+                    <span className="text-indigo-400">•</span> {typeof v === 'string' ? v : JSON.stringify(v)}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm">{typeof value === 'string' ? value : JSON.stringify(value)}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return <pre className="text-xs overflow-auto p-3 rounded-lg" style={{ background: 'var(--surface-2)' }}>{JSON.stringify(data, null, 2)}</pre>;
