@@ -77,25 +77,25 @@ const extractAdData = (card) => {
 
   // ─── Videos ────────────────────────────────────────────────────────────────
   const video_urls = [];
-  // Direct video elements
-  card.querySelectorAll('video source, video').forEach((el) => {
-    const src = el.src || el.querySelector('source')?.src;
-    if (src && src.startsWith('http')) video_urls.push(src);
+  // Direct video elements with src
+  card.querySelectorAll('video').forEach((vid) => {
+    if (vid.src && vid.src.startsWith('http')) video_urls.push(vid.src);
+    vid.querySelectorAll('source').forEach((src) => {
+      if (src.src && src.src.startsWith('http')) video_urls.push(src.src);
+    });
   });
-  // Facebook stores video URLs in data attributes and aria-labels
-  card.querySelectorAll('[data-video-id], [aria-label*="video"], div[data-store]').forEach((el) => {
-    const store = el.getAttribute('data-store');
-    if (store) {
-      try { const d = JSON.parse(store); if (d.src) video_urls.push(d.src); } catch {}
-    }
+  // Facebook ad video container
+  card.querySelectorAll('[data-testid="ad content body video container"] video, div[class*="video"] video').forEach((vid) => {
+    if (vid.src && vid.src.startsWith('http')) video_urls.push(vid.src);
   });
-  // Look for play button overlay — indicates video ad
-  const hasPlayButton = card.querySelector('[aria-label="Play"], [data-testid="play_button"], svg[aria-label="Play"]');
-  // If there's a play button but no video URL found, grab the poster/thumbnail as indicator
-  if (hasPlayButton && video_urls.length === 0) {
-    // Mark as video ad — URL will need to be captured when user plays it
-    const poster = card.querySelector('video')?.getAttribute('poster') || card.querySelector('img[class*="x1ey2m1c"]')?.src;
-    if (poster) video_urls.push(`video_poster:${poster}`);
+  // Also check for blob URLs (won't work for download but indicates video ad)
+  if (video_urls.length === 0) {
+    card.querySelectorAll('video').forEach((vid) => {
+      if (vid.src && vid.src.startsWith('blob:')) {
+        // Try poster as fallback indicator
+        if (vid.poster && vid.poster.startsWith('http')) video_urls.push(`poster:${vid.poster}`);
+      }
+    });
   }
 
   return {
