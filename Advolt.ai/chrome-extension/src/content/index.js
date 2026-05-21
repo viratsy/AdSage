@@ -76,10 +76,27 @@ const extractAdData = (card) => {
     .slice(0, 5);
 
   // ─── Videos ────────────────────────────────────────────────────────────────
-  const video_urls = [...card.querySelectorAll('video source, video')]
-    .map((el) => el.src || el.querySelector('source')?.src)
-    .filter((src) => src && src.startsWith('http'))
-    .slice(0, 2);
+  const video_urls = [];
+  // Direct video elements
+  card.querySelectorAll('video source, video').forEach((el) => {
+    const src = el.src || el.querySelector('source')?.src;
+    if (src && src.startsWith('http')) video_urls.push(src);
+  });
+  // Facebook stores video URLs in data attributes and aria-labels
+  card.querySelectorAll('[data-video-id], [aria-label*="video"], div[data-store]').forEach((el) => {
+    const store = el.getAttribute('data-store');
+    if (store) {
+      try { const d = JSON.parse(store); if (d.src) video_urls.push(d.src); } catch {}
+    }
+  });
+  // Look for play button overlay — indicates video ad
+  const hasPlayButton = card.querySelector('[aria-label="Play"], [data-testid="play_button"], svg[aria-label="Play"]');
+  // If there's a play button but no video URL found, grab the poster/thumbnail as indicator
+  if (hasPlayButton && video_urls.length === 0) {
+    // Mark as video ad — URL will need to be captured when user plays it
+    const poster = card.querySelector('video')?.getAttribute('poster') || card.querySelector('img[class*="x1ey2m1c"]')?.src;
+    if (poster) video_urls.push(`video_poster:${poster}`);
+  }
 
   return {
     advertiser_name,
