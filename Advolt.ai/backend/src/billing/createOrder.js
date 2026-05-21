@@ -40,9 +40,7 @@ exports.handler = async (event) => {
     const hash = crypto.createHash('sha512').update(hashString).digest('hex');
     console.log('PayU hash input:', `${key}|${txnId}|${amount}|${productInfo}|${firstname}|${email}|udf1|udf2|udf3|||||||||||SALT`);
 
-    const payuBaseUrl = process.env.STAGE === 'prod'
-      ? 'https://secure.payu.in/_payment'
-      : 'https://test.payu.in/_payment';
+    const payuBaseUrl = 'https://secure.payu.in/_payment';
 
     return res.created({
       gateway: 'payu',

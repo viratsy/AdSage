@@ -11,13 +11,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// On 401, clear tokens and redirect to login
+// On 401/403, clear tokens and redirect to login
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
-      localStorage.clear();
-      window.location.href = '/login';
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      // Check if it's an auth error (not a permission error on a specific resource)
+      const msg = err.response?.data?.error || err.response?.data?.message || '';
+      if (msg === 'Unauthorized' || msg === 'Forbidden' || err.response?.status === 401) {
+        localStorage.clear();
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+      }
     }
     return Promise.reject(err);
   }
