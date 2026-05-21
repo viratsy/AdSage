@@ -12,13 +12,19 @@ export default function LibraryPage() {
   const [filterFav, setFilterFav] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['ads', 'library', search],
-    queryFn: () =>
-      adsApi.list({ advertiser: search || undefined, limit: 40 }).then((r) => r.data),
+    queryKey: ['ads', 'library'],
+    queryFn: () => adsApi.list({ limit: 50 }).then((r) => r.data),
   });
 
   const ads = data?.ads ?? [];
-  const filtered: Ad[] = filterFav ? ads.filter((a: Ad) => a.favorite) : ads;
+  const filtered: Ad[] = ads.filter((a: Ad) => {
+    const matchesSearch = !search || 
+      a.advertiser_name?.toLowerCase().includes(search.toLowerCase()) ||
+      a.headline?.toLowerCase().includes(search.toLowerCase()) ||
+      a.primary_text?.toLowerCase().includes(search.toLowerCase());
+    const matchesFav = !filterFav || a.favorite;
+    return matchesSearch && matchesFav;
+  });
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -38,7 +44,7 @@ export default function LibraryPage() {
           <Search size={14} className="text-gray-500 shrink-0" />
           <input
             type="text"
-            placeholder="Search by advertiser…"
+            placeholder="Search by advertiser, headline…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 bg-transparent text-sm outline-none"
