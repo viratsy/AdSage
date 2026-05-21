@@ -61,7 +61,7 @@ export const aiApi = {
 // ── Billing ───────────────────────────────────────────────────────────────────
 export const billingApi = {
   status: () => api.get('/billing/status'),
-  createOrder: (data: { purchase_type: string; pack_id?: string }) =>
+  createOrder: (data: { purchase_type: string; pack_id?: string; gateway?: string }) =>
     api.post('/billing/create-order', data),
 };
 

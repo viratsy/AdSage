@@ -18,6 +18,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const qc = useQueryClient();
   const [buyingPack, setBuyingPack] = useState<string | null>(null);
+  const [gateway, setGateway] = useState<'payu' | 'razorpay'>('payu');
   const [editingPersona, setEditingPersona] = useState(false);
   const [personaText, setPersonaText] = useState('');
 
@@ -27,16 +28,40 @@ export default function ProfilePage() {
   });
 
   const upgradeSub = useMutation({
-    mutationFn: () => billingApi.createOrder({ purchase_type: 'subscription' }).then((r) => r.data),
-    onSuccess: openRazorpay,
+    mutationFn: () => billingApi.createOrder({ purchase_type: 'subscription', gateway }).then((r) => r.data),
+    onSuccess: handlePayment,
   });
 
   const buyTokens = useMutation({
-    mutationFn: (pack_id: string) => billingApi.createOrder({ purchase_type: 'token_pack', pack_id }).then((r) => r.data),
-    onSuccess: (data) => { setBuyingPack(null); openRazorpay(data); },
+    mutationFn: (pack_id: string) => billingApi.createOrder({ purchase_type: 'token_pack', pack_id, gateway }).then((r) => r.data),
+    onSuccess: (data) => { setBuyingPack(null); handlePayment(data); },
   });
 
-  function openRazorpay(data: { key: string; order_id: string; amount: number; currency: string; label: string }) {
+  function handlePayment(data: Record<string, string>) {
+    if (data.gateway === 'payu') {
+      // PayU — submit form to redirect
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.payu_url;
+      const fields = ['key', 'txnid', 'amount', 'productinfo', 'firstname', 'email', 'hash', 'surl', 'furl', 'udf1', 'udf2', 'udf3'];
+      fields.forEach((f) => {
+        if (data[f]) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = f;
+          input.value = data[f];
+          form.appendChild(input);
+        }
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } else {
+      // Razorpay — open popup
+      openRazorpay(data);
+    }
+  }
+
+  function openRazorpay(data: Record<string, unknown>) {
     const options = {
       key: data.key,
       amount: data.amount,
@@ -124,10 +149,16 @@ export default function ProfilePage() {
 
           {/* Buy token packs */}
           <div>
-            <p className="text-xs uppercase tracking-wide mb-3" style={{ color: 'var(--text-muted)' }}>
-              <ShoppingCart size={10} className="inline mr-1" />
-              Buy Tokens (Never Expire)
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                <ShoppingCart size={10} className="inline mr-1" />
+                Buy Tokens (Never Expire)
+              </p>
+              <div className="flex gap-1">
+                <button onClick={() => setGateway('payu')} className={`text-xs px-2 py-0.5 rounded ${gateway === 'payu' ? 'bg-indigo-500/30 text-indigo-300' : 'text-gray-500'}`}>PayU</button>
+                <button onClick={() => setGateway('razorpay')} className={`text-xs px-2 py-0.5 rounded ${gateway === 'razorpay' ? 'bg-indigo-500/30 text-indigo-300' : 'text-gray-500'}`}>Razorpay</button>
+              </div>
+            </div>
             <div className="grid grid-cols-3 gap-2">
               {TOKEN_PACKS.map((pack) => (
                 <button key={pack.id}

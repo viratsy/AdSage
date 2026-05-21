@@ -685,6 +685,8 @@ Resources:
         Variables:
           RAZORPAY_KEY: !Ref RazorpayKey
           RAZORPAY_SECRET: !Ref RazorpaySecret
+          PAYU_MERCHANT_KEY: !Ref PayUMerchantKey
+          PAYU_SALT: !Ref PayUSalt
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref UsersTable
