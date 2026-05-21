@@ -16,7 +16,7 @@ exports.buildAnalysisPrompt = (ad, businessProfile = null, businessPersona = nul
 USER'S BUSINESS PERSONA (adapt all generated content for this business):
 ${businessPersona}
 
-IMPORTANT: Generate all hooks, CTAs, and copy variations specifically for the user's business above.
+IMPORTANT: Generate all hooks, CTAs, and copy variations specifically for the user's business above. Use their business name where appropriate.
 Do NOT generate content for the advertiser's business. Use the ad only as inspiration for structure and psychology.
 `
     : businessProfile

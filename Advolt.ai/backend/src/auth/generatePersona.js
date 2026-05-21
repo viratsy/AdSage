@@ -39,6 +39,7 @@ const PERSONA_PROMPT = (answers) => `You are a business strategist and marketing
 
 USER'S ANSWERS:
 - Business/Niche: ${answers.niche || 'Not provided'}
+- Business Name: ${answers.business_name || 'Not provided'}
 - Target Customer: ${answers.target_customer || 'Not provided'}
 - Main Product/Service: ${answers.product_service || 'Not provided'}
 - Customer Pain Point: ${answers.pain_point || 'Not provided'}
@@ -50,6 +51,7 @@ Return ONLY valid JSON:
 {
   "persona_summary": "<A 2-3 sentence refined description of this business, its positioning, and ideal customer. Written in third person. This will be used as context for all future AI content generation.>",
   "refined_profile": {
+    "business_name": "<the business name>",
     "niche": "<refined/clarified niche>",
     "target_customer": "<detailed ideal customer avatar>",
     "product_service": "<clear product/service description>",
