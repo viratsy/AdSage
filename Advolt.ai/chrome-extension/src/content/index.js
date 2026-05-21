@@ -147,7 +147,11 @@ const injectButton = (card) => {
     if (savedAdKeys.has(adKey)) return;
 
     // Check if this is a video ad
-    const hasVideo = card.querySelector('video') || card.querySelector('[data-testid="ad content body video container"]');
+    const hasVideo = card.querySelector('video') || 
+      card.querySelector('[data-testid*="video"]') ||
+      card.querySelector('div[style*="padding-top: 177"]') || // vertical video aspect ratio
+      card.querySelector('img[src*="video"]') ||
+      (card.innerText && card.innerText.includes('0:'));  // timestamp like "0:00 / 0:44" indicates video
 
     if (hasVideo) {
       // Video ad — show record flow
