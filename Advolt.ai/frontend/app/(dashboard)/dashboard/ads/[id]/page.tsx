@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/utils';
 import { useState } from 'react';
 import type { Ad, AiAnalysis } from '@/lib/types';
 import GenerateSection from '@/components/GenerateSection';
+import VideoTranscript from '@/components/VideoTranscript';
 
 export default function AdDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,7 +17,6 @@ export default function AdDetailsPage() {
   const [copied, setCopied] = useState('');
   const [notes, setNotes] = useState('');
   const [notesSaved, setNotesSaved] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['ad', id],
@@ -53,11 +53,6 @@ export default function AdDetailsPage() {
   const saveNotes = useMutation({
     mutationFn: () => adsApi.update(id, { notes }),
     onSuccess: () => { setNotesSaved(true); setTimeout(() => setNotesSaved(false), 2000); },
-  });
-
-  const transcribe = useMutation({
-    mutationFn: () => aiApi.transcribe(id, videoUrl),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ad', id] }); setVideoUrl(''); },
   });
 
   const generateSimilar = useMutation({
@@ -144,29 +139,7 @@ export default function AdDetailsPage() {
           </div>
 
           {/* Video Transcription */}
-          {!ad.video_transcript && (
-            <div className="rounded-xl p-5 space-y-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Video Transcription</p>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Paste the video URL to transcribe audio and use it for AI analysis.</p>
-              <div className="flex gap-2">
-                <input type="text" placeholder="Paste video URL here..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-lg text-xs outline-none focus:ring-1 focus:ring-indigo-500"
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-                <button onClick={() => transcribe.mutate()} disabled={transcribe.isPending || !videoUrl.trim()}
-                  className="px-3 py-2 rounded-lg text-xs font-medium text-white disabled:opacity-50 whitespace-nowrap"
-                  style={{ background: 'var(--accent)' }}>
-                  {transcribe.isPending ? 'Transcribing...' : '🎙️ Transcribe · 30 tokens'}
-                </button>
-              </div>
-              {transcribe.isError && <p className="text-xs text-red-400">Transcription failed. Tokens refunded.</p>}
-            </div>
-          )}
-          {ad.video_transcript && (
-            <div className="rounded-xl p-5 space-y-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Video Transcript</p>
-              <p className="text-sm leading-relaxed">{ad.video_transcript}</p>
-            </div>
-          )}
+          <VideoTranscript adId={id} transcript={ad.video_transcript} />
 
           {/* Generate Similar Ad */}
           {ai_analysis && (

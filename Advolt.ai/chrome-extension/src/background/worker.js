@@ -6,11 +6,6 @@
 const API_BASE = 'https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/dev';
 const SELECTOR_CONFIG_URL = 'https://d37anhmjei4vts.cloudfront.net/config/selectors.json';
 
-// ─── Audio Recording State ────────────────────────────────────────────────────
-let mediaRecorder = null;
-let audioChunks = [];
-let recordingAdData = null;
-
 // ─── Storage helpers ──────────────────────────────────────────────────────────
 const getTokens = () => chrome.storage.local.get(['access_token', 'id_token', 'refresh_token', 'token_expiry']);
 const setTokens = (t) => chrome.storage.local.set({
@@ -176,96 +171,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (!res.ok) return { ads: [] };
         const data = await res.json();
         return { ads: data.ads || [] };
-      }
-
-      case 'START_RECORDING': {
-        // Start recording tab audio
-        recordingAdData = message.payload;
-        audioChunks = [];
-        try {
-          const stream = await new Promise((resolve, reject) => {
-            chrome.tabCapture.capture({ audio: true, video: false }, (s) => {
-              if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-              else resolve(s);
-            });
-          });
-          // Use opus codec for smallest file size (~50KB/min)
-          const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-            ? 'audio/webm;codecs=opus'
-            : 'audio/webm';
-          mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 32000 });
-          mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
-          mediaRecorder.start(1000);
-
-          // Auto-stop after 60 seconds
-          setTimeout(() => {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-              console.log('[Advolt] Auto-stopping recording at 60s');
-              chrome.runtime.sendMessage({ type: 'STOP_RECORDING' });
-            }
-          }, 60000);
-
-          console.log('[Advolt] Recording started (auto-stop in 60s, opus codec)');
-          return { success: true, recording: true };
-        } catch (err) {
-          console.error('[Advolt] Recording failed to start:', err.message);
-          return { success: false, error: err.message };
-        }
-      }
-
-      case 'STOP_RECORDING': {
-        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-          return { success: false, error: 'Not recording' };
-        }
-        return new Promise((resolve) => {
-          mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            console.log('[Advolt] Recording stopped, size:', audioBlob.size);
-
-            // Save the ad first
-            const token = await getValidToken();
-            if (!token) { resolve({ success: false, error: 'Not authenticated' }); return; }
-
-            const saveRes = await fetch(`${API_BASE}/ads/save`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-              body: JSON.stringify(recordingAdData),
-            });
-
-            if (!saveRes.ok) {
-              const err = await saveRes.json().catch(() => ({}));
-              resolve({ success: false, error: err.error || 'Save failed' });
-              return;
-            }
-
-            const saveData = await saveRes.json();
-            const ad_id = saveData.ad_id;
-
-            // Upload audio to the transcribe endpoint
-            // Convert blob to base64 for JSON transport
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-              const base64Audio = reader.result.split(',')[1];
-              try {
-                const transcribeRes = await fetch(`${API_BASE}/ai/transcribe`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                  body: JSON.stringify({ ad_id, audio_base64: base64Audio, format: 'webm' }),
-                });
-                const transcribeData = await transcribeRes.json();
-                console.log('[Advolt] Transcription result:', transcribeData);
-                resolve({ success: true, ad_id, transcript: transcribeData.transcript });
-              } catch (err) {
-                // Ad saved but transcription failed — still success for the save
-                resolve({ success: true, ad_id, transcript_error: err.message });
-              }
-            };
-            reader.readAsDataURL(audioBlob);
-          };
-          mediaRecorder.stop();
-          // Stop all tracks
-          mediaRecorder.stream.getTracks().forEach((t) => t.stop());
-        });
       }
 
       default:
