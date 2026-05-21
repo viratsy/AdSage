@@ -62,6 +62,8 @@ export const aiApi = {
     api.post('/ai/generate', { ad_id, operation, instruction, count }),
   transcribe: (ad_id: string, video_url?: string, audio_base64?: string) =>
     api.post('/ai/transcribe', { ad_id, video_url: video_url || undefined, audio_base64: audio_base64 || undefined, format: 'webm' }),
+  studio: (tool: string, input: Record<string, string | number>) =>
+    api.post('/ai/studio', { tool, input }),
 };
 
 // ── Billing ───────────────────────────────────────────────────────────────────

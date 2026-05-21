@@ -657,6 +657,24 @@ Resources:
             Path: /ai/transcribe
             Method: POST
 
+  CreateStudioFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-create-studio-${Stage}"
+      CodeUri: src/ai/
+      Handler: createStudio.handler
+      Timeout: 30
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /ai/studio
+            Method: POST
+
 # ─────────────────────────────────────────────
 # LAMBDA — MEDIA
 # ─────────────────────────────────────────────
@@ -738,6 +756,23 @@ Resources:
             RestApiId: !Ref AdvoltApi
             Path: /billing/status
             Method: GET
+
+  ResetTokensFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-reset-tokens-${Stage}"
+      CodeUri: src/billing/
+      Handler: resetTokens.handler
+      Timeout: 120
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 day)
+            Description: Reset monthly tokens for Pro users daily
 
 # ─────────────────────────────────────────────
 # GATEWAY RESPONSES (add CORS headers to auth errors)

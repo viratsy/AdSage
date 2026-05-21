@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Library, User, LogOut, Zap } from 'lucide-react';
+import { LayoutDashboard, Library, User, LogOut, Zap, Wand2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 
 const nav = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard },
   { href: '/dashboard/library', label: 'Ad Library', icon: Library },
+  { href: '/dashboard/create', label: 'Create Studio', icon: Wand2 },
   { href: '/dashboard/profile', label: 'Profile', icon: User },
 ];
 
