@@ -16,9 +16,10 @@ export default function VideoTranscript({ adId, transcript }: Props) {
   const [videoUrl, setVideoUrl] = useState('');
   const [seconds, setSeconds] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [error, setError] = useState('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
   const transcribeUrl = useMutation({
@@ -40,17 +41,29 @@ export default function VideoTranscript({ adId, transcript }: Props) {
   });
 
   const startRecording = async () => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getDisplayMedia) {
+      alert('Screen recording is not supported in this browser.');
+      return;
+    }
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-      // Only keep audio tracks
-      stream.getVideoTracks().forEach((t) => t.stop());
-      const audioStream = new MediaStream(stream.getAudioTracks());
-      streamRef.current = audioStream;
+      // getDisplayMedia requires video:true, we'll discard video tracks after
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { width: 1, height: 1 }, // minimal video to satisfy API requirement
+        audio: true,
+      });
 
-      if (audioStream.getAudioTracks().length === 0) {
-        alert('No audio detected. Make sure to check "Share audio" in the dialog.');
+      // Check if audio was shared
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0) {
+        stream.getTracks().forEach((t) => t.stop());
+        setError('No audio detected. Make sure to check "Share tab audio" in the dialog.');
         return;
       }
+
+      // Stop video tracks — we only need audio
+      stream.getVideoTracks().forEach((t) => t.stop());
+      const audioStream = new MediaStream(audioTracks);
+      streamRef.current = stream; // keep reference to stop all tracks later
 
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
       const recorder = new MediaRecorder(audioStream, { mimeType, audioBitsPerSecond: 32000 });
@@ -76,7 +89,9 @@ export default function VideoTranscript({ adId, transcript }: Props) {
 
       // Auto-stop at 75s (1 min 15 sec)
       setTimeout(() => stopRecording(), 75000);
-    } catch (err) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Recording failed';
+      setError(msg);
       console.error('Recording failed:', err);
     }
   };
