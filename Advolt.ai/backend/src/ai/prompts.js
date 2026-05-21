@@ -43,11 +43,12 @@ ${businessContext}
 
 SAVED AD TO ANALYZE:
 - Advertiser: ${ad.advertiser_name || 'Unknown'}
-- Primary Text: ${ad.primary_text || 'N/A'}
+- Ad Content: ${ad.video_transcript || ad.primary_text || 'N/A'}
 - Headline: ${ad.headline || 'N/A'}
 - CTA: ${ad.cta || 'N/A'}
 - Landing Page: ${ad.landing_page || 'N/A'}
 - Platform: ${ad.platform || 'facebook'}
+- Content Source: ${ad.video_transcript ? 'Video transcript' : 'Text ad'}
 
 TASK: Analyze the psychological structure of this ad, then generate content adapted for the user's business.
 

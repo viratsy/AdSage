@@ -11,6 +11,7 @@ const TOKEN_COSTS = {
   long_copy: 50,
   full_analysis: 120, // bundled discount vs 160 individual
   transcribe: 30,
+  video_script: 50,
 };
 
 const FREE_PLAN_LIFETIME_ANALYSES = 1;

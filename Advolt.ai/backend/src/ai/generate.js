@@ -34,28 +34,28 @@ const OPERATION_PROMPTS = {
   hooks: (ad, persona, instruction, count = 5) => `
 Generate ${count} ad hooks for this business.
 ${persona ? `Business: ${persona}` : ''}
-Inspired by this ad from ${ad.advertiser_name}: "${ad.primary_text || ''}"
+Inspired by this ad from ${ad.advertiser_name}: "${ad.video_transcript || ad.primary_text || ''}"
 ${instruction ? `User instruction: ${instruction}` : ''}
 Return JSON: {"hooks": ["hook1", "hook2", ...]}`,
 
   ctas: (ad, persona, instruction, count = 5) => `
 Generate ${count} CTA (call-to-action) variations for this business.
 ${persona ? `Business: ${persona}` : ''}
-Inspired by this ad from ${ad.advertiser_name}: "${ad.primary_text || ''}"
+Inspired by this ad from ${ad.advertiser_name}: "${ad.video_transcript || ad.primary_text || ''}"
 ${instruction ? `User instruction: ${instruction}` : ''}
 Return JSON: {"ctas": ["cta1", "cta2", ...]}`,
 
   short_copy: (ad, persona, instruction) => `
 Write a short ad copy (under 50 words) for this business.
 ${persona ? `Business: ${persona}` : ''}
-Inspired by this ad from ${ad.advertiser_name}: "${ad.primary_text || ''}"
+Inspired by this ad from ${ad.advertiser_name}: "${ad.video_transcript || ad.primary_text || ''}"
 ${instruction ? `User instruction: ${instruction}` : ''}
 Return JSON: {"short_copy": "the ad copy here"}`,
 
   long_copy: (ad, persona, instruction) => `
 Write a long ad copy (100-150 words) for this business. Include a hook, body, and CTA.
 ${persona ? `Business: ${persona}` : ''}
-Inspired by this ad from ${ad.advertiser_name}: "${ad.primary_text || ''}"
+Inspired by this ad from ${ad.advertiser_name}: "${ad.video_transcript || ad.primary_text || ''}"
 ${instruction ? `User instruction: ${instruction}` : ''}
 Return JSON: {"long_copy": "the full ad copy here"}`,
 
@@ -66,6 +66,20 @@ Inspired by the visual style of an ad from ${ad.advertiser_name}.
 Include: subject, style, colors, mood, composition. Make it specific for Midjourney/DALL-E.
 ${instruction ? `User instruction: ${instruction}` : ''}
 Return JSON: {"image_prompt": "the detailed prompt here"}`,
+
+  video_script: (ad, persona, instruction) => `
+Write a 30-60 second video ad script for this business. Include:
+- Hook (first 3 seconds to grab attention)
+- Problem statement
+- Solution (the product/service)
+- Social proof or authority
+- CTA (call to action)
+- Suggested visuals for each section
+
+${persona ? `Business: ${persona}` : ''}
+Inspired by this video ad from ${ad.advertiser_name}: "${ad.video_transcript || ad.primary_text || ''}"
+${instruction ? `User instruction: ${instruction}` : ''}
+Return JSON: {"video_script": "the full script with [VISUAL: description] markers for each section"}`,
 };
 
 exports.handler = async (event) => {

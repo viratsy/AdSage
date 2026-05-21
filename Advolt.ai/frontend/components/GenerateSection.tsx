@@ -36,6 +36,7 @@ export default function GenerateSection({ adId, operation, title, tokenCost, ini
       else if (result.short_copy) newItems = [result.short_copy];
       else if (result.long_copy) newItems = [result.long_copy];
       else if (result.image_prompt) newItems = [result.image_prompt];
+      else if (result.video_script) newItems = [result.video_script];
 
       if (mode === 'more') {
         setItems([...items, ...newItems]);

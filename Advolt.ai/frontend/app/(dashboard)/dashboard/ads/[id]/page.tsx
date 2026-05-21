@@ -257,6 +257,10 @@ export default function AdDetailsPage() {
               <GenerateSection adId={id} operation="image_prompt" title="Image Generation Prompt" tokenCost={20}
                 initialData={ai_analysis.image_prompt} type="text" />
 
+              {/* Video Script — on-demand */}
+              <GenerateSection adId={id} operation="video_script" title="Video Ad Script" tokenCost={50}
+                initialData={null} type="text" />
+
               {/* Why This Ad Works */}
               {ai_analysis.ad_analysis && (
                 <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
