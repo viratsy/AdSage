@@ -53,7 +53,7 @@ Return JSON:
 }`,
 
   hooks: (input, persona) => `
-Generate ${input.count || 10} ad hooks for this product/service.
+Generate ${input.count || 10} ad hooks for this product/service. Each hook should be a single sentence or phrase.
 ${persona ? `Business context: ${persona}` : ''}
 Product/Service: ${input.product || 'Not specified'}
 Target Audience: ${input.audience || 'General'}
@@ -61,17 +61,17 @@ Tone: ${input.tone || 'Engaging'}
 ${input.instruction ? `Additional instruction: ${input.instruction}` : ''}
 
 Mix different hook types: curiosity, pain point, benefit, social proof, urgency, question.
-Return JSON: {"hooks": ["hook1", "hook2", ...]}`,
+Return JSON with ONLY plain text strings: {"hooks": ["hook text 1", "hook text 2", ...]}`,
 
   ctas: (input, persona) => `
-Generate ${input.count || 10} CTA (call-to-action) variations.
+Generate ${input.count || 10} CTA (call-to-action) variations. Each CTA should be a short actionable phrase.
 ${persona ? `Business context: ${persona}` : ''}
 Product/Service: ${input.product || 'Not specified'}
 Goal: ${input.goal || 'Get clicks'}
 ${input.instruction ? `Additional instruction: ${input.instruction}` : ''}
 
 Mix styles: urgency, benefit-driven, curiosity, direct, soft.
-Return JSON: {"ctas": ["cta1", "cta2", ...]}`,
+Return JSON with ONLY plain text strings: {"ctas": ["cta text 1", "cta text 2", ...]}`,
 
   short_copy: (input, persona) => `
 Write 3 short ad copy variations (under 50 words each) for this product/service.
@@ -82,7 +82,7 @@ Tone: ${input.tone || 'Engaging'}
 Platform: ${input.platform || 'Facebook/Instagram'}
 ${input.instruction ? `Additional instruction: ${input.instruction}` : ''}
 
-Return JSON: {"copies": ["copy1", "copy2", "copy3"]}`,
+Return JSON with ONLY the copies as plain strings: {"copies": ["first ad copy text here", "second ad copy text here", "third ad copy text here"]}`,
 
   long_copy: (input, persona) => `
 Write a long-form ad copy (100-200 words) for this product/service.

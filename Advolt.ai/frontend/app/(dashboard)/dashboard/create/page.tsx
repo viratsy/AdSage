@@ -236,9 +236,15 @@ function ResultDisplay({ result, tool, copyText, copied }: {
   // List results (hooks, ctas, copies, rewrites, prompts)
   const listKey = Object.keys(data).find((k) => Array.isArray(data[k]));
   if (listKey) {
-    const items = (data[listKey] as unknown[]).map((item) =>
-      typeof item === 'string' ? item : JSON.stringify(item)
-    );
+    const items = (data[listKey] as unknown[]).map((item) => {
+      if (typeof item === 'string') return item;
+      if (typeof item === 'object' && item !== null) {
+        const obj = item as Record<string, unknown>;
+        // Extract text field if it exists
+        return (obj.text || obj.copy || obj.hook || obj.cta || obj.prompt || Object.values(obj).find(v => typeof v === 'string' && (v as string).length > 10) || JSON.stringify(obj)) as string;
+      }
+      return String(item);
+    });
     return (
       <div className="space-y-2">
         {items.map((item, i) => (
