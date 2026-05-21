@@ -14,14 +14,14 @@ export default function LimitBanner() {
   if (!data) return null;
 
   const isPro = data.subscription_plan === 'pro';
-  const limit = isPro ? 40 : 5;
+  const totalTokens = (data.monthly_tokens ?? 0) + (data.purchased_tokens ?? 0);
   const adsUsed = data.ads_saved_count ?? 0;
-  const creditsLeft = data.ai_credits ?? 0;
+  const adsLimit = isPro ? Infinity : 5;
 
-  const adsNearLimit = adsUsed >= limit;
-  const creditsNearLimit = creditsLeft <= 1;
+  const adsNearLimit = !isPro && adsUsed >= adsLimit;
+  const tokensLow = isPro && totalTokens < 50;
 
-  if (!adsNearLimit && !creditsNearLimit) return null;
+  if (!adsNearLimit && !tokensLow) return null;
 
   return (
     <div
@@ -31,17 +31,15 @@ export default function LimitBanner() {
       <div className="flex items-center gap-2 text-yellow-400">
         <AlertTriangle size={14} />
         {adsNearLimit
-          ? `You've reached your ad save limit (${adsUsed}/${limit}).`
-          : `Only ${creditsLeft} AI credit${creditsLeft === 1 ? '' : 's'} remaining.`}
+          ? `You've reached your ad save limit (${adsUsed}/5). Upgrade to Pro for unlimited.`
+          : `Low token balance (${totalTokens} remaining). Buy more in Profile.`}
       </div>
-      {!isPro && (
-        <Link
-          href="/dashboard/profile"
-          className="text-xs font-semibold text-yellow-400 hover:text-yellow-300 underline"
-        >
-          Upgrade to Pro
-        </Link>
-      )}
+      <Link
+        href="/dashboard/profile"
+        className="text-xs font-semibold text-yellow-400 hover:text-yellow-300 underline"
+      >
+        {adsNearLimit ? 'Upgrade' : 'Buy Tokens'}
+      </Link>
     </div>
   );
 }

@@ -26,8 +26,8 @@ export default function DashboardPage() {
       color: 'text-indigo-400',
     },
     {
-      label: 'AI Credits',
-      value: billing?.ai_credits ?? '—',
+      label: 'AI Tokens',
+      value: billing ? `${((billing.monthly_tokens ?? 0) + (billing.purchased_tokens ?? 0)).toLocaleString()}` : '—',
       icon: Zap,
       color: 'text-yellow-400',
     },
