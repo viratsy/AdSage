@@ -89,8 +89,8 @@ export default function AdDetailsPage() {
           <button onClick={() => toggleFav.mutate()} className="p-2 rounded-lg hover:bg-white/5" aria-label="Favorite">
             <Heart size={16} className={ad.favorite ? 'text-red-400 fill-red-400' : 'text-gray-400'} />
           </button>
-          <button onClick={() => setShowDeleteModal(true)} className="p-2 rounded-lg hover:bg-white/5" aria-label="Delete">
-            <Trash2 size={16} className="text-gray-400" />
+          <button onClick={() => setShowDeleteModal(true)} className="p-2 rounded-lg hover:bg-white/5 cursor-pointer" aria-label="Delete">
+            <Trash2 size={16} className="text-gray-400 hover:text-red-400 transition-colors" />
           </button>
         </div>
       </div>

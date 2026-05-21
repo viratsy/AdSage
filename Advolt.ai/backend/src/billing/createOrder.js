@@ -56,8 +56,8 @@ exports.handler = async (event) => {
       udf1,
       udf2,
       udf3,
-      surl: 'https://ad-sage-i4cs.vercel.app/dashboard/payment/success',
-      furl: 'https://ad-sage-i4cs.vercel.app/dashboard/payment/failure',
+      surl: 'https://ad-sage-i4cs.vercel.app/api/payment/success',
+      furl: 'https://ad-sage-i4cs.vercel.app/api/payment/failure',
     });
 
   } else {

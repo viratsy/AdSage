@@ -498,6 +498,8 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref AdsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
         - S3CrudPolicy:
             BucketName: !Ref MediaBucket
       Events:
