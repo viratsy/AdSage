@@ -13,6 +13,7 @@ export interface Ad {
   notes?: string;
   landing_page?: string;
   platform?: string;
+  video_transcript?: string;
 }
 
 export interface AiAnalysis {

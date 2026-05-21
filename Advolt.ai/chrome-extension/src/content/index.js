@@ -75,6 +75,12 @@ const extractAdData = (card) => {
     .map((img) => img.src)
     .slice(0, 5);
 
+  // ─── Videos ────────────────────────────────────────────────────────────────
+  const video_urls = [...card.querySelectorAll('video source, video')]
+    .map((el) => el.src || el.querySelector('source')?.src)
+    .filter((src) => src && src.startsWith('http'))
+    .slice(0, 2);
+
   return {
     advertiser_name,
     primary_text,

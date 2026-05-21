@@ -218,6 +218,12 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAudioAfter30Days
+            Prefix: "audio/"
+            Status: Enabled
+            ExpirationInDays: 30
       CorsConfiguration:
         CorsRules:
           - AllowedOrigins: ['*']
@@ -616,6 +622,27 @@ Resources:
           Properties:
             RestApiId: !Ref AdvoltApi
             Path: /ai/generate
+            Method: POST
+
+  TranscribeVideoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-transcribe-video-${Stage}"
+      CodeUri: src/ai/
+      Handler: transcribeVideo.handler
+      Timeout: 120
+      MemorySize: 512
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AdsTable
+        - S3CrudPolicy:
+            BucketName: !Ref MediaBucket
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /ai/transcribe
             Method: POST
 
 # ─────────────────────────────────────────────
