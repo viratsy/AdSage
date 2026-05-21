@@ -22,6 +22,14 @@ export default function CreateStudioPage() {
   const [result, setResult] = useState<unknown>(null);
   const [copied, setCopied] = useState('');
   const [usePersona, setUsePersona] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<Array<{ tool: string; result: unknown; date: string; input: Record<string, string> }>>([]);
+
+  // Load history from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('advolt_studio_history');
+    if (saved) setHistory(JSON.parse(saved));
+  }, []);
 
   // Fetch user persona
   const { data: billing } = useQuery({
@@ -44,7 +52,6 @@ export default function CreateStudioPage() {
           tone: personaObj.tone || personaObj.brand_voice || '',
         }));
       } else if (personaStr) {
-        // Persona is a text string — use it as product description
         setInput((prev) => ({
           ...prev,
           product: personaStr.slice(0, 200),
@@ -53,9 +60,19 @@ export default function CreateStudioPage() {
     }
   }, [persona, usePersona]);
 
+  const saveToHistory = (toolId: string, res: unknown, inp: Record<string, string>) => {
+    const entry = { tool: toolId, result: res, date: new Date().toISOString(), input: inp };
+    const updated = [entry, ...history].slice(0, 20); // Keep last 20
+    setHistory(updated);
+    localStorage.setItem('advolt_studio_history', JSON.stringify(updated));
+  };
+
   const generate = useMutation({
     mutationFn: () => aiApi.studio(activeTool, input).then((r) => r.data),
-    onSuccess: (data) => setResult(data.result),
+    onSuccess: (data) => {
+      setResult(data.result);
+      saveToHistory(activeTool, data.result, input);
+    },
   });
 
   const tool = TOOLS.find((t) => t.id === activeTool)!;
@@ -73,14 +90,35 @@ export default function CreateStudioPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <Wand2 size={20} className="text-indigo-400" /> AI Create Studio
-        </h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-          Generate ad content from scratch using AI — no saved ad needed.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <Wand2 size={20} className="text-indigo-400" /> AI Create Studio
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+            Generate ad content from scratch using AI — no saved ad needed.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowHistory(!showHistory)}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            showHistory ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-400 hover:bg-white/5'
+          }`}
+          style={{ border: '1px solid var(--border)' }}
+        >
+          {showHistory ? '← Back to Studio' : `History (${history.length})`}
+        </button>
       </div>
+
+      {showHistory ? (
+        <HistoryView history={history} copyText={copyText} copied={copied} onLoad={(entry) => {
+          setActiveTool(entry.tool);
+          setInput(entry.input);
+          setResult(entry.result);
+          setShowHistory(false);
+        }} />
+      ) : (
+      <>
 
       {/* Tool Selector */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -201,6 +239,8 @@ export default function CreateStudioPage() {
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
@@ -312,4 +352,56 @@ function ResultDisplay({ result, tool, copyText, copied }: {
   }
 
   return <pre className="text-xs overflow-auto p-3 rounded-lg" style={{ background: 'var(--surface-2)' }}>{JSON.stringify(data, null, 2)}</pre>;
+}
+
+function HistoryView({ history, copyText, copied, onLoad }: {
+  history: Array<{ tool: string; result: unknown; date: string; input: Record<string, string> }>;
+  copyText: (t: string, k: string) => void;
+  copied: string;
+  onLoad: (entry: { tool: string; result: unknown; input: Record<string, string> }) => void;
+}) {
+  if (!history.length) {
+    return (
+      <div className="rounded-xl p-12 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <Wand2 size={32} className="text-gray-600 mx-auto mb-3" />
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No generations yet. Create something first!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {history.map((entry, idx) => {
+        const toolInfo = TOOLS.find((t) => t.id === entry.tool);
+        const Icon = toolInfo?.icon || Wand2;
+        return (
+          <div key={idx} className="rounded-xl p-4 space-y-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon size={14} className="text-indigo-400" />
+                <span className="text-sm font-medium">{toolInfo?.label || entry.tool}</span>
+                {entry.input.product && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-white/5" style={{ color: 'var(--text-muted)' }}>
+                    {entry.input.product.slice(0, 30)}{entry.input.product.length > 30 ? '…' : ''}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {new Date(entry.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </span>
+                <button
+                  onClick={() => onLoad(entry)}
+                  className="text-xs px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors cursor-pointer"
+                >
+                  Load
+                </button>
+              </div>
+            </div>
+            <ResultDisplay result={entry.result} tool={entry.tool} copyText={copyText} copied={copied} />
+          </div>
+        );
+      })}
+    </div>
+  );
 }
