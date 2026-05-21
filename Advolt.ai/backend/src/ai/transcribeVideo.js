@@ -16,9 +16,9 @@ exports.handler = async (event) => {
   if (!user) return res.unauthorized();
 
   const body = JSON.parse(event.body || '{}');
-  const { ad_id, video_url } = body;
+  const { ad_id, video_url, audio_base64, format } = body;
 
-  if (!ad_id || !video_url) return res.badRequest('ad_id and video_url required');
+  if (!ad_id || (!video_url && !audio_base64)) return res.badRequest('ad_id and video_url or audio_base64 required');
 
   const TRANSCRIBE_COST = 30;
 
@@ -48,15 +48,25 @@ exports.handler = async (event) => {
   }
 
   try {
-    console.log('Transcribing video', { ad_id, video_url: video_url.substring(0, 80) });
+    console.log('Transcribing', { ad_id, hasVideoUrl: !!video_url, hasAudio: !!audio_base64 });
 
-    // Step 1: Download video from URL
-    const videoResponse = await fetch(video_url);
-    if (!videoResponse.ok) throw new Error(`Failed to download video: ${videoResponse.status}`);
+    let videoBuffer;
+    let contentType;
+    let extension;
 
-    const videoBuffer = Buffer.from(await videoResponse.arrayBuffer());
-    const contentType = videoResponse.headers.get('content-type') || 'video/mp4';
-    const extension = contentType.includes('mp4') ? 'mp4' : contentType.includes('webm') ? 'webm' : 'mp4';
+    if (audio_base64) {
+      // Audio uploaded directly from extension recording
+      videoBuffer = Buffer.from(audio_base64, 'base64');
+      contentType = `audio/${format || 'webm'}`;
+      extension = format || 'webm';
+    } else {
+      // Download video from URL
+      const videoResponse = await fetch(video_url);
+      if (!videoResponse.ok) throw new Error(`Failed to download video: ${videoResponse.status}`);
+      videoBuffer = Buffer.from(await videoResponse.arrayBuffer());
+      contentType = videoResponse.headers.get('content-type') || 'video/mp4';
+      extension = contentType.includes('mp4') ? 'mp4' : contentType.includes('webm') ? 'webm' : 'mp4';
+    }
 
     // Step 2: Upload to S3 under audio/ prefix (auto-deletes in 30 days)
     const s3Key = `audio/${user.user_id}/${ad_id}.${extension}`;

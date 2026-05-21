@@ -146,6 +146,68 @@ const injectButton = (card) => {
     e.preventDefault();
     if (savedAdKeys.has(adKey)) return;
 
+    // Check if this is a video ad
+    const hasVideo = card.querySelector('video') || card.querySelector('[data-testid="ad content body video container"]');
+
+    if (hasVideo) {
+      // Video ad — show record flow
+      btn.innerText = '🎙️ Play video & Recording...';
+      btn.style.background = '#ef4444';
+      btn.disabled = false;
+
+      // Start recording
+      const startResult = await chrome.runtime.sendMessage({ type: 'START_RECORDING', payload: adData });
+      if (!startResult?.success) {
+        btn.innerText = '⚡ Save Ad';
+        btn.style.background = '#6366f1';
+        return;
+      }
+
+      // Show countdown + Stop button
+      let seconds = 60;
+      btn.innerText = `⏹️ Stop & Save (${seconds}s)`;
+      btn.style.background = '#ef4444';
+      const countdown = setInterval(() => {
+        seconds--;
+        if (seconds <= 0) { clearInterval(countdown); return; }
+        btn.innerText = `⏹️ Stop & Save (${seconds}s)`;
+      }, 1000);
+
+      // Auto-save after 60s
+      setTimeout(async () => {
+        clearInterval(countdown);
+        if (!savedAdKeys.has(adKey)) {
+          btn.innerText = '⏳ Saving + Transcribing...';
+          btn.disabled = true;
+          btn.style.background = '#4f46e5';
+          const result = await chrome.runtime.sendMessage({ type: 'STOP_RECORDING' });
+          if (result?.success) { savedAdKeys.add(adKey); btn.innerText = '✓ Saved'; btn.style.background = '#22c55e'; }
+          else { btn.innerText = '✗ Failed'; btn.style.background = '#ef4444'; }
+        }
+      }, 60000);
+
+      btn.onclick = async (e2) => {
+        e2.stopPropagation();
+        e2.preventDefault();
+        btn.innerText = '⏳ Saving + Transcribing...';
+        btn.disabled = true;
+        btn.style.background = '#4f46e5';
+
+        const result = await chrome.runtime.sendMessage({ type: 'STOP_RECORDING' });
+        if (result?.success) {
+          savedAdKeys.add(adKey);
+          btn.innerText = '✓ Saved + Transcribed';
+          btn.style.background = '#22c55e';
+        } else {
+          btn.innerText = '✗ Failed';
+          btn.style.background = '#ef4444';
+          setTimeout(() => { btn.innerText = '⚡ Save Ad'; btn.style.background = '#6366f1'; btn.disabled = false; }, 2000);
+        }
+      };
+      return;
+    }
+
+    // Regular image ad — normal save flow
     btn.innerText = '⏳ Saving...';
     btn.disabled = true;
     btn.style.background = '#4f46e5';
