@@ -8,7 +8,7 @@ const res = require('/opt/nodejs/lib/response');
 const { getUserFromEvent } = require('/opt/nodejs/lib/getUserFromEvent');
 const { TOKEN_COSTS, getUserTokenBalance } = require('/opt/nodejs/lib/tokenCosts');
 
-const callGroq = async (prompt) => {
+const callGroq = async (prompt, maxTokens = 2000) => {
   const key = process.env.GROQ_API_KEY;
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -20,11 +20,14 @@ const callGroq = async (prompt) => {
         { role: 'user', content: prompt },
       ],
       temperature: 0.8,
-      max_tokens: 2000,
+      max_tokens: maxTokens,
       response_format: { type: 'json_object' },
     }),
   });
-  if (!response.ok) throw new Error(`Groq error: ${response.status}`);
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Groq error: ${response.status} — ${err.slice(0, 200)}`);
+  }
   const data = await response.json();
   return data.choices[0].message.content;
 };
@@ -107,23 +110,19 @@ Each prompt should be specific enough for Midjourney/DALL-E. Include subject, st
 Return JSON: {"prompts": ["prompt1", "prompt2", "prompt3"]}`,
 
   video_script: (input, persona) => `
-Write a ${input.duration || '30-60'} second video ad script.
-${persona ? `Business context: ${persona}` : ''}
-Product/Service: ${input.product || 'Not specified'}
-Target Audience: ${input.audience || 'General'}
+Write a ${input.duration || '30-60'} second video ad script for this product/service as a single text block.
+${persona ? `Business: ${typeof persona === 'string' ? persona.slice(0, 300) : ''}` : ''}
+Product: ${input.product || 'Not specified'}
+Audience: ${input.audience || 'General'}
 Tone: ${input.tone || 'Energetic'}
-${input.instruction ? `Additional instruction: ${input.instruction}` : ''}
+${input.instruction ? `Instruction: ${input.instruction}` : ''}
 
-Include:
-- Hook (first 3 seconds)
-- Problem/Pain point
-- Solution introduction
-- Key benefits (2-3)
-- Social proof
-- CTA
-- [VISUAL: description] markers for each section
+Format the script with timestamps and visual cues inline like:
+[0-3s] HOOK: text here [VISUAL: description]
+[4-8s] PROBLEM: text here [VISUAL: description]
+etc.
 
-Return JSON: {"video_script": "the full script"}`,
+Return as JSON: {"video_script": "the entire script as one string with newlines"}`,
 
   rewrite: (input, persona) => `
 Rewrite this ad copy to make it more effective.
@@ -196,8 +195,10 @@ exports.handler = async (event) => {
   // Generate
   try {
     const persona = userRecord.business_persona || null;
-    const prompt = STUDIO_PROMPTS[tool](input, persona);
-    const raw = await callGroq(prompt);
+    const personaContext = typeof persona === 'object' ? JSON.stringify(persona) : persona;
+    const prompt = STUDIO_PROMPTS[tool](input, personaContext);
+    const maxTokens = (tool === 'video_script' || tool === 'long_copy' || tool === 'ad_brief') ? 3000 : 2000;
+    const raw = await callGroq(prompt, maxTokens);
 
     let cleaned = raw;
     if (cleaned.includes('```')) cleaned = cleaned.replace(/```json?\n?/g, '').replace(/```/g, '');

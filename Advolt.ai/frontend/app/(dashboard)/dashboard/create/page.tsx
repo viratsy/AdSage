@@ -47,14 +47,9 @@ export default function CreateStudioPage() {
       if (personaObj) {
         setInput((prev) => ({
           ...prev,
-          product: personaObj.product_service || personaObj.business_name || '',
+          product: personaObj.business_name || personaObj.product_service || '',
           audience: personaObj.target_audience || '',
           tone: personaObj.tone || personaObj.brand_voice || '',
-        }));
-      } else if (personaStr) {
-        setInput((prev) => ({
-          ...prev,
-          product: personaStr.slice(0, 200),
         }));
       }
     }
@@ -162,12 +157,10 @@ export default function CreateStudioPage() {
                     if (next && personaObj) {
                       setInput((prev) => ({
                         ...prev,
-                        product: personaObj.product_service || personaObj.business_name || '',
+                        product: personaObj.business_name || personaObj.product_service || '',
                         audience: personaObj.target_audience || '',
                         tone: personaObj.tone || personaObj.brand_voice || '',
                       }));
-                    } else if (next && personaStr) {
-                      setInput((prev) => ({ ...prev, product: personaStr.slice(0, 200) }));
                     }
                   }}
                   className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${usePersona ? 'bg-indigo-500' : 'bg-gray-600'}`}
@@ -264,6 +257,25 @@ function InputField({ label, field, input, setInput, placeholder }: {
   );
 }
 
+function flattenScript(obj: Record<string, unknown>): string {
+  const lines: string[] = [];
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string') {
+      lines.push(`[${key}] ${value}`);
+    } else if (typeof value === 'object' && value !== null) {
+      const inner = value as Record<string, unknown>;
+      const parts = Object.entries(inner)
+        .map(([k, v]) => {
+          if (Array.isArray(v)) return `${k}: ${(v as string[]).join(', ')}`;
+          return `${k}: ${v}`;
+        })
+        .join('\n  ');
+      lines.push(`[${key}]\n  ${parts}`);
+    }
+  }
+  return lines.join('\n\n');
+}
+
 function ResultDisplay({ result, tool, copyText, copied }: {
   result: unknown; tool: string; copyText: (t: string, k: string) => void; copied: string;
 }) {
@@ -315,6 +327,27 @@ function ResultDisplay({ result, tool, copyText, copied }: {
         </div>
         <button
           onClick={() => copyText(text, 'text')}
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
+          aria-label="Copy"
+        >
+          {copied === 'text' ? <Check size={14} className="text-green-400" /> : <Copy size={14} className="text-gray-400" />}
+        </button>
+      </div>
+    );
+  }
+
+  // Nested object result (video_script as object) — flatten to readable text
+  const objKey = Object.keys(data).find((k) => typeof data[k] === 'object' && data[k] !== null && !Array.isArray(data[k]));
+  if (objKey) {
+    const obj = data[objKey] as Record<string, unknown>;
+    const flatText = flattenScript(obj);
+    return (
+      <div className="relative group">
+        <div className="p-3 rounded-lg text-sm leading-relaxed whitespace-pre-wrap" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+          {flatText}
+        </div>
+        <button
+          onClick={() => copyText(flatText, 'text')}
           className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
           aria-label="Copy"
         >
