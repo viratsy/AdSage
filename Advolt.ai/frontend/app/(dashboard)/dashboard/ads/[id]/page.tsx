@@ -17,6 +17,7 @@ export default function AdDetailsPage() {
   const [copied, setCopied] = useState('');
   const [notes, setNotes] = useState('');
   const [notesSaved, setNotesSaved] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['ad', id],
@@ -88,7 +89,7 @@ export default function AdDetailsPage() {
           <button onClick={() => toggleFav.mutate()} className="p-2 rounded-lg hover:bg-white/5" aria-label="Favorite">
             <Heart size={16} className={ad.favorite ? 'text-red-400 fill-red-400' : 'text-gray-400'} />
           </button>
-          <button onClick={() => { if (confirm('Delete this ad?')) deleteAd.mutate(); }} className="p-2 rounded-lg hover:bg-white/5" aria-label="Delete">
+          <button onClick={() => setShowDeleteModal(true)} className="p-2 rounded-lg hover:bg-white/5" aria-label="Delete">
             <Trash2 size={16} className="text-gray-400" />
           </button>
         </div>
@@ -272,6 +273,39 @@ export default function AdDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="rounded-xl p-6 w-full max-w-sm space-y-4 shadow-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-red-500/10">
+                <Trash2 size={20} className="text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold">Delete Ad</h3>
+            </div>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Are you sure you want to delete this ad? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-white/5"
+                style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowDeleteModal(false); deleteAd.mutate(); }}
+                disabled={deleteAd.isPending}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleteAd.isPending ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
