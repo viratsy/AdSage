@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { aiApi } from '@/lib/api';
-import { Wand2, FileText, Zap, MessageSquare, Image, Video, RefreshCw, Copy, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { aiApi, billingApi } from '@/lib/api';
+import { Wand2, FileText, Zap, MessageSquare, Image, Video, RefreshCw, Copy, Check, User } from 'lucide-react';
 
 const TOOLS = [
   { id: 'hooks', label: 'Hook Generator', icon: Zap, cost: 20, desc: 'Generate attention-grabbing hooks' },
@@ -21,6 +21,27 @@ export default function CreateStudioPage() {
   const [input, setInput] = useState<Record<string, string>>({});
   const [result, setResult] = useState<unknown>(null);
   const [copied, setCopied] = useState('');
+  const [usePersona, setUsePersona] = useState(true);
+
+  // Fetch user persona
+  const { data: billing } = useQuery({
+    queryKey: ['billing'],
+    queryFn: () => billingApi.status().then((r) => r.data),
+  });
+
+  const persona = billing?.business_persona;
+
+  // Prefill from persona when it loads
+  useEffect(() => {
+    if (persona && usePersona && !input.product) {
+      setInput((prev) => ({
+        ...prev,
+        product: persona.product_service || persona.business_name || '',
+        audience: persona.target_audience || '',
+        tone: persona.tone || persona.brand_voice || '',
+      }));
+    }
+  }, [persona, usePersona]);
 
   const generate = useMutation({
     mutationFn: () => aiApi.studio(activeTool, input).then((r) => r.data),
@@ -80,6 +101,30 @@ export default function CreateStudioPage() {
               <span className="text-xs font-normal ml-auto" style={{ color: 'var(--text-muted)' }}>{tool.cost} tokens</span>
             </h2>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{tool.desc}</p>
+
+            {/* Persona Toggle */}
+            {persona && (
+              <div className="flex items-center gap-2 p-2.5 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <User size={14} className="text-indigo-400 shrink-0" />
+                <span className="text-xs flex-1">Use Business Persona</span>
+                <button
+                  onClick={() => {
+                    setUsePersona(!usePersona);
+                    if (!usePersona && persona) {
+                      setInput((prev) => ({
+                        ...prev,
+                        product: persona.product_service || persona.business_name || '',
+                        audience: persona.target_audience || '',
+                        tone: persona.tone || persona.brand_voice || '',
+                      }));
+                    }
+                  }}
+                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${usePersona ? 'bg-indigo-500' : 'bg-gray-600'}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${usePersona ? 'left-[18px]' : 'left-0.5'}`} />
+                </button>
+              </div>
+            )}
 
             <InputField label="Product / Service" field="product" input={input} setInput={setInput} placeholder="e.g. AI-powered fitness app" />
             <InputField label="Target Audience" field="audience" input={input} setInput={setInput} placeholder="e.g. Busy professionals aged 25-40" />
