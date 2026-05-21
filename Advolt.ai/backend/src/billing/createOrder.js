@@ -36,9 +36,10 @@ exports.handler = async (event) => {
     const udf3 = pack_id || '';
 
     // PayU hash: sha512(key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||SALT)
-    const hashString = `${key}|${txnId}|${amount}|${productInfo}|${firstname}|${email}|${udf1}|${udf2}|${udf3}|||||||||||${salt}`;
+    const udf4 = '';
+    const udf5 = '';
+    const hashString = `${key}|${txnId}|${amount}|${productInfo}|${firstname}|${email}|${udf1}|${udf2}|${udf3}|${udf4}|${udf5}||||||${salt}`;
     const hash = crypto.createHash('sha512').update(hashString).digest('hex');
-    console.log('PayU hash input:', `${key}|${txnId}|${amount}|${productInfo}|${firstname}|${email}|udf1|udf2|udf3|||||||||||SALT`);
 
     const payuBaseUrl = 'https://secure.payu.in/_payment';
 
