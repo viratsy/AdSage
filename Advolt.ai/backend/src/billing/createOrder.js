@@ -27,7 +27,7 @@ exports.handler = async (event) => {
     // PayU hash generation
     const key = process.env.PAYU_MERCHANT_KEY;
     const salt = process.env.PAYU_SALT;
-    const amount = product.amount.toFixed(1);
+    const amount = String(product.amount) + '.0';
     const productInfo = product.label;
     const firstname = user.email.split('@')[0];
     const email = user.email;
@@ -35,9 +35,10 @@ exports.handler = async (event) => {
     const udf2 = purchase_type || '';
     const udf3 = pack_id || '';
 
-    // PayU hash: sha512(key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3||||||||salt)
-    const hashString = `${key}|${txnId}|${amount}|${productInfo}|${firstname}|${email}|${udf1}|${udf2}|${udf3}||||||||${salt}`;
+    // PayU hash: sha512(key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||SALT)
+    const hashString = `${key}|${txnId}|${amount}|${productInfo}|${firstname}|${email}|${udf1}|${udf2}|${udf3}|||||||||||${salt}`;
     const hash = crypto.createHash('sha512').update(hashString).digest('hex');
+    console.log('PayU hash input:', `${key}|${txnId}|${amount}|${productInfo}|${firstname}|${email}|udf1|udf2|udf3|||||||||||SALT`);
 
     const payuBaseUrl = process.env.STAGE === 'prod'
       ? 'https://secure.payu.in/_payment'
