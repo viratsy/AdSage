@@ -20,6 +20,33 @@ exports.handler = async (event) => {
 
   if (!ad_id || !video_url) return res.badRequest('ad_id and video_url required');
 
+  const TRANSCRIBE_COST = 30;
+
+  // Check and deduct tokens
+  const userResult = await ddb.send(new (require('@aws-sdk/lib-dynamodb').GetCommand)({
+    TableName: process.env.DYNAMODB_TABLE_USERS,
+    Key: { user_id: user.user_id },
+  }));
+  if (!userResult.Item) return res.unauthorized();
+
+  const { getUserTokenBalance } = require('/opt/nodejs/lib/tokenCosts');
+  const balance = getUserTokenBalance(userResult.Item);
+
+  if (userResult.Item.subscription_plan === 'pro' && userResult.Item.ai_provider !== 'own_key') {
+    if (balance.total < TRANSCRIBE_COST) {
+      return res.paymentRequired(JSON.stringify({ error: 'insufficient_tokens', required: TRANSCRIBE_COST, available: balance.total }));
+    }
+    const deductMonthly = Math.min(balance.monthly, TRANSCRIBE_COST);
+    const deductPurchased = TRANSCRIBE_COST - deductMonthly;
+    const updates = [];
+    const values = {};
+    if (deductMonthly > 0) { updates.push('monthly_tokens = monthly_tokens - :md'); values[':md'] = deductMonthly; }
+    if (deductPurchased > 0) { updates.push('purchased_tokens = purchased_tokens - :pd'); values[':pd'] = deductPurchased; }
+    if (updates.length) {
+      await ddb.send(new UpdateCommand({ TableName: process.env.DYNAMODB_TABLE_USERS, Key: { user_id: user.user_id }, UpdateExpression: `SET ${updates.join(', ')}`, ExpressionAttributeValues: values }));
+    }
+  }
+
   try {
     console.log('Transcribing video', { ad_id, video_url: video_url.substring(0, 80) });
 
@@ -69,7 +96,7 @@ exports.handler = async (event) => {
     await ddb.send(new UpdateCommand({
       TableName: process.env.DYNAMODB_TABLE_ADS,
       Key: { ad_id },
-      UpdateExpression: 'SET video_transcript = :t, primary_text = if_not_exists(primary_text, :t)',
+      UpdateExpression: 'SET video_transcript = :t',
       ExpressionAttributeValues: { ':t': transcript },
     }));
 
@@ -81,6 +108,10 @@ exports.handler = async (event) => {
 
   } catch (err) {
     console.error('Transcription failed', { ad_id, error: err.message });
+    // Refund tokens on failure
+    if (userResult.Item.subscription_plan === 'pro' && userResult.Item.ai_provider !== 'own_key') {
+      await ddb.send(new UpdateCommand({ TableName: process.env.DYNAMODB_TABLE_USERS, Key: { user_id: user.user_id }, UpdateExpression: 'ADD monthly_tokens :refund', ExpressionAttributeValues: { ':refund': TRANSCRIBE_COST } }));
+    }
     return res.serverError(`Transcription failed: ${err.message}`);
   }
 };
