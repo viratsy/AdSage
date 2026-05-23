@@ -757,6 +757,24 @@ Resources:
             Path: /projects/{id}
             Method: GET
 
+  UpdateProjectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-update-project-${Stage}"
+      CodeUri: src/projects/
+      Handler: updateProject.handler
+      Timeout: 30
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /projects/{id}
+            Method: PATCH
+
   DeleteProjectFunction:
     Type: AWS::Serverless::Function
     Properties:

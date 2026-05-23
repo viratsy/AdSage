@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api';
-import { FolderKanban, Plus, Trash2, Loader2, Sparkles, ChevronDown } from 'lucide-react';
+import { FolderKanban, Plus, Trash2, Loader2, Sparkles, ChevronDown, MoreVertical, Pencil, RefreshCw, Zap } from 'lucide-react';
 
 interface Project {
   project_id: string;
@@ -44,6 +44,9 @@ export default function CreatorStudioPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [prefillSource, setPrefillSource] = useState('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [openProjectId, setOpenProjectId] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -55,11 +58,12 @@ export default function CreatorStudioPage() {
 
   const createMutation = useMutation({
     mutationFn: (formData: typeof EMPTY_FORM) => projectsApi.create(formData).then((r) => r.data),
-    onSuccess: () => {
+    onSuccess: (newProject) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setShowCreate(false);
       setForm(EMPTY_FORM);
       setPrefillSource('');
+      setSelectedProject(newProject);
     },
   });
 
@@ -68,6 +72,25 @@ export default function CreatorStudioPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setSelectedProject(null);
+      setMenuOpen(null);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      projectsApi.update(id, data).then((r) => r.data),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setSelectedProject(updated);
+      setEditingProject(null);
+    },
+  });
+
+  const reanalyzeMutation = useMutation({
+    mutationFn: (id: string) => projectsApi.update(id, { reanalyze: true }).then((r) => r.data),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setSelectedProject(updated);
     },
   });
 
@@ -97,6 +120,45 @@ export default function CreatorStudioPage() {
     createMutation.mutate(form);
   };
 
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProject) return;
+    updateMutation.mutate({
+      id: editingProject.project_id,
+      data: {
+        project_name: editingProject.project_name,
+        business_name: editingProject.business_name,
+        business_niche: editingProject.business_niche,
+        product_name: editingProject.product_name,
+        product_description: editingProject.product_description,
+        key_features: editingProject.key_features,
+        key_benefits: editingProject.key_benefits,
+        usp: editingProject.usp,
+        reanalyze: true,
+      },
+    });
+  };
+
+  // Open project view (new page with "Advolt AI" heading)
+  if (openProjectId) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6">
+        <button
+          onClick={() => setOpenProjectId(null)}
+          className="text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          ← Back to projects
+        </button>
+        <div className="flex items-center justify-center py-20">
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Zap size={28} className="text-indigo-400" />
+            Advolt AI
+          </h1>
+        </div>
+      </div>
+    );
+  }
+
   // Project detail view
   if (selectedProject) {
     return (
@@ -111,12 +173,13 @@ export default function CreatorStudioPage() {
         <div className="rounded-xl p-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-bold">{selectedProject.project_name}</h1>
-            <button
-              onClick={() => deleteMutation.mutate(selectedProject.project_id)}
-              className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-            >
-              <Trash2 size={16} />
-            </button>
+            <div className="relative">
+              <ThreeDotMenu
+                onEdit={() => setEditingProject({ ...selectedProject })}
+                onDelete={() => deleteMutation.mutate(selectedProject.project_id)}
+                onOpen={() => setOpenProjectId(selectedProject.project_id)}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -167,9 +230,22 @@ export default function CreatorStudioPage() {
         {/* AI Analysis */}
         {selectedProject.ai_analysis && (
           <div className="rounded-xl p-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
-              <Sparkles size={18} className="text-indigo-400" /> AI Analysis
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Sparkles size={18} className="text-indigo-400" /> AI Analysis
+              </h2>
+              <button
+                onClick={() => reanalyzeMutation.mutate(selectedProject.project_id)}
+                disabled={reanalyzeMutation.isPending}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 transition-colors disabled:opacity-50"
+              >
+                {reanalyzeMutation.isPending ? (
+                  <><Loader2 size={12} className="animate-spin" /> Re-analyzing...</>
+                ) : (
+                  <><RefreshCw size={12} /> Redo Analysis</>
+                )}
+              </button>
+            </div>
 
             <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
               {selectedProject.ai_analysis.summary}
@@ -257,6 +333,24 @@ export default function CreatorStudioPage() {
             )}
           </div>
         )}
+
+        {!selectedProject.ai_analysis && (
+          <div className="rounded-xl p-6 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <Sparkles size={24} className="mx-auto text-gray-600 mb-2" />
+            <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>No AI analysis yet.</p>
+            <button
+              onClick={() => reanalyzeMutation.mutate(selectedProject.project_id)}
+              disabled={reanalyzeMutation.isPending}
+              className="flex items-center gap-2 mx-auto px-4 py-2 rounded-lg text-sm font-medium bg-indigo-500 hover:bg-indigo-600 text-white transition-colors disabled:opacity-50"
+            >
+              {reanalyzeMutation.isPending ? (
+                <><Loader2 size={14} className="animate-spin" /> Analyzing...</>
+              ) : (
+                <><Sparkles size={14} /> Run AI Analysis</>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -290,7 +384,6 @@ export default function CreatorStudioPage() {
           >
             <h2 className="text-lg font-semibold mb-4">Create New Project</h2>
 
-            {/* Prefill dropdown */}
             {projects.length > 0 && (
               <div className="mb-4">
                 <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
@@ -357,6 +450,51 @@ export default function CreatorStudioPage() {
         </div>
       )}
 
+      {/* Edit Project Modal */}
+      {editingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl p-6 shadow-2xl"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+          >
+            <h2 className="text-lg font-semibold mb-4">Edit Project</h2>
+
+            <form onSubmit={handleEditSubmit} className="space-y-3">
+              <Field label="Project Name *" value={editingProject.project_name} onChange={(v) => setEditingProject({ ...editingProject, project_name: v })} placeholder="Project name" />
+              <Field label="Business Name *" value={editingProject.business_name} onChange={(v) => setEditingProject({ ...editingProject, business_name: v })} placeholder="Business name" />
+              <Field label="Business Niche *" value={editingProject.business_niche} onChange={(v) => setEditingProject({ ...editingProject, business_niche: v })} placeholder="Business niche" />
+              <Field label="Product/Service Name *" value={editingProject.product_name} onChange={(v) => setEditingProject({ ...editingProject, product_name: v })} placeholder="Product name" />
+              <Field label="Brief Description" value={editingProject.product_description} onChange={(v) => setEditingProject({ ...editingProject, product_description: v })} placeholder="Description" multiline />
+              <Field label="Key Features" value={editingProject.key_features} onChange={(v) => setEditingProject({ ...editingProject, key_features: v })} placeholder="Key features" multiline />
+              <Field label="Key Benefits" value={editingProject.key_benefits} onChange={(v) => setEditingProject({ ...editingProject, key_benefits: v })} placeholder="Key benefits" multiline />
+              <Field label="USP / Differentiators" value={editingProject.usp} onChange={(v) => setEditingProject({ ...editingProject, usp: v })} placeholder="USP" multiline />
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingProject(null)}
+                  className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateMutation.isPending || !editingProject.project_name || !editingProject.business_name || !editingProject.business_niche || !editingProject.product_name}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-indigo-500 hover:bg-indigo-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {updateMutation.isPending ? (
+                    <><Loader2 size={14} className="animate-spin" /> Saving...</>
+                  ) : (
+                    <><Pencil size={14} /> Save & Re-analyze</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Projects Grid */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
@@ -372,25 +510,36 @@ export default function CreatorStudioPage() {
           {projects.map((project) => (
             <div
               key={project.project_id}
-              onClick={() => setSelectedProject(project)}
-              className="rounded-xl p-5 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg"
+              className="rounded-xl p-5 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg relative group"
               style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
             >
-              <h3 className="font-semibold text-sm mb-2 truncate">{project.project_name}</h3>
-              <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{project.business_name}</p>
-              <div className="flex items-center gap-2 mt-3">
-                <span className="px-2 py-0.5 rounded-full text-xs bg-indigo-500/20 text-indigo-300">
-                  {project.business_niche}
-                </span>
-                {project.ai_analysis && (
-                  <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 flex items-center gap-1">
-                    <Sparkles size={10} /> Analyzed
-                  </span>
-                )}
+              {/* 3-dot menu on card */}
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <CardMenu
+                  onView={() => setSelectedProject(project)}
+                  onEdit={() => setEditingProject({ ...project })}
+                  onOpen={() => setOpenProjectId(project.project_id)}
+                  onDelete={() => deleteMutation.mutate(project.project_id)}
+                />
               </div>
-              <p className="text-xs mt-3 truncate" style={{ color: 'var(--text-muted)' }}>
-                {project.product_name}
-              </p>
+
+              <div onClick={() => setSelectedProject(project)}>
+                <h3 className="font-semibold text-sm mb-2 truncate pr-8">{project.project_name}</h3>
+                <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{project.business_name}</p>
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-indigo-500/20 text-indigo-300">
+                    {project.business_niche}
+                  </span>
+                  {project.ai_analysis && (
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 flex items-center gap-1">
+                      <Sparkles size={10} /> Analyzed
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs mt-3 truncate" style={{ color: 'var(--text-muted)' }}>
+                  {project.product_name}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -399,6 +548,114 @@ export default function CreatorStudioPage() {
   );
 }
 
+
+// ── 3-dot menu for project detail view ──
+function ThreeDotMenu({ onEdit, onDelete, onOpen }: { onEdit: () => void; onDelete: () => void; onOpen: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+      >
+        <MoreVertical size={16} />
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-1 w-40 rounded-lg py-1 shadow-xl z-50"
+          style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
+        >
+          <button
+            onClick={() => { onOpen(); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-white/5 transition-colors"
+          >
+            <Zap size={14} /> Open Studio
+          </button>
+          <button
+            onClick={() => { onEdit(); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-white/5 transition-colors"
+          >
+            <Pencil size={14} /> Edit Details
+          </button>
+          <button
+            onClick={() => { onDelete(); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+          >
+            <Trash2 size={14} /> Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── 3-dot menu for project cards ──
+function CardMenu({ onView, onEdit, onOpen, onDelete }: { onView: () => void; onEdit: () => void; onOpen: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+      >
+        <MoreVertical size={14} />
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-1 w-36 rounded-lg py-1 shadow-xl z-50"
+          style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
+        >
+          <button
+            onClick={() => { onView(); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/5 transition-colors"
+          >
+            <FolderKanban size={12} /> View Details
+          </button>
+          <button
+            onClick={() => { onOpen(); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/5 transition-colors"
+          >
+            <Zap size={12} /> Open Studio
+          </button>
+          <button
+            onClick={() => { onEdit(); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/5 transition-colors"
+          >
+            <Pencil size={12} /> Edit
+          </button>
+          <button
+            onClick={() => { onDelete(); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+          >
+            <Trash2 size={12} /> Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Reusable field component ──
 function Field({ label, value, onChange, placeholder, multiline }: {
   label: string;
   value: string;

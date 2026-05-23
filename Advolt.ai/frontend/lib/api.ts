@@ -96,5 +96,6 @@ export const projectsApi = {
     key_benefits?: string;
     usp?: string;
   }) => api.post('/projects', data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/projects/${id}`, data),
   delete: (id: string) => api.delete(`/projects/${id}`),
 };
