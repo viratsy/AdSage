@@ -12,6 +12,7 @@ Globals:
         DYNAMODB_TABLE_ADS: !Ref AdsTable
         DYNAMODB_TABLE_AI: !Ref AiAnalysisTable
         DYNAMODB_TABLE_USERS: !Ref UsersTable
+        DYNAMODB_TABLE_PROJECTS: !Ref ProjectsTable
         ADS_BUCKET: !Ref MediaBucket
         CLOUDFRONT_URL: !Sub "https://${MediaDistribution.DomainName}"
         COGNITO_USER_POOL_ID: !Ref UserPool
@@ -212,6 +213,31 @@ Resources:
       KeySchema:
         - AttributeName: user_id
           KeyType: HASH
+
+  ProjectsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "advolt-projects-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: project_id
+          AttributeType: S
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: S
+      KeySchema:
+        - AttributeName: project_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: user-created-index
+          KeySchema:
+            - AttributeName: user_id
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
 
 # ─────────────────────────────────────────────
 # S3 + CLOUDFRONT
@@ -674,6 +700,79 @@ Resources:
             RestApiId: !Ref AdvoltApi
             Path: /ai/studio
             Method: POST
+
+# ─────────────────────────────────────────────
+# LAMBDA — PROJECTS
+# ─────────────────────────────────────────────
+
+  CreateProjectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-create-project-${Stage}"
+      CodeUri: src/projects/
+      Handler: createProject.handler
+      Timeout: 30
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /projects
+            Method: POST
+
+  GetProjectsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-get-projects-${Stage}"
+      CodeUri: src/projects/
+      Handler: getProjects.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ProjectsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /projects
+            Method: GET
+
+  GetProjectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-get-project-${Stage}"
+      CodeUri: src/projects/
+      Handler: getProject.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ProjectsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /projects/{id}
+            Method: GET
+
+  DeleteProjectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-delete-project-${Stage}"
+      CodeUri: src/projects/
+      Handler: deleteProject.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /projects/{id}
+            Method: DELETE
 
 # ─────────────────────────────────────────────
 # LAMBDA — MEDIA

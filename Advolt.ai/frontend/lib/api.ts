@@ -81,3 +81,20 @@ export const profileApi = {
   savePersona: (answers: Record<string, string>, persona: Record<string, unknown>) =>
     api.post('/auth/persona', { answers, persona, save_final: true }),
 };
+
+// ── Projects ──────────────────────────────────────────────────────────────────
+export const projectsApi = {
+  list: () => api.get('/projects'),
+  get: (id: string) => api.get(`/projects/${id}`),
+  create: (data: {
+    project_name: string;
+    business_name: string;
+    business_niche: string;
+    product_name: string;
+    product_description?: string;
+    key_features?: string;
+    key_benefits?: string;
+    usp?: string;
+  }) => api.post('/projects', data),
+  delete: (id: string) => api.delete(`/projects/${id}`),
+};
