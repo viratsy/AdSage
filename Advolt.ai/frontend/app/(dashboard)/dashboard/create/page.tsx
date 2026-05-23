@@ -285,8 +285,14 @@ function ResultDisplay({ result, tool, copyText, copied }: {
 
   const data = result as Record<string, unknown>;
 
+  // Filter out null values
+  const validKeys = Object.keys(data).filter((k) => data[k] != null);
+  if (!validKeys.length) {
+    return <p className="text-sm text-red-400">Generation returned empty result. Tokens were refunded.</p>;
+  }
+
   // List results (hooks, ctas, copies, rewrites, prompts)
-  const listKey = Object.keys(data).find((k) => Array.isArray(data[k]));
+  const listKey = validKeys.find((k) => Array.isArray(data[k]));
   if (listKey) {
     const items = (data[listKey] as unknown[]).map((item) => {
       if (typeof item === 'string') return item;
@@ -317,7 +323,7 @@ function ResultDisplay({ result, tool, copyText, copied }: {
   }
 
   // Text results (long_copy, video_script)
-  const textKey = Object.keys(data).find((k) => typeof data[k] === 'string');
+  const textKey = validKeys.find((k) => typeof data[k] === 'string');
   if (textKey) {
     const text = data[textKey] as string;
     return (
@@ -337,7 +343,7 @@ function ResultDisplay({ result, tool, copyText, copied }: {
   }
 
   // Nested object result (video_script as object) — flatten to readable text
-  const objKey = Object.keys(data).find((k) => typeof data[k] === 'object' && data[k] !== null && !Array.isArray(data[k]));
+  const objKey = validKeys.find((k) => typeof data[k] === 'object' && data[k] !== null && !Array.isArray(data[k]));
   if (objKey) {
     const obj = data[objKey] as Record<string, unknown>;
     const flatText = flattenScript(obj);
