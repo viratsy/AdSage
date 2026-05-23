@@ -523,7 +523,7 @@ export default function CreatorStudioPage() {
                 />
               </div>
 
-              <div onClick={() => setSelectedProject(project)}>
+              <div onClick={() => setOpenProjectId(project.project_id)}>
                 <h3 className="font-semibold text-sm mb-2 truncate pr-8">{project.project_name}</h3>
                 <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{project.business_name}</p>
                 <div className="flex items-center gap-2 mt-3">
