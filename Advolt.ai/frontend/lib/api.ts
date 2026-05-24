@@ -98,4 +98,8 @@ export const projectsApi = {
   }) => api.post('/projects', data),
   update: (id: string, data: Record<string, unknown>) => api.patch(`/projects/${id}`, data),
   delete: (id: string) => api.delete(`/projects/${id}`),
+  generate: (id: string, tool: string, input?: Record<string, string>) =>
+    api.post(`/projects/${id}/generate`, { tool, input }),
+  saveIntelligence: (id: string, tool: string, value: unknown) =>
+    api.post(`/projects/${id}/intelligence`, { tool, value }),
 };

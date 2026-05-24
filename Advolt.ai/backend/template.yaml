@@ -775,6 +775,41 @@ Resources:
             Path: /projects/{id}
             Method: PATCH
 
+  GenerateAssetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-generate-asset-${Stage}"
+      CodeUri: src/projects/
+      Handler: generateAsset.handler
+      Timeout: 30
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /projects/{id}/generate
+            Method: POST
+
+  SaveIntelligenceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-save-intelligence-${Stage}"
+      CodeUri: src/projects/
+      Handler: saveIntelligence.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /projects/{id}/intelligence
+            Method: POST
+
   DeleteProjectFunction:
     Type: AWS::Serverless::Function
     Properties:

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { projectsApi } from '@/lib/api';
 import { FolderKanban, Plus, Trash2, Loader2, Sparkles, ChevronDown, MoreVertical, Pencil, RefreshCw, Zap } from 'lucide-react';
 
@@ -34,8 +35,6 @@ const EMPTY_FORM = {
   business_niche: '',
   product_name: '',
   product_description: '',
-  key_features: '',
-  key_benefits: '',
   usp: '',
 };
 
@@ -48,6 +47,7 @@ export default function CreatorStudioPage() {
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { data, isLoading } = useQuery({
     queryKey: ['projects'],
@@ -108,8 +108,6 @@ export default function CreatorStudioPage() {
         business_niche: source.business_niche,
         product_name: source.product_name,
         product_description: source.product_description,
-        key_features: source.key_features,
-        key_benefits: source.key_benefits,
         usp: source.usp,
       });
     }
@@ -139,24 +137,10 @@ export default function CreatorStudioPage() {
     });
   };
 
-  // Open project view (new page with "Advolt AI" heading)
+  // Open project view (studio)
   if (openProjectId) {
-    return (
-      <div className="max-w-5xl mx-auto space-y-6">
-        <button
-          onClick={() => setOpenProjectId(null)}
-          className="text-sm text-gray-400 hover:text-white transition-colors"
-        >
-          ← Back to projects
-        </button>
-        <div className="flex items-center justify-center py-20">
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Zap size={28} className="text-indigo-400" />
-            Advolt AI
-          </h1>
-        </div>
-      </div>
-    );
+    router.push(`/dashboard/projects/studio?id=${openProjectId}`);
+    return null;
   }
 
   // Project detail view
@@ -414,8 +398,6 @@ export default function CreatorStudioPage() {
               <Field label="Business Niche *" value={form.business_niche} onChange={(v) => setForm({ ...form, business_niche: v })} placeholder="e.g. E-commerce, SaaS, Edtech" />
               <Field label="Product/Service Name *" value={form.product_name} onChange={(v) => setForm({ ...form, product_name: v })} placeholder="e.g. SmartLearn Pro" />
               <Field label="Brief Description" value={form.product_description} onChange={(v) => setForm({ ...form, product_description: v })} placeholder="1-2 sentences about what it is" multiline />
-              <Field label="Key Features" value={form.key_features} onChange={(v) => setForm({ ...form, key_features: v })} placeholder="What it does — list main features" multiline />
-              <Field label="Key Benefits" value={form.key_benefits} onChange={(v) => setForm({ ...form, key_benefits: v })} placeholder="Why it matters to the customer" multiline />
               <Field label="USP / Differentiators" value={form.usp} onChange={(v) => setForm({ ...form, usp: v })} placeholder="What makes it better or different from competitors" multiline />
 
               <div className="flex gap-3 pt-2">
@@ -433,9 +415,9 @@ export default function CreatorStudioPage() {
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-indigo-500 hover:bg-indigo-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {createMutation.isPending ? (
-                    <><Loader2 size={14} className="animate-spin" /> Analyzing...</>
+                    <><Loader2 size={14} className="animate-spin" /> Creating...</>
                   ) : (
-                    <><Sparkles size={14} /> Create & Analyze</>
+                    <><Sparkles size={14} /> Create Project</>
                   )}
                 </button>
               </div>
@@ -465,8 +447,6 @@ export default function CreatorStudioPage() {
               <Field label="Business Niche *" value={editingProject.business_niche} onChange={(v) => setEditingProject({ ...editingProject, business_niche: v })} placeholder="Business niche" />
               <Field label="Product/Service Name *" value={editingProject.product_name} onChange={(v) => setEditingProject({ ...editingProject, product_name: v })} placeholder="Product name" />
               <Field label="Brief Description" value={editingProject.product_description} onChange={(v) => setEditingProject({ ...editingProject, product_description: v })} placeholder="Description" multiline />
-              <Field label="Key Features" value={editingProject.key_features} onChange={(v) => setEditingProject({ ...editingProject, key_features: v })} placeholder="Key features" multiline />
-              <Field label="Key Benefits" value={editingProject.key_benefits} onChange={(v) => setEditingProject({ ...editingProject, key_benefits: v })} placeholder="Key benefits" multiline />
               <Field label="USP / Differentiators" value={editingProject.usp} onChange={(v) => setEditingProject({ ...editingProject, usp: v })} placeholder="USP" multiline />
 
               <div className="flex gap-3 pt-2">
