@@ -50,6 +50,16 @@ interface Project {
   usp: string;
   intelligence?: Intelligence;
   assets?: Asset[];
+  ai_analysis?: {
+    summary?: string;
+    target_keywords?: string[];
+    suggested_audiences?: string[];
+    tone_recommendations?: string[];
+    content_angles?: string[];
+    pain_points?: string[];
+    value_propositions?: string[];
+    competitive_edge?: string;
+  };
 }
 
 interface GenerateResponse {
@@ -90,6 +100,8 @@ export default function ProjectStudioPage() {
   const [selectedAudience, setSelectedAudience] = useState<AudienceProfile | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [selectedAngles, setSelectedAngles] = useState<EmotionalAngle[]>([]);
+  const [showNotes, setShowNotes] = useState(false);
+  const [notes, setNotes] = useState('');
 
   const { data: project, isLoading } = useQuery<Project>({
     queryKey: ['project', projectId],
@@ -171,11 +183,16 @@ export default function ProjectStudioPage() {
     setSelectedAudience(null);
     setSelectedItems([]);
     setSelectedAngles([]);
+    setShowNotes(false);
+    setNotes('');
   };
 
   const handleGenerate = () => {
     if (!activeTool) return;
-    generateMutation.mutate({ tool: activeTool, input: Object.keys(input).length > 0 ? input : undefined });
+    const inp = { ...input };
+    if (notes) inp.custom = notes;
+    generateMutation.mutate({ tool: activeTool, input: Object.keys(inp).length > 0 ? inp : undefined });
+    setShowNotes(false);
   };
 
   const handleResolveDep = (dep: string) => {
@@ -295,6 +312,46 @@ export default function ProjectStudioPage() {
               {/* Input area */}
               {!missingDeps && !generatedOptions && !generatedAsset && (
                 <div className="space-y-3">
+                  {/* Pre-suggestions from ai_analysis */}
+                  {activeTool === 'audience' && !intelligence.audience && project.ai_analysis?.suggested_audiences && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Suggested from your project analysis:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {project.ai_analysis.suggested_audiences.map((aud, i) => (
+                          <span key={i} className="px-3 py-1.5 rounded-lg text-xs bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                            {aud}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTool === 'pain_points' && !intelligence.pain_points?.length && project.ai_analysis?.pain_points && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Suggested from your project analysis:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {project.ai_analysis.pain_points.map((pp, i) => (
+                          <span key={i} className="px-3 py-1.5 rounded-lg text-xs bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                            {pp}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTool === 'emotional_angles' && !intelligence.emotional_angles?.length && project.ai_analysis?.content_angles && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Content angles from your analysis:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {project.ai_analysis.content_angles.map((angle, i) => (
+                          <span key={i} className="px-3 py-1.5 rounded-lg text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                            {angle}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {activeTool === 'audience' && (
                     <div>
                       <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Describe your ideal customer (optional)</label>
@@ -382,18 +439,21 @@ export default function ProjectStudioPage() {
                       <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{opt.situation}</p>
                     </div>
                   ))}
-                  <div className="flex gap-2 pt-2">
-                    <button onClick={handleGenerate} disabled={generateMutation.isPending} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:bg-white/5">
-                      <RefreshCw size={12} /> Regenerate
-                    </button>
-                    <button
-                      onClick={() => selectedAudience && saveMutation.mutate({ tool: 'audience', value: selectedAudience })}
-                      disabled={!selectedAudience || saveMutation.isPending}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
-                    >
-                      {saveMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Confirm
-                    </button>
-                  </div>
+                  <NotesAndRegenerate
+                    showNotes={showNotes}
+                    notes={notes}
+                    onToggleNotes={() => setShowNotes(!showNotes)}
+                    onNotesChange={setNotes}
+                    onRegenerate={handleGenerate}
+                    isRegenerating={generateMutation.isPending}
+                  />
+                  <button
+                    onClick={() => selectedAudience && saveMutation.mutate({ tool: 'audience', value: selectedAudience })}
+                    disabled={!selectedAudience || saveMutation.isPending}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
+                  >
+                    {saveMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Confirm
+                  </button>
                 </div>
               )}
 
@@ -414,18 +474,21 @@ export default function ProjectStudioPage() {
                       </label>
                     ))}
                   </div>
-                  <div className="flex gap-2 pt-2">
-                    <button onClick={handleGenerate} disabled={generateMutation.isPending} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:bg-white/5">
-                      <RefreshCw size={12} /> Regenerate
-                    </button>
-                    <button
-                      onClick={() => saveMutation.mutate({ tool: activeTool, value: selectedItems })}
-                      disabled={selectedItems.length === 0 || saveMutation.isPending}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
-                    >
-                      {saveMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save ({selectedItems.length})
-                    </button>
-                  </div>
+                  <NotesAndRegenerate
+                    showNotes={showNotes}
+                    notes={notes}
+                    onToggleNotes={() => setShowNotes(!showNotes)}
+                    onNotesChange={setNotes}
+                    onRegenerate={handleGenerate}
+                    isRegenerating={generateMutation.isPending}
+                  />
+                  <button
+                    onClick={() => saveMutation.mutate({ tool: activeTool, value: selectedItems })}
+                    disabled={selectedItems.length === 0 || saveMutation.isPending}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
+                  >
+                    {saveMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save ({selectedItems.length})
+                  </button>
                 </div>
               )}
 
@@ -456,18 +519,21 @@ export default function ProjectStudioPage() {
                       </label>
                     ))}
                   </div>
-                  <div className="flex gap-2 pt-2">
-                    <button onClick={handleGenerate} disabled={generateMutation.isPending} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:bg-white/5">
-                      <RefreshCw size={12} /> Regenerate
-                    </button>
-                    <button
-                      onClick={() => saveMutation.mutate({ tool: 'emotional_angles', value: selectedAngles })}
-                      disabled={selectedAngles.length === 0 || saveMutation.isPending}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
-                    >
-                      {saveMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save ({selectedAngles.length})
-                    </button>
-                  </div>
+                  <NotesAndRegenerate
+                    showNotes={showNotes}
+                    notes={notes}
+                    onToggleNotes={() => setShowNotes(!showNotes)}
+                    onNotesChange={setNotes}
+                    onRegenerate={handleGenerate}
+                    isRegenerating={generateMutation.isPending}
+                  />
+                  <button
+                    onClick={() => saveMutation.mutate({ tool: 'emotional_angles', value: selectedAngles })}
+                    disabled={selectedAngles.length === 0 || saveMutation.isPending}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
+                  >
+                    {saveMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save ({selectedAngles.length})
+                  </button>
                 </div>
               )}
 
@@ -492,12 +558,15 @@ export default function ProjectStudioPage() {
                       );
                     })}
                   </div>
-                  <button
-                    onClick={() => { setGeneratedAsset(null); }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-indigo-300 hover:bg-indigo-500/10 transition-colors"
-                  >
-                    <RefreshCw size={12} /> Generate More
-                  </button>
+                  <NotesAndRegenerate
+                    showNotes={showNotes}
+                    notes={notes}
+                    onToggleNotes={() => setShowNotes(!showNotes)}
+                    onNotesChange={setNotes}
+                    onRegenerate={() => { setGeneratedAsset(null); handleGenerate(); }}
+                    isRegenerating={generateMutation.isPending}
+                    label="Generate More"
+                  />
                 </div>
               )}
             </div>
@@ -558,6 +627,48 @@ function PreviousAssets({ assets, onCopy, copied }: { assets: Asset[]; onCopy: (
           })}
         </div>
       ))}
+    </div>
+  );
+}
+
+
+function NotesAndRegenerate({ showNotes, notes, onToggleNotes, onNotesChange, onRegenerate, isRegenerating, label }: {
+  showNotes: boolean;
+  notes: string;
+  onToggleNotes: () => void;
+  onNotesChange: (v: string) => void;
+  onRegenerate: () => void;
+  isRegenerating: boolean;
+  label?: string;
+}) {
+  return (
+    <div className="space-y-2 pt-2">
+      {showNotes && (
+        <textarea
+          value={notes}
+          onChange={(e) => onNotesChange(e.target.value)}
+          placeholder="Any suggestions or notes for regeneration? e.g. Make it more specific to B2B, focus on cost savings..."
+          rows={2}
+          className="w-full px-3 py-2 rounded-lg text-xs resize-none"
+          style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+          autoFocus
+        />
+      )}
+      <div className="flex gap-2">
+        <button
+          onClick={onToggleNotes}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:bg-white/5 transition-colors"
+        >
+          {showNotes ? 'Hide notes' : '+ Add notes'}
+        </button>
+        <button
+          onClick={onRegenerate}
+          disabled={isRegenerating}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-indigo-300 hover:bg-indigo-500/10 transition-colors disabled:opacity-50"
+        >
+          {isRegenerating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} {label || 'Regenerate'}
+        </button>
+      </div>
     </div>
   );
 }
