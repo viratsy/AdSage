@@ -43,6 +43,9 @@ const callGroq = async (prompt, maxTokens = 2000) => {
 // Dependencies: what each tool needs before it can run
 const DEPENDENCIES = {
   audience: [],
+  audience_meta: ['audience'],
+  audience_google: ['audience'],
+  audience_linkedin: ['audience'],
   pain_points: ['audience'],
   desires: ['audience'],
   objections: ['audience', 'pain_points'],
@@ -57,6 +60,7 @@ const DEPENDENCIES = {
 };
 
 const FOUNDATION_TOOLS = ['audience', 'pain_points', 'desires', 'objections', 'emotional_angles'];
+const ASSET_TOOLS_WITH_PLATFORM = ['audience_meta', 'audience_google', 'audience_linkedin'];
 
 const buildContext = (project) => {
   const parts = [];
@@ -83,6 +87,61 @@ ${input?.description ? `User says their ideal customer is: ${input.description}`
 
 Generate 3 target audience profile options for this business. Each should be distinct.
 Return JSON: { "options": [{ "label": "short name", "demographics": "age, gender, location, income", "psychographics": "interests, values, lifestyle", "situation": "what's happening in their life that makes them need this", "awareness_level": "unaware/problem-aware/solution-aware/product-aware" }] }`,
+
+  audience_meta: (ctx, input) => `
+${ctx}
+${input?.custom ? `Additional notes: ${input.custom}` : ''}
+
+Based on the target audience, generate Meta (Facebook/Instagram) ad targeting suggestions that the user can directly copy-paste into Meta Ads Manager.
+
+Return JSON: {
+  "items": [{
+    "interests": ["list of 10-15 interests to target"],
+    "behaviors": ["list of 5-8 behaviors"],
+    "demographics_targeting": "Age range, gender, locations to set",
+    "custom_audience_ideas": ["3 custom audience suggestions"],
+    "lookalike_suggestions": ["2-3 lookalike audience ideas"],
+    "exclusions": ["2-3 audiences to exclude"],
+    "budget_recommendation": "Suggested daily budget range and bidding strategy"
+  }]
+}`,
+
+  audience_google: (ctx, input) => `
+${ctx}
+${input?.custom ? `Additional notes: ${input.custom}` : ''}
+
+Based on the target audience, generate Google Ads targeting suggestions that the user can directly copy-paste into Google Ads.
+
+Return JSON: {
+  "items": [{
+    "search_keywords": ["15-20 keywords to target"],
+    "negative_keywords": ["5-8 negative keywords"],
+    "in_market_audiences": ["5-7 in-market audience segments"],
+    "affinity_audiences": ["5-7 affinity audience segments"],
+    "demographics_targeting": "Age, gender, household income, parental status",
+    "device_targeting": "Recommended device strategy",
+    "ad_schedule": "Recommended days/hours to run ads"
+  }]
+}`,
+
+  audience_linkedin: (ctx, input) => `
+${ctx}
+${input?.custom ? `Additional notes: ${input.custom}` : ''}
+
+Based on the target audience, generate LinkedIn Ads targeting suggestions that the user can directly copy-paste into LinkedIn Campaign Manager.
+
+Return JSON: {
+  "items": [{
+    "job_titles": ["10-15 job titles to target"],
+    "industries": ["5-8 industries"],
+    "company_sizes": ["company size ranges"],
+    "seniority_levels": ["relevant seniority levels"],
+    "skills": ["8-10 skills to target"],
+    "groups": ["3-5 LinkedIn groups to consider"],
+    "education": "Degree levels and fields of study",
+    "years_experience": "Experience range to target"
+  }]
+}`,
 
   pain_points: (ctx, input) => `
 ${ctx}
@@ -215,22 +274,24 @@ exports.handler = async (event) => {
       // Foundation: save to intelligence
       const value = aiResult.options || aiResult;
       
+      // First ensure intelligence map exists, then set the tool value
+      const currentIntel = project.intelligence || {};
+      currentIntel[tool] = value;
+
       await ddb.send(new UpdateCommand({
         TableName: TABLE,
         Key: { project_id: projectId },
-        UpdateExpression: 'SET intelligence.#tool = :val, updated_at = :now',
-        ExpressionAttributeNames: { '#tool': tool },
-        ExpressionAttributeValues: { ':val': value, ':now': new Date().toISOString() },
+        UpdateExpression: 'SET intelligence = :intel, updated_at = :now',
+        ExpressionAttributeValues: { ':intel': currentIntel, ':now': new Date().toISOString() },
       }));
 
       return res.ok({ status: 'options', tool, options: value });
     } else {
-      // Asset: append to assets array
+      // Asset (including platform targeting): append to assets array
       const items = aiResult.items || [aiResult];
       const timestamp = new Date().toISOString();
       const asset = { id: `${tool}_${Date.now()}`, tool, items, input: input || {}, created_at: timestamp };
 
-      // Get current assets or initialize
       const currentAssets = project.assets || [];
       currentAssets.push(asset);
 

@@ -414,6 +414,16 @@ export default function ProjectStudioPage() {
                     </div>
                   )}
 
+                  {/* Platform targeting tabs (after audience is set) */}
+                  {activeTool === 'audience' && getFoundationStatus('audience') && (
+                    <PlatformTargeting
+                      projectId={projectId!}
+                      assets={assets}
+                      onCopy={copyText}
+                      copied={copied}
+                    />
+                  )}
+
                   {/* Previous assets */}
                   {TOOLS.find(t => t.id === activeTool)?.category === 'asset' && (
                     <PreviousAssets assets={assets.filter(a => a.tool === activeTool)} onCopy={copyText} copied={copied} />
@@ -669,6 +679,142 @@ function NotesAndRegenerate({ showNotes, notes, onToggleNotes, onNotesChange, on
           {isRegenerating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} {label || 'Regenerate'}
         </button>
       </div>
+    </div>
+  );
+}
+
+
+function PlatformTargeting({ projectId, assets, onCopy, copied }: {
+  projectId: string;
+  assets: Asset[];
+  onCopy: (text: string, key: string) => void;
+  copied: string;
+}) {
+  const [activeTab, setActiveTab] = useState<'meta' | 'google' | 'linkedin'>('meta');
+  const [notes, setNotes] = useState('');
+  const [showNotes, setShowNotes] = useState(false);
+  const queryClient = useQueryClient();
+
+  const generateMutation = useMutation({
+    mutationFn: (platform: string) =>
+      projectsApi.generate(projectId, `audience_${platform}`, notes ? { custom: notes } : undefined).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      setNotes('');
+      setShowNotes(false);
+    },
+  });
+
+  const tabs = [
+    { id: 'meta' as const, label: 'Meta' },
+    { id: 'google' as const, label: 'Google' },
+    { id: 'linkedin' as const, label: 'LinkedIn' },
+  ];
+
+  const platformAssets = assets.filter(a => a.tool === `audience_${activeTab}`);
+  const latestAsset = platformAssets.length > 0 ? platformAssets[platformAssets.length - 1] : null;
+
+  return (
+    <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+      <p className="text-sm font-medium mb-3">Platform Targeting</p>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-4">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
+              activeTab === tab.id ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-400 hover:bg-white/5'
+            }`}
+          >
+            {tab.label}
+            {assets.filter(a => a.tool === `audience_${tab.id}`).length > 0 && (
+              <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      {latestAsset ? (
+        <div className="space-y-2">
+          {latestAsset.items.map((item, i) => {
+            const text = typeof item === 'string' ? item : JSON.stringify(item, null, 2);
+            const key = `platform_${activeTab}_${i}`;
+            return (
+              <div key={i} className="p-3 rounded-lg relative group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <pre className="text-xs whitespace-pre-wrap pr-8" style={{ color: 'var(--text)' }}>{text}</pre>
+                <button
+                  onClick={() => onCopy(text, key)}
+                  className="absolute top-2 right-2 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
+                >
+                  {copied === key ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                </button>
+              </div>
+            );
+          })}
+          <div className="space-y-2 pt-2">
+            {showNotes && (
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Any notes for regeneration? e.g. Focus on retargeting, exclude certain demographics..."
+                rows={2}
+                className="w-full px-3 py-2 rounded-lg text-xs resize-none"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+              />
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowNotes(!showNotes)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:bg-white/5"
+              >
+                {showNotes ? 'Hide notes' : '+ Add notes'}
+              </button>
+              <button
+                onClick={() => generateMutation.mutate(activeTab)}
+                disabled={generateMutation.isPending}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-indigo-300 hover:bg-indigo-500/10 disabled:opacity-50"
+              >
+                {generateMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Regenerate
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {showNotes && (
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Any specific targeting notes? e.g. Focus on B2B, exclude students..."
+              rows={2}
+              className="w-full px-3 py-2 rounded-lg text-xs resize-none"
+              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+            />
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowNotes(!showNotes)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:bg-white/5"
+            >
+              {showNotes ? 'Hide notes' : '+ Add notes'}
+            </button>
+            <button
+              onClick={() => generateMutation.mutate(activeTab)}
+              disabled={generateMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
+            >
+              {generateMutation.isPending ? (
+                <><Loader2 size={12} className="animate-spin" /> Generating...</>
+              ) : (
+                <><Wand2 size={12} /> Generate {tabs.find(t => t.id === activeTab)?.label} Targeting</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
