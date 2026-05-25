@@ -15,6 +15,9 @@ interface AudienceProfile {
   demographics: string;
   psychographics: string;
   situation: string;
+  goals: string;
+  objections: string;
+  buying_triggers: string;
   awareness_level: string;
 }
 
@@ -439,14 +442,17 @@ export default function ProjectStudioPage() {
                     <div
                       key={i}
                       onClick={() => setSelectedAudience(opt)}
-                      className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                      className={`p-4 rounded-lg cursor-pointer transition-colors ${
                         selectedAudience === opt ? 'bg-indigo-500/20' : 'hover:bg-white/5'
                       }`}
                       style={{ border: selectedAudience === opt ? '1px solid rgba(99,102,241,0.4)' : '1px solid var(--border)' }}
                     >
-                      <p className="text-sm font-medium">{opt.label}</p>
+                      <p className="text-sm font-semibold">{opt.label}</p>
                       <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{opt.demographics}</p>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{opt.situation}</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}><span className="text-gray-300">Situation:</span> {opt.situation}</p>
+                      {opt.goals && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}><span className="text-gray-300">Goals:</span> {opt.goals}</p>}
+                      {opt.buying_triggers && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}><span className="text-gray-300">Trigger:</span> {opt.buying_triggers}</p>}
+                      <p className="text-xs mt-1 italic text-indigo-300">{opt.awareness_level}</p>
                     </div>
                   ))}
                   <NotesAndRegenerate
@@ -594,6 +600,8 @@ function CurrentValue({ tool, intelligence }: { tool: string; intelligence: Inte
         <p className="font-medium text-white">{intelligence.audience.label}</p>
         <p>{intelligence.audience.demographics}</p>
         <p>{intelligence.audience.situation}</p>
+        {intelligence.audience.goals && <p><span className="text-gray-300">Goals:</span> {intelligence.audience.goals}</p>}
+        {intelligence.audience.buying_triggers && <p><span className="text-gray-300">Trigger:</span> {intelligence.audience.buying_triggers}</p>}
       </div>
     );
   }

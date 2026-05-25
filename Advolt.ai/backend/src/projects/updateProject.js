@@ -66,7 +66,7 @@ exports.handler = async (event) => {
     if (!projectId) return res.badRequest('Project ID is required');
 
     const body = JSON.parse(event.body || '{}');
-    const { project_name, business_name, business_niche, product_name, product_description, key_features, key_benefits, usp, reanalyze } = body;
+    const { project_name, business_name, business_niche, product_name, product_description, key_features, key_benefits, usp, target_location, target_audience_hint, reanalyze } = body;
 
     // Verify ownership
     const existing = await ddb.send(new GetCommand({
@@ -87,6 +87,8 @@ exports.handler = async (event) => {
     if (key_features !== undefined) updates.key_features = key_features;
     if (key_benefits !== undefined) updates.key_benefits = key_benefits;
     if (usp !== undefined) updates.usp = usp;
+    if (target_location !== undefined) updates.target_location = target_location;
+    if (target_audience_hint !== undefined) updates.target_audience_hint = target_audience_hint;
     updates.updated_at = new Date().toISOString();
 
     // Re-run AI analysis if requested

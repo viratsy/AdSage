@@ -64,7 +64,7 @@ exports.handler = async (event) => {
     if (!user) return res.unauthorized();
 
     const body = JSON.parse(event.body || '{}');
-    const { project_name, business_name, business_niche, product_name, product_description, key_features, key_benefits, usp } = body;
+    const { project_name, business_name, business_niche, product_name, product_description, key_features, key_benefits, usp, target_location, target_audience_hint } = body;
 
     if (!project_name || !business_name || !business_niche || !product_name) {
       return res.badRequest('project_name, business_name, business_niche, and product_name are required');
@@ -90,6 +90,8 @@ exports.handler = async (event) => {
       key_features: key_features || '',
       key_benefits: key_benefits || '',
       usp: usp || '',
+      target_location: target_location || '',
+      target_audience_hint: target_audience_hint || '',
       ai_analysis,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

@@ -15,6 +15,7 @@ interface Project {
   product_description: string;
   usp: string;
   target_location: string;
+  target_audience_hint: string;
   ai_analysis: {
     summary: string;
     target_keywords: string[];
@@ -36,6 +37,7 @@ const EMPTY_FORM = {
   product_description: '',
   usp: '',
   target_location: '',
+  target_audience_hint: '',
 };
 
 export default function CreatorStudioPage() {
@@ -110,6 +112,7 @@ export default function CreatorStudioPage() {
         product_description: source.product_description,
         usp: source.usp,
         target_location: source.target_location || '',
+        target_audience_hint: source.target_audience_hint || '',
       });
     }
   };
@@ -132,6 +135,7 @@ export default function CreatorStudioPage() {
         product_description: editingProject.product_description,
         usp: editingProject.usp,
         target_location: editingProject.target_location,
+        target_audience_hint: editingProject.target_audience_hint,
         reanalyze: true,
       },
     });
@@ -435,6 +439,8 @@ export default function CreatorStudioPage() {
                 </select>
               </div>
 
+              <Field label="Who is your ideal customer? (optional)" value={form.target_audience_hint} onChange={(v) => setForm({ ...form, target_audience_hint: v })} placeholder="e.g. Business owners, founders, entrepreneurs aged 24-60 who run ads" multiline />
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -510,6 +516,8 @@ export default function CreatorStudioPage() {
                   <option value="Africa">Africa</option>
                 </select>
               </div>
+
+              <Field label="Who is your ideal customer? (optional)" value={editingProject.target_audience_hint || ''} onChange={(v) => setEditingProject({ ...editingProject, target_audience_hint: v })} placeholder="e.g. Business owners, founders, entrepreneurs aged 24-60 who run ads" multiline />
 
               <div className="flex gap-3 pt-2">
                 <button

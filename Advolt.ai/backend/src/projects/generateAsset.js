@@ -41,7 +41,7 @@ const callGroq = async (prompt, maxTokens = 2000, model = 'llama-3.1-8b-instant'
 };
 
 // Tools that use the larger model for better quality
-const PREMIUM_TOOLS = ['audience_meta', 'audience_google', 'audience_linkedin', 'ad_brief', 'long_copy', 'video_script'];
+const PREMIUM_TOOLS = ['audience', 'audience_meta', 'audience_google', 'audience_linkedin', 'ad_brief', 'long_copy', 'video_script'];
 
 // Dependencies: what each tool needs before it can run
 const DEPENDENCIES = {
@@ -73,6 +73,7 @@ const buildContext = (project) => {
   parts.push(`Description: ${project.product_description || 'Not provided'}`);
   parts.push(`USP: ${project.usp || 'Not provided'}`);
   if (project.target_location) parts.push(`Target Location: ${project.target_location}`);
+  if (project.target_audience_hint) parts.push(`Ideal Customer Hint: ${project.target_audience_hint}`);
   
   const intel = project.intelligence || {};
   if (intel.audience) parts.push(`Target Audience: ${JSON.stringify(intel.audience)}`);
@@ -88,9 +89,20 @@ const PROMPTS = {
   audience: (ctx, input) => `
 ${ctx}
 ${input?.description ? `User says their ideal customer is: ${input.description}` : ''}
+${input?.custom ? `Additional notes: ${input.custom}` : ''}
 
-Generate 3 target audience profile options for this business. Each should be distinct.
-Return JSON: { "options": [{ "label": "short name", "demographics": "age, gender, location, income", "psychographics": "interests, values, lifestyle", "situation": "what's happening in their life that makes them need this", "awareness_level": "unaware/problem-aware/solution-aware/product-aware" }] }`,
+Generate 3 detailed and distinct target audience personas for this business. Each persona should be specific enough to guide ad targeting and copywriting.
+
+Return JSON: { "options": [{ 
+  "label": "A memorable persona name (e.g. The Overwhelmed Founder)",
+  "demographics": "Age range, gender split, location type, income bracket, education level, job title/role",
+  "psychographics": "Values, beliefs, lifestyle choices, media consumption habits, brands they follow, communities they belong to",
+  "situation": "What's happening in their life/business RIGHT NOW that makes them need this product. Be very specific about their current frustration or trigger moment.",
+  "goals": "What they're trying to achieve in the next 3-6 months related to this product's domain",
+  "objections": "Top 2 reasons this persona might hesitate to buy",
+  "buying_triggers": "What specific event or realization would make them take action TODAY",
+  "awareness_level": "unaware/problem-aware/solution-aware/product-aware — with brief explanation of what they currently know"
+}] }`,
 
   audience_meta: (ctx, input) => `
 ${ctx}
