@@ -14,6 +14,7 @@ interface Project {
   product_name: string;
   product_description: string;
   usp: string;
+  target_location: string;
   ai_analysis: {
     summary: string;
     target_keywords: string[];
@@ -34,6 +35,7 @@ const EMPTY_FORM = {
   product_name: '',
   product_description: '',
   usp: '',
+  target_location: '',
 };
 
 export default function CreatorStudioPage() {
@@ -107,6 +109,7 @@ export default function CreatorStudioPage() {
         product_name: source.product_name,
         product_description: source.product_description,
         usp: source.usp,
+        target_location: source.target_location || '',
       });
     }
   };
@@ -128,6 +131,7 @@ export default function CreatorStudioPage() {
         product_name: editingProject.product_name,
         product_description: editingProject.product_description,
         usp: editingProject.usp,
+        target_location: editingProject.target_location,
         reanalyze: true,
       },
     });
@@ -397,6 +401,33 @@ export default function CreatorStudioPage() {
               <Field label="Brief Description" value={form.product_description} onChange={(v) => setForm({ ...form, product_description: v })} placeholder="1-2 sentences about what it is" multiline />
               <Field label="USP / Differentiators" value={form.usp} onChange={(v) => setForm({ ...form, usp: v })} placeholder="What makes it better or different from competitors" multiline />
 
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Target Location</label>
+                <select
+                  value={form.target_location}
+                  onChange={(e) => setForm({ ...form, target_location: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                >
+                  <option value="">Select location</option>
+                  <option value="Global">Global</option>
+                  <option value="PAN India">PAN India</option>
+                  <option value="United States">United States</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Canada">Canada</option>
+                  <option value="Australia">Australia</option>
+                  <option value="Germany">Germany</option>
+                  <option value="France">France</option>
+                  <option value="UAE">UAE</option>
+                  <option value="Singapore">Singapore</option>
+                  <option value="Southeast Asia">Southeast Asia</option>
+                  <option value="Europe">Europe</option>
+                  <option value="Middle East">Middle East</option>
+                  <option value="Latin America">Latin America</option>
+                  <option value="Africa">Africa</option>
+                </select>
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -445,6 +476,33 @@ export default function CreatorStudioPage() {
               <Field label="Product/Service Name *" value={editingProject.product_name} onChange={(v) => setEditingProject({ ...editingProject, product_name: v })} placeholder="Product name" />
               <Field label="Brief Description" value={editingProject.product_description} onChange={(v) => setEditingProject({ ...editingProject, product_description: v })} placeholder="Description" multiline />
               <Field label="USP / Differentiators" value={editingProject.usp} onChange={(v) => setEditingProject({ ...editingProject, usp: v })} placeholder="USP" multiline />
+
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Target Location</label>
+                <select
+                  value={editingProject.target_location || ''}
+                  onChange={(e) => setEditingProject({ ...editingProject, target_location: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                >
+                  <option value="">Select location</option>
+                  <option value="Global">Global</option>
+                  <option value="PAN India">PAN India</option>
+                  <option value="United States">United States</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Canada">Canada</option>
+                  <option value="Australia">Australia</option>
+                  <option value="Germany">Germany</option>
+                  <option value="France">France</option>
+                  <option value="UAE">UAE</option>
+                  <option value="Singapore">Singapore</option>
+                  <option value="Southeast Asia">Southeast Asia</option>
+                  <option value="Europe">Europe</option>
+                  <option value="Middle East">Middle East</option>
+                  <option value="Latin America">Latin America</option>
+                  <option value="Africa">Africa</option>
+                </select>
+              </div>
 
               <div className="flex gap-3 pt-2">
                 <button

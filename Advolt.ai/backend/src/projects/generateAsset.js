@@ -16,13 +16,13 @@ const { getUserFromEvent } = require('/opt/nodejs/lib/getUserFromEvent');
 
 const TABLE = process.env.DYNAMODB_TABLE_PROJECTS;
 
-const callGroq = async (prompt, maxTokens = 2000) => {
+const callGroq = async (prompt, maxTokens = 2000, model = 'llama-3.1-8b-instant') => {
   const key = process.env.GROQ_API_KEY;
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
+      model,
       messages: [
         { role: 'system', content: 'You are an expert ad strategist and copywriter. Always respond with valid JSON only.' },
         { role: 'user', content: prompt },
@@ -39,6 +39,9 @@ const callGroq = async (prompt, maxTokens = 2000) => {
   const data = await response.json();
   return JSON.parse(data.choices[0].message.content);
 };
+
+// Tools that use the larger model for better quality
+const PREMIUM_TOOLS = ['audience_meta', 'audience_google', 'audience_linkedin', 'ad_brief', 'long_copy', 'video_script'];
 
 // Dependencies: what each tool needs before it can run
 const DEPENDENCIES = {
@@ -69,6 +72,7 @@ const buildContext = (project) => {
   parts.push(`Product: ${project.product_name}`);
   parts.push(`Description: ${project.product_description || 'Not provided'}`);
   parts.push(`USP: ${project.usp || 'Not provided'}`);
+  if (project.target_location) parts.push(`Target Location: ${project.target_location}`);
   
   const intel = project.intelligence || {};
   if (intel.audience) parts.push(`Target Audience: ${JSON.stringify(intel.audience)}`);
@@ -267,7 +271,8 @@ exports.handler = async (event) => {
     // Generate
     const ctx = buildContext(project);
     const prompt = PROMPTS[tool](ctx, input);
-    const aiResult = await callGroq(prompt);
+    const model = PREMIUM_TOOLS.includes(tool) ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
+    const aiResult = await callGroq(prompt, 2000, model);
 
     // Save result
     if (FOUNDATION_TOOLS.includes(tool)) {
