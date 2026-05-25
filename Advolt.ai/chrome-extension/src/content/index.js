@@ -213,7 +213,9 @@ const findCardFromSponsored = (sponsoredEl) => {
 
 // ─── Main scan ────────────────────────────────────────────────────────────────
 const scan = () => {
-  // Find all "Sponsored" text nodes on the page
+  const cards = new Set();
+
+  // Method 1: Find "Sponsored" text nodes (works on feed ads and ad library previews)
   const walker = document.createTreeWalker(
     document.body,
     NodeFilter.SHOW_TEXT,
@@ -227,11 +229,36 @@ const scan = () => {
     }
   );
 
-  const cards = new Set();
   let node;
   while ((node = walker.nextNode())) {
     const card = findCardFromSponsored(node.parentElement);
     if (card) cards.add(card);
+  }
+
+  // Method 2: Ad Library grid cards — look for "Library ID" text to find card boundaries
+  const adLibWalker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (n) => {
+        const t = n.textContent?.trim();
+        return (t && t.startsWith('Library ID'))
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_SKIP;
+      },
+    }
+  );
+
+  while ((node = adLibWalker.nextNode())) {
+    let el = node.parentElement;
+    for (let i = 0; i < 12; i++) {
+      if (!el || el === document.body) break;
+      if (el.offsetHeight > 250 && el.offsetWidth > 200 && el.querySelector('img')) {
+        cards.add(el);
+        break;
+      }
+      el = el.parentElement;
+    }
   }
 
   cards.forEach(injectButton);
