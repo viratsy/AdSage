@@ -13,8 +13,6 @@ interface Project {
   business_niche: string;
   product_name: string;
   product_description: string;
-  key_features: string;
-  key_benefits: string;
   usp: string;
   ai_analysis: {
     summary: string;
@@ -129,8 +127,6 @@ export default function CreatorStudioPage() {
         business_niche: editingProject.business_niche,
         product_name: editingProject.product_name,
         product_description: editingProject.product_description,
-        key_features: editingProject.key_features,
-        key_benefits: editingProject.key_benefits,
         usp: editingProject.usp,
         reanalyze: true,
       },
