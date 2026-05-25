@@ -160,14 +160,14 @@ const injectButton = (adBlock) => {
 const findAdBlocks = () => {
   const adBlocks = new Set();
 
-  // Method 1: Look for "Sponsored" / "Ad" labels
+  // Method 1: Find "Sponsored" section and get individual ad items within it
   const walker = document.createTreeWalker(
     document.body,
     NodeFilter.SHOW_TEXT,
     {
       acceptNode: (node) => {
         const t = node.textContent?.trim();
-        return (t === 'Sponsored' || t === 'Ad' || t === 'Ads')
+        return (t === 'Sponsored' || t === 'Sponsored results' || t === 'Ad' || t === 'Ads')
           ? NodeFilter.FILTER_ACCEPT
           : NodeFilter.FILTER_SKIP;
       },
@@ -176,40 +176,66 @@ const findAdBlocks = () => {
 
   let node;
   while ((node = walker.nextNode())) {
-    // Walk up to find the ad container
+    // Walk up to find the sponsored section container
     let el = node.parentElement;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 10; i++) {
       if (!el || el === document.body) break;
-      // Google ad blocks are typically divs with data-text-ad or contain headline links
-      if (
-        el.querySelector('h3') &&
-        el.offsetHeight > 60 &&
-        el.offsetWidth > 200
-      ) {
-        adBlocks.add(el);
+      // Find individual ad blocks within the sponsored section
+      const adItems = el.querySelectorAll('a[href]:has(h3), div:has(> a h3)');
+      if (adItems.length > 0) {
+        adItems.forEach(item => {
+          // Walk up from the link to find the individual ad container
+          let adContainer = item;
+          for (let j = 0; j < 5; j++) {
+            if (!adContainer.parentElement || adContainer.parentElement === el) break;
+            adContainer = adContainer.parentElement;
+          }
+          if (adContainer.offsetHeight > 50 && adContainer.querySelector('h3')) {
+            adBlocks.add(adContainer);
+          }
+        });
         break;
       }
       el = el.parentElement;
     }
   }
 
-  // Method 2: Look for known Google ad container selectors
-  document.querySelectorAll('div[data-text-ad], div[data-hveid] div.uEierd, div.mnr-c, div.commercial-unit-desktop-top').forEach(el => {
-    if (el.querySelector('h3') && el.offsetHeight > 60) {
-      adBlocks.add(el);
-    }
-  });
-
-  // Method 3: Look for elements with "Ad" badge styling
-  document.querySelectorAll('span.x2VHCd, span[class*="ad-badge"]').forEach(badge => {
-    let el = badge.parentElement;
-    for (let i = 0; i < 6; i++) {
-      if (!el) break;
-      if (el.querySelector('h3') && el.offsetHeight > 60) {
-        adBlocks.add(el);
-        break;
+  // Method 2: Look for ad containers by structure — divs containing both a cite/URL and h3
+  if (adBlocks.size === 0) {
+    // Find all h3 elements that are inside links (typical Google ad structure)
+    document.querySelectorAll('h3').forEach(h3 => {
+      const link = h3.closest('a[href]');
+      if (!link) return;
+      const href = link.href || '';
+      // Skip organic results (they link to google.com/url or directly)
+      // Ads typically have tracking params or direct URLs
+      
+      // Walk up to find the ad block container
+      let container = h3.parentElement;
+      for (let i = 0; i < 6; i++) {
+        if (!container) break;
+        // Check if this container has a URL display (cite element or domain text)
+        const hasCite = container.querySelector('cite, span[class*="VuuXrf"]');
+        const hasDesc = [...container.querySelectorAll('div, span')].some(
+          el => el.innerText?.length > 40 && el.children.length < 3
+        );
+        if (hasCite && hasDesc && container.offsetHeight > 60) {
+          // Verify it's in a sponsored section
+          const parentText = container.parentElement?.innerText || '';
+          if (parentText.includes('Sponsored') || parentText.includes('Hide sponsored')) {
+            adBlocks.add(container);
+          }
+          break;
+        }
+        container = container.parentElement;
       }
-      el = el.parentElement;
+    });
+  }
+
+  // Method 3: Direct selector approach for known Google ad wrappers
+  document.querySelectorAll('div[data-text-ad], div.uEierd, div.mnr-c').forEach(el => {
+    if (el.querySelector('h3') && el.offsetHeight > 50) {
+      adBlocks.add(el);
     }
   });
 
