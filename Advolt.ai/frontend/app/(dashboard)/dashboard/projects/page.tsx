@@ -157,11 +157,17 @@ export default function CreatorStudioPage() {
         <div className="rounded-xl p-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-bold">{selectedProject.project_name}</h1>
-            <div className="relative">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push(`/dashboard/projects/studio?id=${selectedProject.project_id}`)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
+              >
+                <Zap size={14} /> Open Studio
+              </button>
               <ThreeDotMenu
                 onEdit={() => setEditingProject({ ...selectedProject })}
                 onDelete={() => deleteMutation.mutate(selectedProject.project_id)}
-                onOpen={() => setOpenProjectId(selectedProject.project_id)}
+                onOpen={() => router.push(`/dashboard/projects/studio?id=${selectedProject.project_id}`)}
               />
             </div>
           </div>
@@ -191,24 +197,19 @@ export default function CreatorStudioPage() {
               <p className="mt-1">{selectedProject.product_description}</p>
             </div>
           )}
-          {selectedProject.key_features && (
-            <div className="mt-3 text-sm">
-              <span style={{ color: 'var(--text-muted)' }}>Key Features:</span>
-              <p className="mt-1">{selectedProject.key_features}</p>
-            </div>
-          )}
-          {selectedProject.key_benefits && (
-            <div className="mt-3 text-sm">
-              <span style={{ color: 'var(--text-muted)' }}>Key Benefits:</span>
-              <p className="mt-1">{selectedProject.key_benefits}</p>
-            </div>
-          )}
           {selectedProject.usp && (
             <div className="mt-3 text-sm">
               <span style={{ color: 'var(--text-muted)' }}>USP / Differentiators:</span>
               <p className="mt-1">{selectedProject.usp}</p>
             </div>
           )}
+
+          <button
+            onClick={() => setEditingProject({ ...selectedProject })}
+            className="mt-4 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+          >
+            <Pencil size={12} /> Edit Details
+          </button>
         </div>
 
         {/* AI Analysis */}
