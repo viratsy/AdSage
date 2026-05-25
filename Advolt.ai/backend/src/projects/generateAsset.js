@@ -41,7 +41,35 @@ const callGroq = async (prompt, maxTokens = 2000, model = 'llama-3.1-8b-instant'
 };
 
 // Tools that use the larger model for better quality
-const PREMIUM_TOOLS = ['audience', 'audience_meta', 'audience_google', 'audience_linkedin', 'ad_brief', 'long_copy', 'video_script'];
+const PREMIUM_TOOLS = ['audience', 'audience_meta', 'audience_google', 'audience_linkedin', 'ad_brief', 'long_copy', 'video_script', 'image_prompt'];
+
+const callGeminiVision = async (imageBase64, mimeType, prompt) => {
+  const key = process.env.GEMINI_API_KEY;
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inline_data: { mime_type: mimeType, data: imageBase64 } }
+        ]
+      }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2000,
+        responseMimeType: 'application/json',
+      }
+    }),
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Gemini error: ${response.status} — ${err.slice(0, 200)}`);
+  }
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  return JSON.parse(text);
+};
 
 // Dependencies: what each tool needs before it can run
 const DEPENDENCIES = {
@@ -231,8 +259,21 @@ Return JSON: { "items": ["full script text"] }`,
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 
-Generate 3 AI image generation prompts for ad creatives. Each should describe the visual clearly.
-Return JSON: { "items": ["prompt 1", "prompt 2", "prompt 3"] }`,
+Generate 3 detailed AI image generation prompts for ad creatives (optimized for Midjourney/DALL-E/Ideogram).
+
+Each prompt MUST include:
+- Subject/scene description (specific, not vague)
+- Art style (photorealistic, flat illustration, 3D render, minimalist, etc.)
+- Lighting (studio lighting, golden hour, neon glow, soft diffused, etc.)
+- Color palette (specific colors that match the brand/mood)
+- Composition (close-up, wide shot, overhead, rule of thirds, etc.)
+- Mood/atmosphere (energetic, calm, professional, playful, etc.)
+- Technical specs (aspect ratio suggestion like 1:1 for feed, 9:16 for stories, 16:9 for landscape)
+
+Make them diverse: one product-focused, one lifestyle/emotional, one abstract/conceptual.
+Do NOT use generic descriptions. Be specific enough that any AI image tool produces a usable ad creative.
+
+Return JSON: { "items": ["detailed prompt 1", "detailed prompt 2", "detailed prompt 3"] }`,
 
   ad_brief: (ctx, input) => `
 ${ctx}
@@ -281,10 +322,39 @@ exports.handler = async (event) => {
     }
 
     // Generate
-    const ctx = buildContext(project);
-    const prompt = PROMPTS[tool](ctx, input);
-    const model = PREMIUM_TOOLS.includes(tool) ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
-    const aiResult = await callGroq(prompt, 2000, model);
+    let aiResult;
+
+    // Special handling: image_prompt with reference image
+    if (tool === 'image_prompt' && input?.image_base64) {
+      const mimeType = input.image_mime || 'image/jpeg';
+      const visionPrompt = `Analyze this reference image for ad creative generation. Describe in detail:
+1. Art style (photorealistic, illustration, 3D, flat design, etc.)
+2. Color palette (specific colors used)
+3. Lighting style
+4. Composition and layout
+5. Mood/atmosphere
+6. Subject matter and visual elements
+7. Typography style if any text is present
+8. Overall aesthetic
+
+Then generate 3 AI image generation prompts that create SIMILAR style ad creatives for this product:
+Business: ${project.business_name}
+Product: ${project.product_name}
+Description: ${project.product_description || ''}
+${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
+
+Each prompt should maintain the same visual style as the reference but adapted for this product/brand.
+Include: subject, art style, lighting, colors, composition, mood, and aspect ratio.
+
+Return JSON: { "style_analysis": "brief description of the reference image style", "items": ["detailed prompt 1", "detailed prompt 2", "detailed prompt 3"] }`;
+
+      aiResult = await callGeminiVision(input.image_base64, mimeType, visionPrompt);
+    } else {
+      const ctx = buildContext(project);
+      const prompt = PROMPTS[tool](ctx, input);
+      const model = PREMIUM_TOOLS.includes(tool) ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
+      aiResult = await callGroq(prompt, 2000, model);
+    }
 
     // Save result
     if (FOUNDATION_TOOLS.includes(tool)) {

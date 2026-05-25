@@ -406,6 +406,44 @@ export default function ProjectStudioPage() {
                     </div>
                   )}
 
+                  {activeTool === 'image_prompt' && (
+                    <div>
+                      <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Upload reference image (optional)</label>
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer hover:bg-white/5 transition-colors" style={{ border: '1px solid var(--border)' }}>
+                          <Image size={14} />
+                          {input.image_base64 ? 'Image uploaded ✓' : 'Choose image'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                const base64 = (reader.result as string).split(',')[1];
+                                setInput({ ...input, image_base64: base64, image_mime: file.type });
+                              };
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                        </label>
+                        {input.image_base64 && (
+                          <button
+                            onClick={() => { const { image_base64, image_mime, ...rest } = input; setInput(rest); }}
+                            className="text-xs text-red-400 hover:text-red-300"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      {input.image_base64 && (
+                        <p className="text-xs mt-1 text-emerald-400">AI will analyze this image and generate prompts in a similar style.</p>
+                      )}
+                    </div>
+                  )}
+
                   <button
                     onClick={handleGenerate}
                     disabled={generateMutation.isPending}
