@@ -355,6 +355,15 @@ export default function ProjectStudioPage() {
                     </div>
                   )}
 
+                  {activeTool === 'objections' && !intelligence.objections?.length && intelligence.audience?.objections && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>From your audience profile:</p>
+                      <p className="text-xs px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                        {intelligence.audience.objections}
+                      </p>
+                    </div>
+                  )}
+
                   {activeTool === 'audience' && (
                     <div>
                       <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Describe your ideal customer (optional)</label>
