@@ -202,6 +202,13 @@ export default function CreatorStudioPage() {
             </div>
           )}
 
+          {selectedProject.target_audience_hint && (
+            <div className="mt-3 text-sm">
+              <span style={{ color: 'var(--text-muted)' }}>Ideal Customer:</span>
+              <p className="font-medium">{selectedProject.target_audience_hint}</p>
+            </div>
+          )}
+
           {selectedProject.product_description && (
             <div className="mt-4 text-sm">
               <span style={{ color: 'var(--text-muted)' }}>Description:</span>
