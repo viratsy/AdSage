@@ -606,8 +606,32 @@ export default function ProjectStudioPage() {
                   <p className="text-sm font-medium text-emerald-400">Generated:</p>
                   <div className="space-y-2">
                     {generatedAsset.items.map((item, i) => {
-                      const text = typeof item === 'string' ? item : JSON.stringify(item, null, 2);
                       const key = `new_${i}`;
+
+                      if (typeof item === 'object' && item !== null) {
+                        const obj = item as Record<string, unknown>;
+                        const copyVal = Object.entries(obj)
+                          .map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
+                          .join('\n');
+                        return (
+                          <div key={i} className="p-3 rounded-lg relative group space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                            {Object.entries(obj).map(([field, value]) => (
+                              <div key={field}>
+                                <p className="text-xs font-medium text-gray-400 capitalize">{field.replace(/_/g, ' ')}</p>
+                                <p className="text-sm mt-0.5">{typeof value === 'string' ? value : Array.isArray(value) ? (value as string[]).join(', ') : JSON.stringify(value)}</p>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => copyText(copyVal, key)}
+                              className="absolute top-2 right-2 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
+                            >
+                              {copied === key ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      const text = item as string;
                       return (
                         <div key={i} className="p-3 rounded-lg relative group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
                           <p className="text-sm pr-8 whitespace-pre-wrap">{text}</p>
@@ -673,14 +697,40 @@ function PreviousAssets({ assets, onCopy, copied }: { assets: Asset[]; onCopy: (
     <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
       <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Previously generated:</p>
       {assets.slice().reverse().map((asset) => (
-        <div key={asset.id} className="space-y-1.5">
+        <div key={asset.id} className="space-y-2">
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{new Date(asset.created_at).toLocaleDateString()}</p>
           {asset.items.map((item, i) => {
-            const text = typeof item === 'string' ? item : JSON.stringify(item, null, 2);
             const key = `${asset.id}_${i}`;
+
+            // Structured object (short_copy, ad_brief, etc.)
+            if (typeof item === 'object' && item !== null) {
+              const obj = item as Record<string, unknown>;
+              const copyText = Object.entries(obj)
+                .map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
+                .join('\n');
+              return (
+                <div key={i} className="p-3 rounded-lg relative group space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                  {Object.entries(obj).map(([field, value]) => (
+                    <div key={field}>
+                      <p className="text-xs font-medium text-gray-400 capitalize">{field.replace(/_/g, ' ')}</p>
+                      <p className="text-sm mt-0.5">{typeof value === 'string' ? value : JSON.stringify(value)}</p>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => onCopy(copyText, key)}
+                    className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
+                  >
+                    {copied === key ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                  </button>
+                </div>
+              );
+            }
+
+            // Plain string
+            const text = item as string;
             return (
               <div key={i} className="p-2.5 rounded-lg relative group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                <p className="text-xs pr-6 whitespace-pre-wrap">{text}</p>
+                <p className="text-sm pr-6 whitespace-pre-wrap">{text}</p>
                 <button
                   onClick={() => onCopy(text, key)}
                   className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
