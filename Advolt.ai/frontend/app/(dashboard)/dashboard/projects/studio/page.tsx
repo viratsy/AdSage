@@ -722,11 +722,60 @@ function PlatformTargeting({ projectId, assets, onCopy, copied }: {
   const platformAssets = assets.filter(a => a.tool === `audience_${activeTab}`);
   const latestAsset = platformAssets.length > 0 ? platformAssets[platformAssets.length - 1] : null;
 
+  const renderTargetingData = (data: Record<string, unknown>) => {
+    return Object.entries(data).map(([key, value]) => {
+      const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const sectionKey = `platform_${activeTab}_${key}`;
+
+      if (Array.isArray(value)) {
+        const copyVal = (value as string[]).join(', ');
+        return (
+          <div key={key} className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-gray-300">{label}</p>
+              <button
+                onClick={() => onCopy(copyVal, sectionKey)}
+                className="p-1 rounded text-gray-500 hover:text-white transition-colors"
+              >
+                {copied === sectionKey ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {(value as string[]).map((item, i) => (
+                <span key={i} className="px-2 py-0.5 rounded text-xs bg-white/5 text-gray-300 border border-white/10">
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      if (typeof value === 'string') {
+        return (
+          <div key={key} className="space-y-1">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-gray-300">{label}</p>
+              <button
+                onClick={() => onCopy(value, sectionKey)}
+                className="p-1 rounded text-gray-500 hover:text-white transition-colors"
+              >
+                {copied === sectionKey ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+              </button>
+            </div>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{value}</p>
+          </div>
+        );
+      }
+
+      return null;
+    });
+  };
+
   return (
     <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
       <p className="text-sm font-medium mb-3">Platform Targeting</p>
 
-      {/* Tabs */}
       <div className="flex gap-1 mb-4">
         {tabs.map(tab => (
           <button
@@ -744,24 +793,24 @@ function PlatformTargeting({ projectId, assets, onCopy, copied }: {
         ))}
       </div>
 
-      {/* Content */}
       {latestAsset ? (
-        <div className="space-y-2">
+        <div className="space-y-4">
           {latestAsset.items.map((item, i) => {
+            if (typeof item === 'object' && item !== null) {
+              return (
+                <div key={i} className="space-y-4 p-4 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                  {renderTargetingData(item as Record<string, unknown>)}
+                </div>
+              );
+            }
             const text = typeof item === 'string' ? item : JSON.stringify(item, null, 2);
-            const key = `platform_${activeTab}_${i}`;
             return (
-              <div key={i} className="p-3 rounded-lg relative group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                <pre className="text-xs whitespace-pre-wrap pr-8" style={{ color: 'var(--text)' }}>{text}</pre>
-                <button
-                  onClick={() => onCopy(text, key)}
-                  className="absolute top-2 right-2 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
-                >
-                  {copied === key ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                </button>
+              <div key={i} className="p-3 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <p className="text-xs whitespace-pre-wrap">{text}</p>
               </div>
             );
           })}
+
           <div className="space-y-2 pt-2">
             {showNotes && (
               <textarea
