@@ -191,6 +191,13 @@ export default function CreatorStudioPage() {
             </div>
           </div>
 
+          {selectedProject.target_location && (
+            <div className="mt-4 text-sm">
+              <span style={{ color: 'var(--text-muted)' }}>Target Location:</span>
+              <p className="font-medium">{selectedProject.target_location}</p>
+            </div>
+          )}
+
           {selectedProject.product_description && (
             <div className="mt-4 text-sm">
               <span style={{ color: 'var(--text-muted)' }}>Description:</span>
