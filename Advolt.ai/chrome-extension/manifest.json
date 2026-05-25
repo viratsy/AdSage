@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Advolt.ai — Ad Intelligence",
-  "version": "1.0.0",
-  "description": "Save and analyze Meta ads directly from Facebook Ad Library and your feed.",
+  "name": "Advolt AI — Ad Intelligence",
+  "version": "1.1.0",
+  "description": "Save and analyze ads from Meta Ad Library, Facebook feed, and Google Search results.",
 
   "permissions": [
     "storage",
@@ -13,6 +13,10 @@
   "host_permissions": [
     "https://www.facebook.com/*",
     "https://www.instagram.com/*",
+    "https://www.google.com/*",
+    "https://www.google.co.in/*",
+    "https://www.google.co.uk/*",
+    "https://api.advoltai.com/*",
     "https://flm6m6u5yc.execute-api.ap-south-1.amazonaws.com/*",
     "https://cognito-idp.ap-south-1.amazonaws.com/*",
     "https://d37anhmjei4vts.cloudfront.net/*"
@@ -29,6 +33,15 @@
         "https://www.instagram.com/*"
       ],
       "js": ["src/content/index.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.google.com/search*",
+        "https://www.google.co.in/search*",
+        "https://www.google.co.uk/search*"
+      ],
+      "js": ["src/content/google.js"],
       "run_at": "document_idle"
     }
   ],
