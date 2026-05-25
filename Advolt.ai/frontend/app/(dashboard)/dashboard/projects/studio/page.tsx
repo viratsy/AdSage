@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api';
 import {
   Zap, Users, AlertTriangle, Heart, Flame, Target,
-  MessageSquare, FileText, Video, Image, Wand2,
+  MessageSquare, FileText, Image, Wand2,
   Loader2, Check, ChevronLeft, RefreshCw, Copy, ArrowRight
 } from 'lucide-react';
 
@@ -79,13 +79,19 @@ const TOOLS = [
   { id: 'desires', label: 'Desires & Goals', icon: Heart, category: 'foundation', desc: 'What your audience wants' },
   { id: 'objections', label: 'Objections', icon: Target, category: 'foundation', desc: 'Why people might not buy' },
   { id: 'emotional_angles', label: 'Emotional Angles', icon: Flame, category: 'foundation', desc: 'Angles to use in ads' },
-  { id: 'hooks', label: 'Hooks', icon: Zap, category: 'asset', desc: 'Attention-grabbing openers' },
-  { id: 'short_copy', label: 'Short Copy', icon: FileText, category: 'asset', desc: 'Quick ad copy under 50 words' },
-  { id: 'long_copy', label: 'Long Copy', icon: FileText, category: 'asset', desc: 'Full ad copy with structure' },
-  { id: 'ctas', label: 'CTAs', icon: MessageSquare, category: 'asset', desc: 'Call-to-action variations' },
-  { id: 'video_script', label: 'Video Script', icon: Video, category: 'asset', desc: '30-60s video ad script' },
-  { id: 'image_prompt', label: 'Image Prompts', icon: Image, category: 'asset', desc: 'AI image generation prompts' },
-  { id: 'ad_brief', label: 'Ad Brief', icon: Wand2, category: 'asset', desc: 'Complete campaign brief' },
+  // Meta
+  { id: 'meta_hooks', label: 'Hooks', icon: Zap, category: 'meta', desc: 'Scroll-stopping openers' },
+  { id: 'meta_primary_text', label: 'Primary Text', icon: FileText, category: 'meta', desc: 'Main ad body copy' },
+  { id: 'meta_headlines', label: 'Headlines', icon: FileText, category: 'meta', desc: 'Below-creative headlines' },
+  { id: 'meta_ctas', label: 'CTAs', icon: MessageSquare, category: 'meta', desc: 'Call-to-action variations' },
+  { id: 'meta_creatives', label: 'Creative Concepts', icon: Image, category: 'meta', desc: 'Visual/image concepts' },
+  // Google
+  { id: 'google_keywords', label: 'Keywords', icon: Target, category: 'google', desc: 'Search keywords & intent' },
+  { id: 'google_headlines', label: 'Headlines', icon: FileText, category: 'google', desc: 'Max 30 char headlines' },
+  { id: 'google_descriptions', label: 'Descriptions', icon: FileText, category: 'google', desc: 'Max 90 char descriptions' },
+  { id: 'google_extensions', label: 'Extensions', icon: Wand2, category: 'google', desc: 'Sitelinks, callouts, snippets' },
+  { id: 'google_ctas', label: 'CTAs', icon: MessageSquare, category: 'google', desc: 'Direct action CTAs' },
+  { id: 'google_landing_match', label: 'Landing Page Match', icon: ArrowRight, category: 'google', desc: 'Landing page suggestions' },
 ];
 
 export default function ProjectStudioPage() {
@@ -209,7 +215,8 @@ export default function ProjectStudioPage() {
   };
 
   const foundationTools = TOOLS.filter(t => t.category === 'foundation');
-  const assetTools = TOOLS.filter(t => t.category === 'asset');
+  const metaTools = TOOLS.filter(t => t.category === 'meta');
+  const googleTools = TOOLS.filter(t => t.category === 'google');
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -254,9 +261,32 @@ export default function ProjectStudioPage() {
           </div>
 
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>Generate</p>
+            <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>Meta Ads</p>
             <div className="space-y-1">
-              {assetTools.map(tool => {
+              {metaTools.map(tool => {
+                const Icon = tool.icon;
+                const count = assets.filter(a => a.tool === tool.id).length;
+                return (
+                  <button
+                    key={tool.id}
+                    onClick={() => handleToolClick(tool.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left ${
+                      activeTool === tool.id ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-300 hover:bg-white/5'
+                    }`}
+                  >
+                    <Icon size={14} />
+                    <span className="flex-1">{tool.label}</span>
+                    {count > 0 && <span className="text-xs px-1.5 py-0.5 rounded bg-white/10">{count}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>Google Ads</p>
+            <div className="space-y-1">
+              {googleTools.map(tool => {
                 const Icon = tool.icon;
                 const count = assets.filter(a => a.tool === tool.id).length;
                 return (
@@ -392,7 +422,7 @@ export default function ProjectStudioPage() {
                     </div>
                   )}
 
-                  {['hooks', 'short_copy', 'long_copy', 'ctas', 'video_script', 'image_prompt', 'ad_brief'].includes(activeTool) && (
+                  {['meta_hooks', 'meta_primary_text', 'meta_headlines', 'meta_ctas', 'meta_creatives', 'google_keywords', 'google_headlines', 'google_descriptions', 'google_extensions', 'google_ctas', 'google_landing_match'].includes(activeTool) && (
                     <div>
                       <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Additional instructions (optional)</label>
                       <textarea
@@ -406,7 +436,7 @@ export default function ProjectStudioPage() {
                     </div>
                   )}
 
-                  {activeTool === 'image_prompt' && (
+                  {activeTool === 'meta_creatives' && (
                     <div>
                       <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Upload reference image (optional)</label>
                       <div className="flex items-center gap-3">
@@ -439,7 +469,7 @@ export default function ProjectStudioPage() {
                         )}
                       </div>
                       {input.image_base64 && (
-                        <p className="text-xs mt-1 text-emerald-400">AI will analyze this image and generate prompts in a similar style.</p>
+                        <p className="text-xs mt-1 text-emerald-400">AI will analyze this image and generate concepts in a similar style.</p>
                       )}
                     </div>
                   )}
@@ -475,7 +505,7 @@ export default function ProjectStudioPage() {
                   )}
 
                   {/* Previous assets */}
-                  {TOOLS.find(t => t.id === activeTool)?.category === 'asset' && (
+                  {TOOLS.find(t => t.id === activeTool)?.category !== 'foundation' && (
                     <PreviousAssets assets={assets.filter(a => a.tool === activeTool)} onCopy={copyText} copied={copied} />
                   )}
                 </div>

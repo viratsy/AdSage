@@ -1,13 +1,13 @@
 /**
- * Generate Asset — AI generation within a project with dependency checking.
+ * Generate Asset — Platform-specific AI generation within a project.
  * POST /projects/{id}/generate
  * 
  * Body: { tool: string, input?: Record<string, string> }
  * 
- * Tools: audience, pain_points, desires, objections, emotional_angles, hooks, short_copy, long_copy, ctas, video_script, image_prompt, ad_brief
- * 
- * Foundation tools (audience, pain_points, desires, objections, emotional_angles) save to project.intelligence
- * Asset tools (hooks, short_copy, etc.) append to project.assets[]
+ * Foundation: audience, pain_points, desires, objections, emotional_angles
+ * Meta: meta_hooks, meta_primary_text, meta_headlines, meta_ctas, meta_creatives
+ * Google: google_keywords, google_headlines, google_descriptions, google_extensions, google_ctas, google_landing_match
+ * Targeting: audience_meta, audience_google
  */
 const { GetCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 const ddb = require('/opt/nodejs/lib/dynamo');
@@ -40,26 +40,14 @@ const callGroq = async (prompt, maxTokens = 2000, model = 'llama-3.1-8b-instant'
   return JSON.parse(data.choices[0].message.content);
 };
 
-// Tools that use the larger model for better quality
-const PREMIUM_TOOLS = ['audience', 'audience_meta', 'audience_google', 'audience_linkedin', 'ad_brief', 'long_copy', 'video_script', 'image_prompt'];
-
 const callGeminiVision = async (imageBase64, mimeType, prompt) => {
   const key = process.env.GEMINI_API_KEY;
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${key}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: mimeType, data: imageBase64 } }
-        ]
-      }],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 2000,
-        responseMimeType: 'application/json',
-      }
+      contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: imageBase64 } }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 2000, responseMimeType: 'application/json' }
     }),
   });
   if (!response.ok) {
@@ -67,31 +55,35 @@ const callGeminiVision = async (imageBase64, mimeType, prompt) => {
     throw new Error(`Gemini error: ${response.status} — ${err.slice(0, 200)}`);
   }
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  return JSON.parse(text);
+  return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text);
 };
 
-// Dependencies: what each tool needs before it can run
+const PREMIUM_TOOLS = ['audience', 'audience_meta', 'audience_google', 'meta_primary_text', 'meta_creatives', 'google_keywords', 'google_descriptions', 'google_landing_match'];
+
 const DEPENDENCIES = {
   audience: [],
   audience_meta: ['audience'],
   audience_google: ['audience'],
-  audience_linkedin: ['audience'],
   pain_points: ['audience'],
   desires: ['audience'],
   objections: ['audience', 'pain_points'],
   emotional_angles: ['audience', 'pain_points', 'desires'],
-  hooks: ['audience', 'pain_points', 'emotional_angles'],
-  short_copy: ['audience', 'pain_points', 'emotional_angles'],
-  long_copy: ['audience', 'pain_points', 'emotional_angles'],
-  ctas: ['audience', 'desires'],
-  video_script: ['audience', 'pain_points', 'emotional_angles'],
-  image_prompt: ['audience', 'emotional_angles'],
-  ad_brief: ['audience', 'pain_points', 'desires', 'emotional_angles'],
+  // Meta tools
+  meta_hooks: ['audience', 'pain_points', 'emotional_angles'],
+  meta_primary_text: ['audience', 'pain_points', 'emotional_angles'],
+  meta_headlines: ['audience', 'emotional_angles'],
+  meta_ctas: ['audience', 'desires'],
+  meta_creatives: ['audience', 'emotional_angles'],
+  // Google tools
+  google_keywords: ['audience', 'pain_points'],
+  google_headlines: ['audience', 'pain_points'],
+  google_descriptions: ['audience', 'pain_points', 'desires'],
+  google_extensions: ['audience', 'desires'],
+  google_ctas: ['audience', 'desires'],
+  google_landing_match: ['audience', 'pain_points', 'desires'],
 };
 
 const FOUNDATION_TOOLS = ['audience', 'pain_points', 'desires', 'objections', 'emotional_angles'];
-const ASSET_TOOLS_WITH_PLATFORM = ['audience_meta', 'audience_google', 'audience_linkedin'];
 
 const buildContext = (project) => {
   const parts = [];
@@ -102,185 +94,187 @@ const buildContext = (project) => {
   parts.push(`USP: ${project.usp || 'Not provided'}`);
   if (project.target_location) parts.push(`Target Location: ${project.target_location}`);
   if (project.target_audience_hint) parts.push(`Ideal Customer Hint: ${project.target_audience_hint}`);
-  
   const intel = project.intelligence || {};
   if (intel.audience) parts.push(`Target Audience: ${JSON.stringify(intel.audience)}`);
   if (intel.pain_points?.length) parts.push(`Pain Points: ${intel.pain_points.join(', ')}`);
   if (intel.desires?.length) parts.push(`Desires: ${intel.desires.join(', ')}`);
   if (intel.objections?.length) parts.push(`Objections: ${intel.objections.join(', ')}`);
-  if (intel.emotional_angles?.length) parts.push(`Emotional Angles: ${intel.emotional_angles.join(', ')}`);
-  
+  if (intel.emotional_angles?.length) parts.push(`Emotional Angles: ${JSON.stringify(intel.emotional_angles)}`);
   return parts.join('\n');
 };
 
 const PROMPTS = {
+  // ── FOUNDATION ──
   audience: (ctx, input) => `
 ${ctx}
 ${input?.description ? `User says their ideal customer is: ${input.description}` : ''}
 ${input?.custom ? `Additional notes: ${input.custom}` : ''}
 
-Generate 3 detailed and distinct target audience personas for this business. Each persona should be specific enough to guide ad targeting and copywriting.
-
+Generate 3 detailed and distinct target audience personas for this business.
 Return JSON: { "options": [{ 
-  "label": "A memorable persona name (e.g. The Overwhelmed Founder)",
+  "label": "A memorable persona name",
   "demographics": "Age range, gender split, location type, income bracket, education level, job title/role",
-  "psychographics": "Values, beliefs, lifestyle choices, media consumption habits, brands they follow, communities they belong to",
-  "situation": "What's happening in their life/business RIGHT NOW that makes them need this product. Be very specific about their current frustration or trigger moment.",
-  "goals": "What they're trying to achieve in the next 3-6 months related to this product's domain",
+  "psychographics": "Values, beliefs, lifestyle choices, media consumption habits, brands they follow",
+  "situation": "What's happening in their life/business RIGHT NOW that makes them need this product",
+  "goals": "What they're trying to achieve in the next 3-6 months",
   "objections": "Top 2 reasons this persona might hesitate to buy",
-  "buying_triggers": "What specific event or realization would make them take action TODAY",
-  "awareness_level": "unaware/problem-aware/solution-aware/product-aware — with brief explanation of what they currently know"
+  "buying_triggers": "What specific event would make them take action TODAY",
+  "awareness_level": "unaware/problem-aware/solution-aware/product-aware with explanation"
 }] }`,
-
-  audience_meta: (ctx, input) => `
-${ctx}
-${input?.custom ? `Additional notes: ${input.custom}` : ''}
-
-Based on the target audience, generate Meta (Facebook/Instagram) ad targeting suggestions that the user can directly copy-paste into Meta Ads Manager.
-
-Return JSON: {
-  "items": [{
-    "interests": ["list of 10-15 interests to target"],
-    "behaviors": ["list of 5-8 behaviors"],
-    "demographics_targeting": "Age range, gender, locations to set",
-    "custom_audience_ideas": ["3 custom audience suggestions"],
-    "lookalike_suggestions": ["2-3 lookalike audience ideas"],
-    "exclusions": ["2-3 audiences to exclude"],
-    "budget_recommendation": "Suggested daily budget range and bidding strategy"
-  }]
-}`,
-
-  audience_google: (ctx, input) => `
-${ctx}
-${input?.custom ? `Additional notes: ${input.custom}` : ''}
-
-Based on the target audience, generate Google Ads targeting suggestions that the user can directly copy-paste into Google Ads.
-
-Return JSON: {
-  "items": [{
-    "search_keywords": ["15-20 keywords to target"],
-    "negative_keywords": ["5-8 negative keywords"],
-    "in_market_audiences": ["5-7 in-market audience segments"],
-    "affinity_audiences": ["5-7 affinity audience segments"],
-    "demographics_targeting": "Age, gender, household income, parental status",
-    "device_targeting": "Recommended device strategy",
-    "ad_schedule": "Recommended days/hours to run ads"
-  }]
-}`,
-
-  audience_linkedin: (ctx, input) => `
-${ctx}
-${input?.custom ? `Additional notes: ${input.custom}` : ''}
-
-Based on the target audience, generate LinkedIn Ads targeting suggestions that the user can directly copy-paste into LinkedIn Campaign Manager.
-
-Return JSON: {
-  "items": [{
-    "job_titles": ["10-15 job titles to target"],
-    "industries": ["5-8 industries"],
-    "company_sizes": ["company size ranges"],
-    "seniority_levels": ["relevant seniority levels"],
-    "skills": ["8-10 skills to target"],
-    "groups": ["3-5 LinkedIn groups to consider"],
-    "education": "Degree levels and fields of study",
-    "years_experience": "Experience range to target"
-  }]
-}`,
 
   pain_points: (ctx, input) => `
 ${ctx}
 ${input?.custom ? `User added: ${input.custom}` : ''}
-
 Generate 8-10 specific pain points this audience faces that the product solves. Be specific, not generic.
 Return JSON: { "options": ["pain point 1", "pain point 2", ...] }`,
 
   desires: (ctx, input) => `
 ${ctx}
 ${input?.custom ? `User added: ${input.custom}` : ''}
-
 Generate 6-8 specific desires/goals this audience has that relate to the product.
 Return JSON: { "options": ["desire 1", "desire 2", ...] }`,
 
   objections: (ctx, input) => `
 ${ctx}
 ${input?.custom ? `User added: ${input.custom}` : ''}
-
 Generate 6-8 common objections or reasons someone might NOT buy this product.
 Return JSON: { "options": ["objection 1", "objection 2", ...] }`,
 
   emotional_angles: (ctx, input) => `
 ${ctx}
 ${input?.custom ? `User added: ${input.custom}` : ''}
+Generate 5-6 emotional angles for ads. Focus on: curiosity, emotional storytelling, aspiration, pain amplification, transformation, social proof.
+Return JSON: { "options": [{ "emotion": "type", "angle": "specific angle description", "example_hook": "one example hook" }] }`,
 
-Generate 5-6 emotional angles that could be used in ads for this product. Each angle should include the emotion and how to use it.
-Return JSON: { "options": [{ "emotion": "fear/aspiration/urgency/curiosity/social-proof/empathy", "angle": "specific angle description", "example_hook": "one example hook using this angle" }] }`,
+  // ── TARGETING ──
+  audience_meta: (ctx, input) => `
+${ctx}
+${input?.custom ? `Additional notes: ${input.custom}` : ''}
+Generate Meta (Facebook/Instagram) ad targeting suggestions. Be specific and actionable.
+Return JSON: { "items": [{ "interests": ["15 interests"], "behaviors": ["8 behaviors"], "demographics_targeting": "Age, gender, locations", "custom_audience_ideas": ["3 ideas"], "lookalike_suggestions": ["3 suggestions"], "exclusions": ["3 exclusions"], "budget_recommendation": "daily budget and bidding strategy" }] }`,
 
-  hooks: (ctx, input) => `
+  audience_google: (ctx, input) => `
+${ctx}
+${input?.custom ? `Additional notes: ${input.custom}` : ''}
+Generate Google Ads targeting suggestions. Be specific and actionable.
+Return JSON: { "items": [{ "search_keywords": ["20 keywords"], "negative_keywords": ["8 negatives"], "in_market_audiences": ["7 segments"], "affinity_audiences": ["7 segments"], "demographics_targeting": "Age, gender, income", "device_targeting": "device strategy", "ad_schedule": "recommended schedule" }] }`,
+
+  // ── META ADS ──
+  meta_hooks: (ctx, input) => `
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
-${input?.angle ? `Focus on this emotional angle: ${input.angle}` : ''}
 
-Generate 10 ad hooks. Mix types: curiosity, pain point, benefit, social proof, urgency, question.
-Each hook should be a single attention-grabbing sentence.
+Generate 10 Meta ad hooks (first line that stops the scroll). 
+Focus on these BEST PERFORMING angles for Meta: curiosity, emotional storytelling, aspiration, pain amplification, transformation.
+Each hook should be 1 sentence, punchy, scroll-stopping.
+Mix types: question, bold statement, story opener, pain call-out, transformation tease.
+
 Return JSON: { "items": ["hook 1", "hook 2", ...] }`,
 
-  short_copy: (ctx, input) => `
+  meta_primary_text: (ctx, input) => `
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
-${input?.hook ? `Use this hook: ${input.hook}` : ''}
+${input?.hook ? `Use this hook as the opener: ${input.hook}` : ''}
 
-Write 3 short ad copy variations (under 50 words each). Each should have a hook, body, and CTA.
-Return JSON: { "items": ["copy 1", "copy 2", "copy 3"] }`,
+Write 3 Meta ad primary text variations (the main body copy under the creative).
+Each should follow this structure: Hook → Pain/Problem → Solution → Benefits → Social proof hint → CTA
+Tone: Conversational, emotional, story-driven. NOT corporate.
+Length: 100-200 words each.
+Focus angles: emotional storytelling, aspiration, pain amplification, transformation.
 
-  long_copy: (ctx, input) => `
-${ctx}
-${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
-${input?.hook ? `Use this hook: ${input.hook}` : ''}
+Return JSON: { "items": [{ "hook": "opening hook", "body": "full primary text", "cta": "call to action line" }] }`,
 
-Write a full ad copy (150-250 words) with: hook, problem agitation, solution, benefits, social proof hint, CTA.
-Return JSON: { "items": ["full copy text"] }`,
-
-  ctas: (ctx, input) => `
+  meta_headlines: (ctx, input) => `
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 
-Generate 10 CTA variations. Mix styles: urgency, benefit-driven, curiosity, direct, soft.
+Generate 10 Meta ad headlines (appears below the creative image/video).
+Max 40 characters each. Punchy, benefit-driven, curiosity-inducing.
+Mix: benefit statements, questions, urgency, social proof, transformation.
+
+Return JSON: { "items": ["headline 1", "headline 2", ...] }`,
+
+  meta_ctas: (ctx, input) => `
+${ctx}
+${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
+
+Generate 8 Meta ad CTA variations. These appear as the button text or final line.
+Mix styles: urgency, benefit-driven, curiosity, direct action, soft ask.
+Keep them short (2-5 words for buttons, 1 sentence for text CTAs).
+
 Return JSON: { "items": ["cta 1", "cta 2", ...] }`,
 
-  video_script: (ctx, input) => `
-${ctx}
-${input?.duration ? `Duration: ${input.duration} seconds` : 'Duration: 30-60 seconds'}
-${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
-
-Write a video ad script with: hook (first 3 seconds), problem, solution, benefits, CTA.
-Return JSON: { "items": ["full script text"] }`,
-
-  image_prompt: (ctx, input) => `
+  meta_creatives: (ctx, input) => `
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 
-Generate 3 detailed AI image generation prompts for ad creatives (optimized for Midjourney/DALL-E/Ideogram).
+Generate 3 Meta ad creative/image concepts. Each should be a detailed description of what the ad visual should look like.
+Include: visual style, subject, text overlay suggestions, color mood, format (static/carousel/video).
+Focus on scroll-stopping visuals that complement emotional/aspirational copy.
 
-Each prompt MUST include:
-- Subject/scene description (specific, not vague)
-- Art style (photorealistic, flat illustration, 3D render, minimalist, etc.)
-- Lighting (studio lighting, golden hour, neon glow, soft diffused, etc.)
-- Color palette (specific colors that match the brand/mood)
-- Composition (close-up, wide shot, overhead, rule of thirds, etc.)
-- Mood/atmosphere (energetic, calm, professional, playful, etc.)
-- Technical specs (aspect ratio suggestion like 1:1 for feed, 9:16 for stories, 16:9 for landscape)
+Return JSON: { "items": [{ "concept": "concept name", "visual": "detailed visual description", "text_overlay": "suggested text on image", "format": "static/carousel/video/story", "mood": "visual mood" }] }`,
 
-Make them diverse: one product-focused, one lifestyle/emotional, one abstract/conceptual.
-Do NOT use generic descriptions. Be specific enough that any AI image tool produces a usable ad creative.
-
-Return JSON: { "items": ["detailed prompt 1", "detailed prompt 2", "detailed prompt 3"] }`,
-
-  ad_brief: (ctx, input) => `
+  // ── GOOGLE ADS ──
+  google_keywords: (ctx, input) => `
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 
-Create a complete ad campaign brief.
-Return JSON: { "items": [{ "objective": "", "key_message": "", "tone": "", "platforms": [], "content_angles": [], "hooks": [], "cta_options": [] }] }`,
+Generate keyword research for Google Search Ads.
+Focus on: clarity, specificity, search intent, buyer keywords.
+Group by intent: informational, commercial, transactional.
+
+Return JSON: { "items": [{ "transactional": ["10 high-intent buying keywords"], "commercial": ["10 comparison/research keywords"], "informational": ["10 awareness keywords"], "negative_keywords": ["8 keywords to exclude"], "long_tail": ["8 long-tail opportunities"] }] }`,
+
+  google_headlines: (ctx, input) => `
+${ctx}
+${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
+
+Generate 15 Google Search Ad headlines. STRICT: Max 30 characters each.
+Focus on: clarity, specificity, benefits, ROI, trust, comparisons. NOT emotional storytelling.
+Include: benefit headlines, feature headlines, urgency headlines, trust headlines, action headlines.
+Each must be under 30 characters.
+
+Return JSON: { "items": ["headline 1", "headline 2", ...] }`,
+
+  google_descriptions: (ctx, input) => `
+${ctx}
+${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
+
+Generate 6 Google Search Ad descriptions. STRICT: Max 90 characters each.
+Focus on: clarity, benefits, ROI, trust signals, specific outcomes. NOT emotional.
+Each should complement headlines and include a soft CTA.
+
+Return JSON: { "items": ["description 1", "description 2", ...] }`,
+
+  google_extensions: (ctx, input) => `
+${ctx}
+${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
+
+Generate Google Ad extensions content:
+- 4 sitelink extensions (title + description)
+- 6 callout extensions (short benefit phrases, max 25 chars)
+- 4 structured snippets (header + values)
+
+Return JSON: { "items": [{ "sitelinks": [{"title": "", "description": ""}], "callouts": [""], "structured_snippets": [{"header": "", "values": [""]}] }] }`,
+
+  google_ctas: (ctx, input) => `
+${ctx}
+${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
+
+Generate 8 Google Ad CTA variations. Direct, clear, action-oriented.
+Focus on: specificity, benefit, urgency. NOT emotional.
+Examples of good Google CTAs: "Get Free Quote", "Start 14-Day Trial", "See Pricing".
+
+Return JSON: { "items": ["cta 1", "cta 2", ...] }`,
+
+  google_landing_match: (ctx, input) => `
+${ctx}
+${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
+
+Generate landing page optimization suggestions to match Google Ad messaging.
+Include: headline suggestions, above-fold content, trust signals, CTA placement, message match tips.
+
+Return JSON: { "items": [{ "headline_suggestions": ["3 landing page headlines"], "above_fold": "what should be visible without scrolling", "trust_signals": ["4 trust elements to include"], "cta_suggestions": ["3 landing page CTAs"], "message_match_tips": ["4 tips to match ad to landing page"] }] }`,
 };
 
 exports.handler = async (event) => {
@@ -298,7 +292,6 @@ exports.handler = async (event) => {
       return res.badRequest(`Invalid tool. Available: ${Object.keys(PROMPTS).join(', ')}`);
     }
 
-    // Get project
     const result = await ddb.send(new GetCommand({ TableName: TABLE, Key: { project_id: projectId } }));
     if (!result.Item) return res.notFound('Project not found');
     if (result.Item.user_id !== user.user_id) return res.forbidden();
@@ -314,40 +307,18 @@ exports.handler = async (event) => {
     });
 
     if (missing.length > 0) {
-      return res.ok({
-        status: 'missing_dependencies',
-        missing,
-        message: `To generate ${tool}, we first need: ${missing.join(', ')}`,
-      });
+      return res.ok({ status: 'missing_dependencies', missing, message: `To generate ${tool}, we first need: ${missing.join(', ')}` });
     }
 
     // Generate
     let aiResult;
 
-    // Special handling: image_prompt with reference image
-    if (tool === 'image_prompt' && input?.image_base64) {
+    if (tool === 'meta_creatives' && input?.image_base64) {
       const mimeType = input.image_mime || 'image/jpeg';
-      const visionPrompt = `Analyze this reference image for ad creative generation. Describe in detail:
-1. Art style (photorealistic, illustration, 3D, flat design, etc.)
-2. Color palette (specific colors used)
-3. Lighting style
-4. Composition and layout
-5. Mood/atmosphere
-6. Subject matter and visual elements
-7. Typography style if any text is present
-8. Overall aesthetic
-
-Then generate 3 AI image generation prompts that create SIMILAR style ad creatives for this product:
-Business: ${project.business_name}
-Product: ${project.product_name}
-Description: ${project.product_description || ''}
-${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
-
-Each prompt should maintain the same visual style as the reference but adapted for this product/brand.
-Include: subject, art style, lighting, colors, composition, mood, and aspect ratio.
-
-Return JSON: { "style_analysis": "brief description of the reference image style", "items": ["detailed prompt 1", "detailed prompt 2", "detailed prompt 3"] }`;
-
+      const visionPrompt = `Analyze this reference image and generate 3 similar-style ad creative concepts for:
+Business: ${project.business_name}, Product: ${project.product_name}
+${input?.instruction ? `Instruction: ${input.instruction}` : ''}
+Return JSON: { "style_analysis": "brief style description", "items": [{ "concept": "name", "visual": "detailed description", "text_overlay": "text suggestion", "format": "format type", "mood": "mood" }] }`;
       aiResult = await callGeminiVision(input.image_base64, mimeType, visionPrompt);
     } else {
       const ctx = buildContext(project);
@@ -358,37 +329,28 @@ Return JSON: { "style_analysis": "brief description of the reference image style
 
     // Save result
     if (FOUNDATION_TOOLS.includes(tool)) {
-      // Foundation: save to intelligence
       const value = aiResult.options || aiResult;
-      
-      // First ensure intelligence map exists, then set the tool value
       const currentIntel = project.intelligence || {};
       currentIntel[tool] = value;
-
       await ddb.send(new UpdateCommand({
         TableName: TABLE,
         Key: { project_id: projectId },
         UpdateExpression: 'SET intelligence = :intel, updated_at = :now',
         ExpressionAttributeValues: { ':intel': currentIntel, ':now': new Date().toISOString() },
       }));
-
       return res.ok({ status: 'options', tool, options: value });
     } else {
-      // Asset (including platform targeting): append to assets array
       const items = aiResult.items || [aiResult];
       const timestamp = new Date().toISOString();
       const asset = { id: `${tool}_${Date.now()}`, tool, items, input: input || {}, created_at: timestamp };
-
       const currentAssets = project.assets || [];
       currentAssets.push(asset);
-
       await ddb.send(new UpdateCommand({
         TableName: TABLE,
         Key: { project_id: projectId },
         UpdateExpression: 'SET assets = :assets, updated_at = :now',
         ExpressionAttributeValues: { ':assets': currentAssets, ':now': timestamp },
       }));
-
       return res.ok({ status: 'generated', tool, asset });
     }
   } catch (err) {
