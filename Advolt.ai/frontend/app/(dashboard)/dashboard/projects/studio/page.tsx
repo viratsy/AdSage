@@ -219,9 +219,9 @@ export default function ProjectStudioPage() {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left Panel */}
-        <div className="lg:col-span-2 space-y-4">
+      <div className={`grid grid-cols-1 lg:grid-cols-5 gap-6 ${activeStep === 4 ? 'lg:grid-flow-dense' : ''}`}>
+        {/* Left Panel — Steps 1-3: step content, Step 4: audience intelligence */}
+        <div className={`${activeStep === 4 ? 'lg:col-span-2' : 'lg:col-span-2'} space-y-4`}>
           {activeStep === 1 && (
             <StepAudience
               project={project}
@@ -269,7 +269,42 @@ export default function ProjectStudioPage() {
             />
           )}
 
-          {activeStep === 4 && (
+          {/* Step 4: Left side shows audience context */}
+          {activeStep === 4 && intelligence.audience && (
+            <div className="space-y-4 max-h-[calc(100vh-180px)] overflow-y-auto">
+              <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <UserCircle size={20} className="text-indigo-400" />
+                  <div>
+                    <p className="text-sm font-bold">{intelligence.audience.label}</p>
+                    <p className="text-xs text-gray-400">{intelligence.audience.demographics}</p>
+                  </div>
+                </div>
+                {intelligence.audience.situation && <p className="text-xs text-gray-300 mb-2">{intelligence.audience.situation}</p>}
+              </div>
+              {intelligence.pain_points && intelligence.pain_points.length > 0 && (
+                <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <p className="text-xs font-bold text-red-300 mb-2">Pain Points</p>
+                  {intelligence.pain_points.slice(0, 3).map((p, i) => <p key={i} className="text-xs text-gray-300 mb-1">• {p}</p>)}
+                </div>
+              )}
+              {intelligence.emotional_angles && intelligence.emotional_angles.length > 0 && (
+                <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <p className="text-xs font-bold text-orange-300 mb-2">Emotional Angles</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {intelligence.emotional_angles.map((a, i) => (
+                      <span key={i} className="px-2 py-1 rounded text-[10px] bg-orange-500/10 text-orange-300 border border-orange-500/20 capitalize">{a.emotion}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right Panel — Steps 1-3: intelligence dashboard, Step 4: ad generation workspace */}
+        <div className="lg:col-span-3 space-y-5 max-h-[calc(100vh-180px)] overflow-y-auto pr-1">
+          {activeStep === 4 ? (
             <StepDesignAds
               projectId={projectId!}
               assets={assets}
@@ -286,11 +321,8 @@ export default function ProjectStudioPage() {
               onCopy={copyText}
               copied={copied}
             />
-          )}
-        </div>
-
-        {/* Right Panel — Dashboard-style Intelligence */}
-        <div className="lg:col-span-3 space-y-5 max-h-[calc(100vh-180px)] overflow-y-auto pr-1">
+          ) : (
+            <>
           {/* Platform toggle */}
           <div className="flex justify-end">
             <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
@@ -312,15 +344,22 @@ export default function ProjectStudioPage() {
                     <UserCircle size={28} className="text-indigo-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white">Ideal Audience</h3>
-                    <p className="text-sm mt-2 text-gray-200 leading-relaxed">{intelligence.audience.situation || intelligence.audience.demographics}</p>
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      {intelligence.audience.demographics?.split(',').slice(0, 4).map((tag, i) => (
-                        <span key={i} className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 text-gray-200 border border-white/10">
-                          {tag.trim()}
-                        </span>
-                      ))}
-                    </div>
+                    <h3 className="text-lg font-bold text-white">{intelligence.audience.label || 'Ideal Audience'}</h3>
+                    <p className="text-sm mt-2 text-gray-200 leading-relaxed">
+                      {intelligence.audience.situation || intelligence.audience.psychographics || intelligence.audience.demographics || 'Target audience defined'}
+                    </p>
+                    {intelligence.audience.demographics && (
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {intelligence.audience.demographics.split(',').map((tag, i) => (
+                          <span key={i} className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 text-gray-200 border border-white/10">
+                            {tag.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {intelligence.audience.goals && (
+                      <p className="text-xs mt-3 text-gray-400"><span className="text-gray-300">Goals:</span> {intelligence.audience.goals}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -493,6 +532,8 @@ export default function ProjectStudioPage() {
               <p className="text-base font-medium text-gray-400">Define your audience first</p>
               <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Complete Step 1 to see targeting intelligence here</p>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>
