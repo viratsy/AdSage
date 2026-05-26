@@ -909,6 +909,32 @@ Resources:
             Path: /billing/status
             Method: GET
 
+  AdminActivateProFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-admin-activate-pro-${Stage}"
+      CodeUri: src/billing/
+      Handler: adminActivatePro.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+                - cognito-idp:AdminCreateUser
+                - cognito-idp:AdminSetUserPassword
+              Resource: !GetAtt UserPool.Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /billing/admin/activate-pro
+            Method: POST
+            Auth:
+              Authorizer: NONE
+
   ResetTokensFunction:
     Type: AWS::Serverless::Function
     Properties:

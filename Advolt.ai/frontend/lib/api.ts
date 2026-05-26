@@ -35,7 +35,7 @@ export default api;
 export const authApi = {
   signup: (data: { email: string; password: string; full_name: string }) =>
     api.post('/auth/signup', data),
-  login: (data: { email: string; password: string }) =>
+  login: (data: Record<string, string>) =>
     api.post('/auth/login', data),
   refresh: (refresh_token: string) =>
     api.post('/auth/refresh', { refresh_token }),

@@ -14,7 +14,7 @@ const TOKEN_COSTS = {
   video_script: 50,
 };
 
-const FREE_PLAN_LIFETIME_ANALYSES = 1;
+const FREE_PLAN_LIFETIME_ANALYSES = 0; // Free plan removed — all users need Pro
 const PRO_MONTHLY_TOKENS = 5000;
 const PRO_MONTHLY_EXPIRY_DAYS = 30;
 

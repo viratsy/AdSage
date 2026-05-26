@@ -10,6 +10,9 @@ export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const [form, setForm] = useState({ email: '', password: '' });
+  const [newPassword, setNewPassword] = useState('');
+  const [session, setSession] = useState('');
+  const [needsNewPassword, setNeedsNewPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,9 +21,22 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const { data } = await authApi.login(form);
-      login(data);
-      router.push('/dashboard');
+      if (needsNewPassword && session) {
+        // Submit new password
+        const { data } = await authApi.login({ ...form, new_password: newPassword, session } as Record<string, string>);
+        login(data);
+        router.push('/dashboard');
+      } else {
+        const { data } = await authApi.login(form);
+        if (data.challenge === 'NEW_PASSWORD_REQUIRED') {
+          setSession(data.session);
+          setNeedsNewPassword(true);
+          setError('');
+        } else {
+          login(data);
+          router.push('/dashboard');
+        }
+      }
     } catch (err: unknown) {
       setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Login failed. Check your credentials.');
     } finally {
@@ -32,29 +48,50 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-indigo-400">⚡ Advolt.ai</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Sign in to your account</p>
+          <h1 className="text-2xl font-bold text-indigo-400">⚡ Advolt AI</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+            {needsNewPassword ? 'Set your new password' : 'Sign in to your account'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            required
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full px-4 py-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-            style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            required
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="w-full px-4 py-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-            style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-          />
+          {!needsNewPassword ? (
+            <>
+              <input
+                type="email"
+                placeholder="Email"
+                required
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full px-4 py-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                required
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="w-full px-4 py-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+              />
+            </>
+          ) : (
+            <>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                Your account requires a password reset. Please set a new password.
+              </p>
+              <input
+                type="password"
+                placeholder="New Password (min 8 chars, uppercase, number)"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+              />
+            </>
+          )}
 
           {error && <p className="text-sm text-red-400">{error}</p>}
 
@@ -64,14 +101,16 @@ export default function LoginPage() {
             className="w-full py-3 rounded-lg font-semibold text-sm text-white transition-colors disabled:opacity-50"
             style={{ background: 'var(--accent)' }}
           >
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading ? 'Please wait…' : needsNewPassword ? 'Set Password & Sign In' : 'Sign In'}
           </button>
         </form>
 
-        <p className="text-center text-sm mt-6" style={{ color: 'var(--text-muted)' }}>
-          No account?{' '}
-          <Link href="/signup" className="text-indigo-400 hover:underline">Sign up</Link>
-        </p>
+        {!needsNewPassword && (
+          <p className="text-center text-sm mt-6" style={{ color: 'var(--text-muted)' }}>
+            No account?{' '}
+            <Link href="/signup" className="text-indigo-400 hover:underline">Sign up</Link>
+          </p>
+        )}
       </div>
     </div>
   );
