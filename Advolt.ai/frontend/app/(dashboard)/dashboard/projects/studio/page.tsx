@@ -923,16 +923,16 @@ function StepDesignAds({ projectId, assets, activePlatform, setActivePlatform, a
         <div className="space-y-4">
           <p className="text-xs font-medium text-emerald-400">✓ Generated</p>
           {generatedAsset.items.map((item, i) => {
-            const obj = item as Record<string, unknown>;
+            const obj = (typeof item === 'object' && item !== null ? item : {}) as Record<string, unknown>;
             const text = typeof item === 'string' ? item : Object.entries(obj).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
             const key = `gen_${i}`;
             return (
               <div key={i} className="rounded-xl p-5 relative group" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 {typeof item === 'object' && item !== null ? (
                   <div className="space-y-3">
-                    {obj.campaign_name && <p className="text-base font-bold text-white">{String(obj.campaign_name)}</p>}
-                    {obj.emotional_angle && <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">{String(obj.emotional_angle)}</span>}
-                    {obj.search_intent && <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">{String(obj.search_intent)}</span>}
+                    {obj.campaign_name ? <p className="text-base font-bold text-white">{String(obj.campaign_name)}</p> : null}
+                    {obj.emotional_angle ? <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">{String(obj.emotional_angle)}</span> : null}
+                    {obj.search_intent ? <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">{String(obj.search_intent)}</span> : null}
 
                     {Object.entries(obj).filter(([k]) => !['campaign_name', 'emotional_angle', 'search_intent'].includes(k)).map(([field, value]) => {
                       const isLong = typeof value === 'string' && value.length > 60;
@@ -970,18 +970,18 @@ function StepDesignAds({ projectId, assets, activePlatform, setActivePlatform, a
           <p className="text-xs font-medium text-gray-400">Previous campaigns</p>
           {(mode === 'campaign' ? campaignAssets : assets.filter(a => a.tool === activeTool)).slice().reverse().slice(0, 3).map(asset => (
             asset.items.map((item, i) => {
-              const obj = item as Record<string, unknown>;
+              const obj = (typeof item === 'object' && item !== null ? item : {}) as Record<string, unknown>;
               const text = typeof item === 'string' ? item : Object.entries(obj).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
               const key = `prev_${asset.id}_${i}`;
               return (
                 <div key={key} className="rounded-xl p-4 relative group" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                   {typeof item === 'object' && item !== null ? (
                     <div className="space-y-2">
-                      {obj.campaign_name && <p className="text-sm font-bold text-gray-200">{String(obj.campaign_name)}</p>}
-                      {obj.hook && <p className="text-xs text-gray-300"><span className="text-indigo-400 font-medium">Hook:</span> {String(obj.hook)}</p>}
-                      {obj.headline && <p className="text-xs text-gray-300"><span className="text-indigo-400 font-medium">Headline:</span> {typeof obj.headline === 'string' ? obj.headline : (obj.headlines as string[])?.join(' | ')}</p>}
-                      {obj.cta && <p className="text-xs text-gray-300"><span className="text-indigo-400 font-medium">CTA:</span> {String(obj.cta)}</p>}
-                      {obj.why_it_works && <p className="text-[10px] text-gray-500 italic mt-1">{String(obj.why_it_works)}</p>}
+                      {obj.campaign_name ? <p className="text-sm font-bold text-gray-200">{String(obj.campaign_name)}</p> : null}
+                      {obj.hook ? <p className="text-xs text-gray-300"><span className="text-indigo-400 font-medium">Hook:</span> {String(obj.hook)}</p> : null}
+                      {obj.headline ? <p className="text-xs text-gray-300"><span className="text-indigo-400 font-medium">Headline:</span> {typeof obj.headline === 'string' ? obj.headline : (obj.headlines as string[])?.join(' | ')}</p> : null}
+                      {obj.cta ? <p className="text-xs text-gray-300"><span className="text-indigo-400 font-medium">CTA:</span> {String(obj.cta)}</p> : null}
+                      {obj.why_it_works ? <p className="text-[10px] text-gray-500 italic mt-1">{String(obj.why_it_works)}</p> : null}
                     </div>
                   ) : (
                     <p className="text-xs text-gray-300">{text}</p>
