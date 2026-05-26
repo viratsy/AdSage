@@ -290,13 +290,13 @@ export default function ProjectStudioPage() {
         </div>
 
         {/* Right Panel — Dashboard-style Intelligence */}
-        <div className="lg:col-span-3 space-y-4 max-h-[calc(100vh-180px)] overflow-y-auto">
+        <div className="lg:col-span-3 space-y-5 max-h-[calc(100vh-180px)] overflow-y-auto pr-1">
           {/* Platform toggle */}
           <div className="flex justify-end">
             <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
               {(['meta', 'google'] as const).map(p => (
                 <button key={p} onClick={() => setActivePlatform(p)}
-                  className={`px-4 py-2 text-xs font-medium transition-colors ${activePlatform === p ? 'bg-indigo-500 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+                  className={`px-5 py-2.5 text-sm font-medium transition-colors ${activePlatform === p ? 'bg-indigo-500 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
                   {p === 'meta' ? '◎ Meta Ads' : 'G Google Ads'}
                 </button>
               ))}
@@ -304,19 +304,19 @@ export default function ProjectStudioPage() {
           </div>
 
           {intelligence.audience ? (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Ideal Audience Card */}
-              <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0">
-                    <UserCircle size={24} className="text-indigo-400" />
+              <div className="rounded-xl p-6" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05))', border: '1px solid rgba(99,102,241,0.2)' }}>
+                <div className="flex items-start gap-5">
+                  <div className="w-14 h-14 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0">
+                    <UserCircle size={28} className="text-indigo-400" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold">Ideal Audience</h3>
-                    <p className="text-sm mt-1 text-gray-300">{intelligence.audience.situation || intelligence.audience.demographics}</p>
-                    <div className="flex flex-wrap gap-1.5 mt-3">
+                    <h3 className="text-lg font-bold text-white">Ideal Audience</h3>
+                    <p className="text-sm mt-2 text-gray-200 leading-relaxed">{intelligence.audience.situation || intelligence.audience.demographics}</p>
+                    <div className="flex flex-wrap gap-2 mt-4">
                       {intelligence.audience.demographics?.split(',').slice(0, 4).map((tag, i) => (
-                        <span key={i} className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-white/5 text-gray-300 border border-white/10">
+                        <span key={i} className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 text-gray-200 border border-white/10">
                           {tag.trim()}
                         </span>
                       ))}
@@ -327,29 +327,33 @@ export default function ProjectStudioPage() {
 
               {/* Pain Points & Desires */}
               {(intelligence.pain_points?.length || intelligence.desires?.length) && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-5">
                   {intelligence.pain_points && intelligence.pain_points.length > 0 && (
-                    <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle size={14} className="text-red-400" />
-                        <span className="text-xs font-semibold">Pain Points</span>
+                    <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center">
+                          <AlertTriangle size={12} className="text-red-400" />
+                        </div>
+                        <span className="text-sm font-bold text-white">Pain Points</span>
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         {intelligence.pain_points.slice(0, 4).map((p, i) => (
-                          <p key={i} className="text-xs text-gray-300">• {p}</p>
+                          <p key={i} className="text-sm text-gray-300 leading-relaxed">• {p}</p>
                         ))}
                       </div>
                     </div>
                   )}
                   {intelligence.desires && intelligence.desires.length > 0 && (
-                    <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <Heart size={14} className="text-emerald-400" />
-                        <span className="text-xs font-semibold">Desires</span>
+                    <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                          <Heart size={12} className="text-emerald-400" />
+                        </div>
+                        <span className="text-sm font-bold text-white">Desires</span>
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         {intelligence.desires.slice(0, 4).map((d, i) => (
-                          <p key={i} className="text-xs text-gray-300">• {d}</p>
+                          <p key={i} className="text-sm text-gray-300 leading-relaxed">• {d}</p>
                         ))}
                       </div>
                     </div>
@@ -357,7 +361,7 @@ export default function ProjectStudioPage() {
                 </div>
               )}
 
-              {/* Interests & Behaviors from platform targeting */}
+              {/* Interests & Behaviors */}
               {(() => {
                 const platformAssets = assets.filter(a => a.tool === `audience_${activePlatform}`);
                 const latest = platformAssets.length > 0 ? platformAssets[platformAssets.length - 1] : null;
@@ -367,35 +371,39 @@ export default function ProjectStudioPage() {
                 const behaviors = Array.isArray(data.behaviors) ? data.behaviors : [];
                 if (!interests.length && !behaviors.length) return null;
                 return (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-5">
                     {interests.length > 0 && (
-                      <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                        <div className="flex items-center gap-2 mb-3">
-                          <Zap size={14} className="text-yellow-400" />
-                          <span className="text-xs font-semibold">Interests</span>
+                      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                            <Zap size={12} className="text-yellow-400" />
+                          </div>
+                          <span className="text-sm font-bold text-white">Interests</span>
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {interests.slice(0, 6).map((item: string, i: number) => (
-                            <span key={i} className="px-2 py-0.5 rounded text-[10px] bg-white/5 text-gray-300 border border-white/10">{item}</span>
+                        <div className="flex flex-wrap gap-2">
+                          {interests.slice(0, 5).map((item: string, i: number) => (
+                            <span key={i} className="px-2.5 py-1 rounded-lg text-xs bg-white/5 text-gray-200 border border-white/10">{item}</span>
                           ))}
-                          {interests.length > 6 && (
-                            <span className="px-2 py-0.5 rounded text-[10px] text-gray-500">+{interests.length - 6} more</span>
+                          {interests.length > 5 && (
+                            <span className="px-2.5 py-1 rounded-lg text-xs text-gray-500">+{interests.length - 5} more</span>
                           )}
                         </div>
                       </div>
                     )}
                     {behaviors.length > 0 && (
-                      <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                        <div className="flex items-center gap-2 mb-3">
-                          <Users size={14} className="text-blue-400" />
-                          <span className="text-xs font-semibold">Behaviors</span>
+                      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                            <Users size={12} className="text-blue-400" />
+                          </div>
+                          <span className="text-sm font-bold text-white">Behaviors</span>
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-2">
                           {behaviors.slice(0, 5).map((item: string, i: number) => (
-                            <span key={i} className="px-2 py-0.5 rounded text-[10px] bg-white/5 text-gray-300 border border-white/10">{item}</span>
+                            <span key={i} className="px-2.5 py-1 rounded-lg text-xs bg-white/5 text-gray-200 border border-white/10">{item}</span>
                           ))}
                           {behaviors.length > 5 && (
-                            <span className="px-2 py-0.5 rounded text-[10px] text-gray-500">+{behaviors.length - 5} more</span>
+                            <span className="px-2.5 py-1 rounded-lg text-xs text-gray-500">+{behaviors.length - 5} more</span>
                           )}
                         </div>
                       </div>
@@ -404,20 +412,30 @@ export default function ProjectStudioPage() {
                 );
               })()}
 
-              {/* Emotional Angles */}
+              {/* Emotional Angles — 5 column */}
               {intelligence.emotional_angles && intelligence.emotional_angles.length > 0 && (
-                <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Flame size={14} className="text-orange-400" />
-                    <span className="text-xs font-semibold">Emotional Angles</span>
+                <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center">
+                      <Flame size={12} className="text-orange-400" />
+                    </div>
+                    <span className="text-sm font-bold text-white">Emotional Angles</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {intelligence.emotional_angles.slice(0, 6).map((a, i) => {
-                      const colors = ['text-cyan-300 bg-cyan-500/10 border-cyan-500/20', 'text-amber-300 bg-amber-500/10 border-amber-500/20', 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20', 'text-red-300 bg-red-500/10 border-red-500/20', 'text-purple-300 bg-purple-500/10 border-purple-500/20', 'text-blue-300 bg-blue-500/10 border-blue-500/20'];
+                  <div className="grid grid-cols-5 gap-3">
+                    {intelligence.emotional_angles.slice(0, 5).map((a, i) => {
+                      const configs = [
+                        { color: 'text-cyan-300', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30', icon: '💡' },
+                        { color: 'text-amber-300', bg: 'bg-amber-500/10', border: 'border-amber-500/30', icon: '⭐' },
+                        { color: 'text-emerald-300', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', icon: '🔄' },
+                        { color: 'text-red-300', bg: 'bg-red-500/10', border: 'border-red-500/30', icon: '🔥' },
+                        { color: 'text-purple-300', bg: 'bg-purple-500/10', border: 'border-purple-500/30', icon: '👥' },
+                      ];
+                      const cfg = configs[i % configs.length];
                       return (
-                        <div key={i} className={`p-2.5 rounded-lg border ${colors[i % colors.length]}`}>
-                          <p className="text-[10px] font-bold capitalize">{a.emotion}</p>
-                          <p className="text-[9px] mt-0.5 opacity-70">{a.angle?.slice(0, 40)}</p>
+                        <div key={i} className={`p-3 rounded-xl border ${cfg.bg} ${cfg.border} text-center`}>
+                          <p className="text-lg mb-1">{cfg.icon}</p>
+                          <p className={`text-xs font-bold capitalize ${cfg.color}`}>{a.emotion}</p>
+                          <p className="text-[10px] mt-1 text-gray-400 leading-tight">{a.angle?.slice(0, 35)}</p>
                         </div>
                       );
                     })}
@@ -425,38 +443,55 @@ export default function ProjectStudioPage() {
                 </div>
               )}
 
-              {/* Budget & Audience Size */}
+              {/* Audience Size & Budget */}
               {(() => {
                 const platformAssets = assets.filter(a => a.tool === `audience_${activePlatform}`);
                 const latest = platformAssets.length > 0 ? platformAssets[platformAssets.length - 1] : null;
-                const data = latest?.items?.[0] as Record<string, unknown> | undefined;
-                if (!data?.budget_recommendation) return null;
+                const data = latest?.items?.[0] as Record<string, string> | undefined;
+                if (!data) return null;
                 return (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <DollarSign size={14} className="text-emerald-400" />
-                        <span className="text-xs font-semibold">Budget Recommendation</span>
+                  <div className="grid grid-cols-2 gap-5">
+                    {data.estimated_audience_size && (
+                      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                            <Users size={12} className="text-emerald-400" />
+                          </div>
+                          <span className="text-xs font-medium text-gray-400">Audience Size (Estimated)</span>
+                        </div>
+                        <p className="text-2xl font-bold text-white">{data.estimated_audience_size}</p>
+                        <p className="text-xs text-gray-400 mt-1">People on {activePlatform === 'meta' ? 'Meta' : 'Google'}</p>
+                        {data.audience_quality && (
+                          <span className="inline-block mt-2 px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            {data.audience_quality}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-sm font-bold text-white">{String(data.budget_recommendation).split(',')[0]}</p>
-                      <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>{String(data.budget_recommendation).split(',').slice(1).join(',').trim()}</p>
-                    </div>
-                    <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <MapPin size={14} className="text-indigo-400" />
-                        <span className="text-xs font-semibold">Demographics</span>
+                    )}
+                    <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                          <DollarSign size={12} className="text-indigo-400" />
+                        </div>
+                        <span className="text-xs font-medium text-gray-400">Budget Recommendation</span>
                       </div>
-                      <p className="text-xs text-gray-300">{data.demographics_targeting ? String(data.demographics_targeting) : 'Generate targeting to see'}</p>
+                      <p className="text-2xl font-bold text-white">{data.budget_recommendation?.split(',')[0] || '—'}</p>
+                      <p className="text-xs text-gray-400 mt-1">{data.estimated_cpc ? `Cost per click: ${data.estimated_cpc}` : data.budget_recommendation?.split(',').slice(1).join(',').trim() || ''}</p>
+                      {data.estimated_cpc && (
+                        <span className="inline-block mt-2 px-2.5 py-1 rounded-full text-[10px] font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                          Optimized
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
               })()}
             </div>
           ) : (
-            <div className="rounded-xl p-8 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <Users size={32} className="mx-auto text-gray-600 mb-2" />
-              <p className="text-sm font-medium text-gray-400">Define your audience first</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Complete Step 1 to see targeting intelligence here</p>
+            <div className="rounded-xl p-10 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <Users size={40} className="mx-auto text-gray-600 mb-3" />
+              <p className="text-base font-medium text-gray-400">Define your audience first</p>
+              <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Complete Step 1 to see targeting intelligence here</p>
             </div>
           )}
         </div>

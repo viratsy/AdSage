@@ -58,7 +58,7 @@ const callGeminiVision = async (imageBase64, mimeType, prompt) => {
   return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text);
 };
 
-const PREMIUM_TOOLS = ['audience', 'audience_meta', 'audience_google', 'meta_primary_text', 'meta_creatives', 'google_keywords', 'google_descriptions', 'google_landing_match'];
+const PREMIUM_TOOLS = ['audience', 'audience_meta', 'audience_google', 'meta_primary_text', 'meta_hooks', 'meta_creatives', 'google_keywords', 'google_descriptions', 'google_landing_match'];
 
 const DEPENDENCIES = {
   audience: [],
@@ -164,10 +164,21 @@ Return JSON: { "items": [{ "search_keywords": ["20 keywords"], "negative_keyword
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 
-Generate 10 Meta ad hooks (first line that stops the scroll). 
-Focus on these BEST PERFORMING angles for Meta: curiosity, emotional storytelling, aspiration, pain amplification, transformation.
-Each hook should be 1 sentence, punchy, scroll-stopping.
-Mix types: question, bold statement, story opener, pain call-out, transformation tease.
+Generate 10 Meta ad hooks. A hook is the FIRST LINE someone sees — it must stop the scroll in under 2 seconds.
+
+RULES:
+- Max 8-12 words each. Shorter = better.
+- NEVER start with "Are you tired of...", "Ever felt like...", "What if I told you...", "Ready to...", "Imagine...", "Introducing..."
+- NEVER use generic phrases. Be SPECIFIC to this product/niche.
+- Each hook must use a DIFFERENT angle from this list: pattern interrupt, bold claim, specific number/stat, controversial opinion, identity call-out, fear of missing out, social proof, before/after contrast, direct challenge, unexpected comparison.
+- Write like a DTC brand copywriter, not a corporate marketer.
+- Think: what would make someone STOP scrolling and read more?
+
+GOOD EXAMPLES (for reference style, not to copy):
+- "Your ads are bleeding money. Here's proof."
+- "3 words that doubled our ROAS overnight."
+- "Nobody talks about this Meta Ads hack."
+- "I spent ₹50L on ads so you don't have to."
 
 Return JSON: { "items": ["hook 1", "hook 2", ...] }`,
 
@@ -176,21 +187,51 @@ ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 ${input?.hook ? `Use this hook as the opener: ${input.hook}` : ''}
 
-Write 3 Meta ad primary text variations (the main body copy under the creative).
-Each should follow this structure: Hook → Pain/Problem → Solution → Benefits → Social proof hint → CTA
-Tone: Conversational, emotional, story-driven. NOT corporate.
-Length: 100-200 words each.
-Focus angles: emotional storytelling, aspiration, pain amplification, transformation.
+Write 3 Meta ad primary text variations. Each MUST use a DIFFERENT emotional angle.
 
-Return JSON: { "items": [{ "hook": "opening hook", "body": "full primary text", "cta": "call to action line" }] }`,
+FORMAT (use line breaks exactly like this):
+Line 1: Hook (scroll-stopper, max 10 words)
+Line 2: [empty line]
+Line 3-4: Agitate the problem (2 short sentences, be specific)
+Line 5: [empty line]
+Line 6-7: Introduce solution (what it does, not what it is)
+Line 8: [empty line]
+Line 9: Key benefit (specific outcome, use numbers if possible)
+Line 10: [empty line]
+Line 11: CTA (clear, direct, one sentence)
+
+RULES:
+- MAX 80 words total per variation. Mobile users don't read walls of text.
+- Use line breaks between every 1-2 sentences.
+- Write like texting a friend, not writing an essay.
+- NO clichés: "game-changer", "revolutionary", "unlock your potential", "take it to the next level"
+- Be SPECIFIC: mention the product, the outcome, the audience's situation.
+- Each variation must target a different angle: (1) Pain/frustration (2) Aspiration/transformation (3) Social proof/FOMO
+- Use \\n for line breaks in the text.
+
+Return JSON: { "items": [{ "hook": "opening hook line", "body": "full primary text with \\n line breaks", "cta": "call to action line", "angle": "which emotional angle this uses" }] }`,
 
   meta_headlines: (ctx, input) => `
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 
 Generate 10 Meta ad headlines (appears below the creative image/video).
-Max 40 characters each. Punchy, benefit-driven, curiosity-inducing.
-Mix: benefit statements, questions, urgency, social proof, transformation.
+STRICT: Max 40 characters each. Count carefully.
+
+CRITICAL RULES:
+- Match the TONE of the industry. Fashion = cool/vibe/aesthetic. SaaS = benefit/outcome. Education = transformation/career.
+- For fashion/lifestyle/DTC: Use slang, aesthetic language, drop culture, identity. NO "7 days", "2x more", "3 easy steps" — that's for SaaS.
+- For SaaS/B2B: Use numbers, outcomes, ROI. NO vague vibes.
+- NEVER use: "Unlock", "Discover", "Transform your X in Y days" for physical products.
+- Each headline must work STANDALONE — someone should want to click from the headline alone.
+- Be specific to the ACTUAL product. Mention it or its key attribute.
+
+MIX REQUIRED:
+- 3 that create desire/FOMO ("You'll get compliments", "Selling fast")
+- 2 that are identity-based ("For the ones who...", "Not for everyone")
+- 2 that highlight the product specifically (name, feature, design)
+- 2 that use urgency/scarcity ("Limited drop", "Last 50")
+- 1 that's a bold/fun statement
 
 Return JSON: { "items": ["headline 1", "headline 2", ...] }`,
 
@@ -198,9 +239,14 @@ Return JSON: { "items": ["headline 1", "headline 2", ...] }`,
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 
-Generate 8 Meta ad CTA variations. These appear as the button text or final line.
-Mix styles: urgency, benefit-driven, curiosity, direct action, soft ask.
-Keep them short (2-5 words for buttons, 1 sentence for text CTAs).
+Generate 8 Meta ad CTA variations.
+
+RULES:
+- Button CTAs: 2-4 words max (e.g., "Shop Now", "Get Yours", "See How")
+- Text CTAs: 1 short sentence that creates urgency or curiosity
+- NEVER use: "Click here", "Learn more" (too generic)
+- Mix: 3 urgency-based, 2 benefit-based, 2 curiosity-based, 1 scarcity-based
+- Each should feel like a natural next step, not a demand
 
 Return JSON: { "items": ["cta 1", "cta 2", ...] }`,
 
@@ -208,11 +254,23 @@ Return JSON: { "items": ["cta 1", "cta 2", ...] }`,
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 
-Generate 3 Meta ad creative/image concepts. Each should be a detailed description of what the ad visual should look like.
-Include: visual style, subject, text overlay suggestions, color mood, format (static/carousel/video).
-Focus on scroll-stopping visuals that complement emotional/aspirational copy.
+Generate 3 Meta ad creative/image concepts optimized for scroll-stopping in a feed.
 
-Return JSON: { "items": [{ "concept": "concept name", "visual": "detailed visual description", "text_overlay": "suggested text on image", "format": "static/carousel/video/story", "mood": "visual mood" }] }`,
+Each concept must include:
+- Visual style (photorealistic, flat illustration, UGC-style, meme format, comparison, before/after)
+- Exact text overlay (max 6 words on image — this is critical for Meta)
+- Color strategy (contrast with typical feed content — blue/white feeds need warm/bold colors)
+- Format recommendation with reasoning
+- The "thumb-stop" element (what makes someone pause)
+
+RULES:
+- Concept 1: Product-focused (show the product in use/context)
+- Concept 2: UGC/testimonial style (feels native, not like an ad)
+- Concept 3: Bold/disruptive (pattern interrupt, unusual visual)
+- Text on image must be readable at mobile size (large, high contrast)
+- Think about what stands out in a feed of selfies, food, and memes
+
+Return JSON: { "items": [{ "concept": "concept name", "visual": "detailed visual description", "text_overlay": "max 6 words on image", "format": "static/carousel/video/story", "thumb_stop": "what makes someone pause", "mood": "visual mood" }] }`,
 
   // ── GOOGLE ADS ──
   google_keywords: (ctx, input) => `
