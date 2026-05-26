@@ -58,7 +58,7 @@ const callGeminiVision = async (imageBase64, mimeType, prompt) => {
   return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text);
 };
 
-const PREMIUM_TOOLS = ['audience', 'audience_meta', 'audience_google', 'meta_primary_text', 'meta_hooks', 'meta_creatives', 'google_keywords', 'google_descriptions', 'google_landing_match'];
+const PREMIUM_TOOLS = ['audience', 'audience_meta', 'audience_google', 'meta_primary_text', 'meta_hooks', 'meta_creatives', 'meta_campaign', 'google_campaign', 'google_keywords', 'google_descriptions', 'google_landing_match'];
 
 const DEPENDENCIES = {
   audience: [],
@@ -68,7 +68,10 @@ const DEPENDENCIES = {
   desires: ['audience'],
   objections: ['audience', 'pain_points'],
   emotional_angles: ['audience', 'pain_points', 'desires'],
-  // Meta tools
+  // Campaign concepts
+  meta_campaign: ['audience', 'pain_points', 'emotional_angles'],
+  google_campaign: ['audience', 'pain_points'],
+  // Meta individual tools
   meta_hooks: ['audience', 'pain_points', 'emotional_angles'],
   meta_primary_text: ['audience', 'pain_points', 'emotional_angles'],
   meta_headlines: ['audience', 'emotional_angles'],
@@ -159,7 +162,71 @@ ${input?.custom ? `Additional notes: ${input.custom}` : ''}
 Generate Google Ads targeting suggestions. Be specific and actionable.
 Return JSON: { "items": [{ "search_keywords": ["20 keywords"], "negative_keywords": ["8 negatives"], "in_market_audiences": ["7 segments"], "affinity_audiences": ["7 segments"], "demographics_targeting": "Age, gender, income", "device_targeting": "device strategy", "ad_schedule": "recommended schedule" }] }`,
 
-  // ── META ADS ──
+  // ── CAMPAIGN CONCEPTS ──
+  meta_campaign: (ctx, input) => `
+${ctx}
+${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
+${input?.tone ? `Tone: ${input.tone}` : ''}
+${input?.angle ? `Focus on this emotional angle: ${input.angle}` : ''}
+
+Generate 3 COMPLETE Meta ad campaign concepts. Each campaign is a full, ready-to-launch ad concept with all components.
+
+Each campaign MUST use a DIFFERENT emotional angle and creative approach.
+
+RULES:
+- Hook: Max 10 words. Scroll-stopping. No clichés.
+- Primary text: Max 80 words. Use \\n for line breaks. Conversational, not corporate.
+- Headline: Max 40 characters. Specific to the product.
+- CTA: 2-4 words.
+- Creative direction: Specific visual concept, not vague.
+- Video flow: 5-step storyboard if applicable.
+- Match the TONE of the industry (fashion = cool/vibe, SaaS = benefit/outcome, education = transformation).
+
+Return JSON: { "items": [
+  {
+    "campaign_name": "A memorable 2-3 word campaign name",
+    "emotional_angle": "which angle this uses",
+    "hook": "scroll-stopping first line",
+    "primary_text": "full ad copy with \\n line breaks (max 80 words)",
+    "headline": "below-creative headline (max 40 chars)",
+    "cta": "call to action (2-4 words)",
+    "creative_style": "UGC/Static/Carousel/Reel/Meme",
+    "visual_direction": "specific visual concept description",
+    "thumbnail_text": "max 6 words for image overlay",
+    "video_flow": ["step 1", "step 2", "step 3", "step 4", "step 5"],
+    "why_it_works": "1 sentence on why this campaign will perform"
+  }
+] }`,
+
+  google_campaign: (ctx, input) => `
+${ctx}
+${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
+${input?.tone ? `Tone: ${input.tone}` : ''}
+
+Generate 3 COMPLETE Google Search ad campaign concepts. Each is a full responsive search ad setup.
+
+RULES:
+- Headlines: Max 30 characters each. Clear, specific, benefit-driven. NOT emotional.
+- Descriptions: Max 90 characters each. ROI/trust/benefit focused.
+- Focus on: clarity, specificity, search intent, trust signals.
+- Each campaign targets a different search intent (transactional, commercial, informational).
+
+Return JSON: { "items": [
+  {
+    "campaign_name": "descriptive campaign name",
+    "search_intent": "transactional/commercial/informational",
+    "headlines": ["headline 1 (max 30 chars)", "headline 2", "headline 3"],
+    "descriptions": ["description 1 (max 90 chars)", "description 2"],
+    "keywords": ["5 target keywords for this campaign"],
+    "negative_keywords": ["3 negatives"],
+    "cta": "landing page CTA suggestion",
+    "landing_page_headline": "suggested landing page H1",
+    "sitelinks": ["sitelink 1", "sitelink 2", "sitelink 3"],
+    "why_it_works": "1 sentence on why this will convert"
+  }
+] }`,
+
+  // ── META ADS (individual tools kept for granular generation) ──
   meta_hooks: (ctx, input) => `
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
@@ -382,7 +449,8 @@ Return JSON: { "style_analysis": "brief style description", "items": [{ "concept
       const ctx = buildContext(project);
       const prompt = PROMPTS[tool](ctx, input);
       const model = PREMIUM_TOOLS.includes(tool) ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
-      aiResult = await callGroq(prompt, 2000, model);
+      const tokens = (tool === 'meta_campaign' || tool === 'google_campaign') ? 3000 : 2000;
+      aiResult = await callGroq(prompt, tokens, model);
     }
 
     // Save result

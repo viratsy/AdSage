@@ -825,6 +825,10 @@ function StepDesignAds({ projectId, assets, activePlatform, setActivePlatform, a
   onGenerate: (tool: string) => void; generatedAsset: Asset | null; setGeneratedAsset: (v: Asset | null) => void; isGenerating: boolean;
   onCopy: (t: string, k: string) => void; copied: string;
 }) {
+  const [mode, setMode] = useState<'campaign' | 'individual'>('campaign');
+
+  const tones = ['Bold', 'Emotional', 'Funny', 'Luxury', 'Aggressive', 'Minimal', 'Gen-Z', 'Professional'];
+
   const metaTools = [
     { id: 'meta_hooks', label: 'Hooks' }, { id: 'meta_primary_text', label: 'Primary Text' },
     { id: 'meta_headlines', label: 'Headlines' }, { id: 'meta_ctas', label: 'CTAs' }, { id: 'meta_creatives', label: 'Creatives' },
@@ -834,115 +838,161 @@ function StepDesignAds({ projectId, assets, activePlatform, setActivePlatform, a
     { id: 'google_descriptions', label: 'Descriptions' }, { id: 'google_extensions', label: 'Extensions' },
     { id: 'google_ctas', label: 'CTAs' }, { id: 'google_landing_match', label: 'Landing Match' },
   ];
-  const tools = activePlatform === 'meta' ? metaTools : googleTools;
+
+  const campaignTool = activePlatform === 'meta' ? 'meta_campaign' : 'google_campaign';
+  const campaignAssets = assets.filter(a => a.tool === campaignTool);
 
   return (
     <div className="space-y-4">
+      {/* Platform + Mode toggle */}
       <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-        <div className="flex gap-1 mb-4">
-          {(['meta', 'google'] as const).map(p => (
-            <button key={p} onClick={() => { setActivePlatform(p); setActiveTool(null); setGeneratedAsset(null); }}
-              className={`px-4 py-2 rounded-lg text-xs font-medium ${activePlatform === p ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-400 hover:bg-white/5'}`}>
-              {p === 'meta' ? '◎ Meta Ads' : 'G Google Ads'}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {tools.map(t => {
-            const count = assets.filter(a => a.tool === t.id).length;
-            return (
-              <button key={t.id} onClick={() => { setActiveTool(t.id); setGeneratedAsset(null); setInput({}); }}
-                className={`p-2.5 rounded-lg text-xs font-medium transition-colors ${activeTool === t.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'text-gray-300 hover:bg-white/5 border border-transparent'}`}
-                style={{ borderColor: activeTool !== t.id ? 'var(--border)' : undefined }}>
-                {t.label} {count > 0 && <span className="ml-1 text-[10px] text-gray-500">{count}</span>}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex gap-1">
+            {(['meta', 'google'] as const).map(p => (
+              <button key={p} onClick={() => { setActivePlatform(p); setActiveTool(null); setGeneratedAsset(null); }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${activePlatform === p ? 'bg-indigo-500 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+                {p === 'meta' ? '◎ Meta Ads' : 'G Google Ads'}
               </button>
-            );
-          })}
+            ))}
+          </div>
+          <div className="flex gap-1 text-xs">
+            <button onClick={() => setMode('campaign')} className={`px-3 py-1.5 rounded ${mode === 'campaign' ? 'bg-white/10 text-white' : 'text-gray-500'}`}>Campaign</button>
+            <button onClick={() => setMode('individual')} className={`px-3 py-1.5 rounded ${mode === 'individual' ? 'bg-white/10 text-white' : 'text-gray-500'}`}>Individual</button>
+          </div>
         </div>
-      </div>
 
-      {activeTool && (
-        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <textarea value={input.instruction || ''} onChange={(e) => setInput({ ...input, instruction: e.target.value })}
-            placeholder="Additional instructions (optional)..." rows={2}
-            className="w-full px-3 py-2 rounded-lg text-sm resize-none mb-3"
-            style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-          <button onClick={() => onGenerate(activeTool)} disabled={isGenerating}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
-            {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} Generate
-          </button>
+        {mode === 'campaign' ? (
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-white">Generate Complete Campaign</p>
+            <p className="text-xs text-gray-400">AI will create full campaign concepts with hook, copy, headline, CTA, and creative direction.</p>
 
-          {generatedAsset && (
-            <div className="mt-4 space-y-3">
-              <p className="text-xs font-medium text-emerald-400">✓ Generated</p>
-              {generatedAsset.items.map((item, i) => {
-                const text = typeof item === 'string' ? item : Object.entries(item as Record<string, unknown>).map(([k, v]) => `${k}: ${v}`).join('\n');
-                const key = `gen_${i}`;
+            {/* Tone selector */}
+            <div>
+              <p className="text-xs text-gray-400 mb-2">Tone (optional):</p>
+              <div className="flex flex-wrap gap-1.5">
+                {tones.map(t => (
+                  <button key={t} onClick={() => setInput({ ...input, tone: input.tone === t ? '' : t })}
+                    className={`px-2.5 py-1 rounded-lg text-xs transition-colors ${input.tone === t ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'text-gray-400 border border-white/10 hover:bg-white/5'}`}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <textarea value={input.instruction || ''} onChange={(e) => setInput({ ...input, instruction: e.target.value })}
+              placeholder="Additional instructions (optional)... e.g. Focus on festival season, target college students"
+              rows={2} className="w-full px-3 py-2 rounded-lg text-sm resize-none"
+              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+
+            <button onClick={() => onGenerate(campaignTool)} disabled={isGenerating}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
+              {isGenerating ? <><Loader2 size={14} className="animate-spin" /> Generating Campaigns...</> : <><Wand2 size={14} /> Generate 3 Campaign Concepts</>}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-2">
+              {(activePlatform === 'meta' ? metaTools : googleTools).map(t => {
+                const count = assets.filter(a => a.tool === t.id).length;
                 return (
-                  <div key={i} className="p-4 rounded-xl relative group space-y-2.5" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                    {typeof item === 'object' && item !== null ? (
-                      Object.entries(item as Record<string, unknown>).map(([field, value]) => {
-                        const isLong = typeof value === 'string' && value.length > 60;
-                        return (
-                          <div key={field} className={isLong ? '' : 'flex items-baseline gap-2'}>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-400 shrink-0">{field.replace(/_/g, ' ')}</span>
-                            <p className={`text-sm leading-relaxed ${isLong ? 'mt-1' : ''}`} style={{ color: 'var(--text)' }}>
-                              {typeof value === 'string' ? value : Array.isArray(value) ? (value as string[]).join(', ') : JSON.stringify(value)}
-                            </p>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <p className="text-sm leading-relaxed">{text}</p>
-                    )}
-                    <button onClick={() => onCopy(text, key)} className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10 transition-all">
-                      {copied === key ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                    </button>
-                  </div>
+                  <button key={t.id} onClick={() => { setActiveTool(t.id); setGeneratedAsset(null); setInput({}); }}
+                    className={`p-2.5 rounded-lg text-xs font-medium ${activeTool === t.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'text-gray-300 hover:bg-white/5'}`}
+                    style={{ border: activeTool !== t.id ? '1px solid var(--border)' : undefined }}>
+                    {t.label} {count > 0 && <span className="ml-1 text-gray-500">{count}</span>}
+                  </button>
                 );
               })}
-              <button onClick={() => setGeneratedAsset(null)} className="text-xs text-indigo-300 hover:text-indigo-200 mt-2">
-                ↻ Generate more
-              </button>
             </div>
-          )}
+            {activeTool && (
+              <>
+                <textarea value={input.instruction || ''} onChange={(e) => setInput({ ...input, instruction: e.target.value })}
+                  placeholder="Instructions (optional)..." rows={2} className="w-full px-3 py-2 rounded-lg text-sm resize-none"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+                <button onClick={() => onGenerate(activeTool)} disabled={isGenerating}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
+                  {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} Generate
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
-          {/* Previous assets */}
-          {assets.filter(a => a.tool === activeTool).length > 0 && !generatedAsset && (
-            <div className="mt-4 pt-4 border-t space-y-3 max-h-[60vh] overflow-y-auto" style={{ borderColor: 'var(--border)' }}>
-              <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Previously generated</p>
-              {assets.filter(a => a.tool === activeTool).slice().reverse().slice(0, 2).map(asset => (
-                <div key={asset.id} className="space-y-2">
-                  {asset.items.map((item, i) => {
-                    const text = typeof item === 'string' ? item : Object.entries(item as Record<string, unknown>).map(([k, v]) => `${k}: ${v}`).join('\n');
-                    const key = `prev_${asset.id}_${i}`;
-                    return (
-                      <div key={key} className="p-3.5 rounded-xl relative group space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                        {typeof item === 'object' && item !== null ? (
-                          Object.entries(item as Record<string, unknown>).map(([field, value]) => {
-                            const isLong = typeof value === 'string' && value.length > 60;
-                            return (
-                              <div key={field} className={isLong ? '' : 'flex items-baseline gap-2'}>
-                                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0">{field.replace(/_/g, ' ')}</span>
-                                <p className={`text-sm leading-relaxed text-gray-200 ${isLong ? 'mt-0.5' : ''}`}>
-                                  {typeof value === 'string' ? value : Array.isArray(value) ? (value as string[]).join(', ') : JSON.stringify(value)}
-                                </p>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <p className="text-sm text-gray-200">{text}</p>
-                        )}
-                        <button onClick={() => onCopy(text, key)} className="absolute top-2.5 right-2.5 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10 transition-all">
-                          {copied === key ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
-                        </button>
-                      </div>
-                    );
-                  })}
+      {/* Generated campaigns / assets */}
+      {generatedAsset && (
+        <div className="space-y-4">
+          <p className="text-xs font-medium text-emerald-400">✓ Generated</p>
+          {generatedAsset.items.map((item, i) => {
+            const obj = item as Record<string, unknown>;
+            const text = typeof item === 'string' ? item : Object.entries(obj).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
+            const key = `gen_${i}`;
+            return (
+              <div key={i} className="rounded-xl p-5 relative group" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                {typeof item === 'object' && item !== null ? (
+                  <div className="space-y-3">
+                    {obj.campaign_name && <p className="text-base font-bold text-white">{String(obj.campaign_name)}</p>}
+                    {obj.emotional_angle && <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">{String(obj.emotional_angle)}</span>}
+                    {obj.search_intent && <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">{String(obj.search_intent)}</span>}
+
+                    {Object.entries(obj).filter(([k]) => !['campaign_name', 'emotional_angle', 'search_intent'].includes(k)).map(([field, value]) => {
+                      const isLong = typeof value === 'string' && value.length > 60;
+                      const isArray = Array.isArray(value);
+                      return (
+                        <div key={field}>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-400 mb-0.5">{field.replace(/_/g, ' ')}</p>
+                          {isArray ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {(value as string[]).map((v, j) => <span key={j} className="px-2 py-0.5 rounded text-xs bg-white/5 text-gray-200">{v}</span>)}
+                            </div>
+                          ) : (
+                            <p className={`text-sm text-gray-200 leading-relaxed ${isLong ? 'whitespace-pre-line' : ''}`}>{String(value)}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-200">{text}</p>
+                )}
+                <button onClick={() => onCopy(text, key)} className="absolute top-4 right-4 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10">
+                  {copied === key ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                </button>
+              </div>
+            );
+          })}
+          <button onClick={() => setGeneratedAsset(null)} className="text-xs text-indigo-300 hover:text-indigo-200">↻ Generate more</button>
+        </div>
+      )}
+
+      {/* Previous campaigns */}
+      {!generatedAsset && (mode === 'campaign' ? campaignAssets : assets.filter(a => a.tool === activeTool)).length > 0 && (
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto">
+          <p className="text-xs font-medium text-gray-400">Previous campaigns</p>
+          {(mode === 'campaign' ? campaignAssets : assets.filter(a => a.tool === activeTool)).slice().reverse().slice(0, 3).map(asset => (
+            asset.items.map((item, i) => {
+              const obj = item as Record<string, unknown>;
+              const text = typeof item === 'string' ? item : Object.entries(obj).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
+              const key = `prev_${asset.id}_${i}`;
+              return (
+                <div key={key} className="rounded-xl p-4 relative group" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  {typeof item === 'object' && item !== null ? (
+                    <div className="space-y-2">
+                      {obj.campaign_name && <p className="text-sm font-bold text-gray-200">{String(obj.campaign_name)}</p>}
+                      {obj.hook && <p className="text-xs text-gray-300"><span className="text-indigo-400 font-medium">Hook:</span> {String(obj.hook)}</p>}
+                      {obj.headline && <p className="text-xs text-gray-300"><span className="text-indigo-400 font-medium">Headline:</span> {typeof obj.headline === 'string' ? obj.headline : (obj.headlines as string[])?.join(' | ')}</p>}
+                      {obj.cta && <p className="text-xs text-gray-300"><span className="text-indigo-400 font-medium">CTA:</span> {String(obj.cta)}</p>}
+                      {obj.why_it_works && <p className="text-[10px] text-gray-500 italic mt-1">{String(obj.why_it_works)}</p>}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-300">{text}</p>
+                  )}
+                  <button onClick={() => onCopy(text, key)} className="absolute top-3 right-3 p-1 rounded opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white">
+                    {copied === key ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                  </button>
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })
+          ))}
         </div>
       )}
     </div>
