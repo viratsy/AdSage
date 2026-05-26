@@ -5,9 +5,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api';
 import {
-  Zap, Users, AlertTriangle, Heart, Flame, Target,
-  MessageSquare, FileText, Image, Wand2,
-  Loader2, Check, ChevronLeft, RefreshCw, Copy, ArrowRight
+  Zap, Users, AlertTriangle, Heart, Target, Flame,
+  Loader2, Check, ChevronLeft, RefreshCw, Copy, Wand2,
+  MapPin, DollarSign, UserCircle, MessageSquare, FileText, Image, ArrowRight
 } from 'lucide-react';
 
 interface AudienceProfile {
@@ -51,6 +51,8 @@ interface Project {
   product_name: string;
   product_description: string;
   usp: string;
+  target_location: string;
+  target_audience_hint: string;
   intelligence?: Intelligence;
   assets?: Asset[];
   ai_analysis?: {
@@ -73,25 +75,11 @@ interface GenerateResponse {
   asset?: Asset;
 }
 
-const TOOLS = [
-  { id: 'audience', label: 'Target Audience', icon: Users, category: 'foundation', desc: 'Define who you\'re selling to' },
-  { id: 'pain_points', label: 'Pain Points', icon: AlertTriangle, category: 'foundation', desc: 'Problems your audience faces' },
-  { id: 'desires', label: 'Desires & Goals', icon: Heart, category: 'foundation', desc: 'What your audience wants' },
-  { id: 'objections', label: 'Objections', icon: Target, category: 'foundation', desc: 'Why people might not buy' },
-  { id: 'emotional_angles', label: 'Emotional Angles', icon: Flame, category: 'foundation', desc: 'Angles to use in ads' },
-  // Meta
-  { id: 'meta_hooks', label: 'Hooks', icon: Zap, category: 'meta', desc: 'Scroll-stopping openers' },
-  { id: 'meta_primary_text', label: 'Primary Text', icon: FileText, category: 'meta', desc: 'Main ad body copy' },
-  { id: 'meta_headlines', label: 'Headlines', icon: FileText, category: 'meta', desc: 'Below-creative headlines' },
-  { id: 'meta_ctas', label: 'CTAs', icon: MessageSquare, category: 'meta', desc: 'Call-to-action variations' },
-  { id: 'meta_creatives', label: 'Creative Concepts', icon: Image, category: 'meta', desc: 'Visual/image concepts' },
-  // Google
-  { id: 'google_keywords', label: 'Keywords', icon: Target, category: 'google', desc: 'Search keywords & intent' },
-  { id: 'google_headlines', label: 'Headlines', icon: FileText, category: 'google', desc: 'Max 30 char headlines' },
-  { id: 'google_descriptions', label: 'Descriptions', icon: FileText, category: 'google', desc: 'Max 90 char descriptions' },
-  { id: 'google_extensions', label: 'Extensions', icon: Wand2, category: 'google', desc: 'Sitelinks, callouts, snippets' },
-  { id: 'google_ctas', label: 'CTAs', icon: MessageSquare, category: 'google', desc: 'Direct action CTAs' },
-  { id: 'google_landing_match', label: 'Landing Page Match', icon: ArrowRight, category: 'google', desc: 'Landing page suggestions' },
+const STEPS = [
+  { id: 1, label: 'Define Audience' },
+  { id: 2, label: 'Set Foundation' },
+  { id: 3, label: 'Select Platforms' },
+  { id: 4, label: 'Design Ads' },
 ];
 
 export default function ProjectStudioPage() {
@@ -100,7 +88,7 @@ export default function ProjectStudioPage() {
   const projectId = searchParams.get('id');
   const queryClient = useQueryClient();
 
-  const [activeTool, setActiveTool] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState(1);
   const [input, setInput] = useState<Record<string, string>>({});
   const [generatedOptions, setGeneratedOptions] = useState<AudienceProfile[] | string[] | EmotionalAngle[] | null>(null);
   const [generatedAsset, setGeneratedAsset] = useState<Asset | null>(null);
@@ -109,6 +97,8 @@ export default function ProjectStudioPage() {
   const [selectedAudience, setSelectedAudience] = useState<AudienceProfile | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [selectedAngles, setSelectedAngles] = useState<EmotionalAngle[]>([]);
+  const [activePlatform, setActivePlatform] = useState<'meta' | 'google'>('meta');
+  const [activeTool, setActiveTool] = useState<string | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState('');
 
@@ -131,7 +121,6 @@ export default function ProjectStudioPage() {
         setGeneratedOptions(opts);
         setMissingDeps(null);
         setGeneratedAsset(null);
-        // Pre-select all for list types
         if (activeTool && ['pain_points', 'desires', 'objections'].includes(activeTool)) {
           setSelectedItems(opts as string[]);
         }
@@ -153,59 +142,33 @@ export default function ProjectStudioPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project', projectId] });
       setGeneratedOptions(null);
-      setActiveTool(null);
       setSelectedAudience(null);
       setSelectedItems([]);
       setSelectedAngles([]);
     },
   });
 
-  if (!projectId) {
-    router.push('/dashboard/projects');
-    return null;
-  }
-
+  if (!projectId) { router.push('/dashboard/projects'); return null; }
   if (isLoading || !project) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 size={24} className="animate-spin text-indigo-400" />
-      </div>
-    );
+    return <div className="flex items-center justify-center py-20"><Loader2 size={24} className="animate-spin text-indigo-400" /></div>;
   }
 
   const intelligence = project.intelligence || {};
   const assets = project.assets || [];
 
-  const getFoundationStatus = (tool: string) => {
-    const val = (intelligence as Record<string, unknown>)[tool];
-    if (!val) return false;
-    if (Array.isArray(val)) return val.length > 0;
-    return true;
+  const getCurrentStep = () => {
+    if (!intelligence.audience) return 1;
+    if (!intelligence.pain_points?.length || !intelligence.desires?.length || !intelligence.emotional_angles?.length) return 2;
+    if (!assets.some(a => a.tool.startsWith('audience_'))) return 3;
+    return 4;
   };
 
-  const handleToolClick = (toolId: string) => {
-    setActiveTool(toolId);
-    setInput({});
-    setGeneratedOptions(null);
-    setGeneratedAsset(null);
-    setMissingDeps(null);
-    setSelectedAudience(null);
-    setSelectedItems([]);
-    setSelectedAngles([]);
-    setShowNotes(false);
-    setNotes('');
-  };
-
-  const handleGenerate = () => {
-    if (!activeTool) return;
+  const handleGenerate = (tool: string) => {
+    setActiveTool(tool);
     const inp = { ...input };
     if (notes) inp.custom = notes;
-    generateMutation.mutate({ tool: activeTool, input: Object.keys(inp).length > 0 ? inp : undefined });
+    generateMutation.mutate({ tool, input: Object.keys(inp).length > 0 ? inp : undefined });
     setShowNotes(false);
-  };
-
-  const handleResolveDep = (dep: string) => {
-    handleToolClick(dep);
   };
 
   const copyText = (text: string, key: string) => {
@@ -214,791 +177,574 @@ export default function ProjectStudioPage() {
     setTimeout(() => setCopied(''), 2000);
   };
 
-  const foundationTools = TOOLS.filter(t => t.category === 'foundation');
-  const metaTools = TOOLS.filter(t => t.category === 'meta');
-  const googleTools = TOOLS.filter(t => t.category === 'google');
-
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => router.push('/dashboard/projects')} className="text-gray-400 hover:text-white transition-colors">
           <ChevronLeft size={20} />
         </button>
-        <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Zap size={18} className="text-indigo-400" />
-            {project.project_name}
-          </h1>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{project.business_name} · {project.business_niche}</p>
+        <div className="flex-1">
+          <h1 className="text-lg font-bold">The Campaign Builder</h1>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{project.project_name} · {project.business_name}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Tool selector */}
-        <div className="lg:col-span-1 space-y-4">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>Foundation</p>
-            <div className="space-y-1">
-              {foundationTools.map(tool => {
-                const done = getFoundationStatus(tool.id);
-                const Icon = tool.icon;
-                return (
-                  <button
-                    key={tool.id}
-                    onClick={() => handleToolClick(tool.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left ${
-                      activeTool === tool.id ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-300 hover:bg-white/5'
-                    }`}
-                  >
-                    <Icon size={14} />
-                    <span className="flex-1">{tool.label}</span>
-                    {done && <Check size={12} className="text-emerald-400" />}
-                  </button>
-                );
-              })}
+      {/* Step Progress */}
+      <div className="flex items-center gap-2">
+        {STEPS.map((step, i) => {
+          const current = getCurrentStep();
+          const isActive = step.id === activeStep;
+          const isDone = step.id < current;
+          return (
+            <div key={step.id} className="flex items-center gap-2 flex-1">
+              <button
+                onClick={() => setActiveStep(step.id)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors w-full ${
+                  isActive ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' :
+                  isDone ? 'text-emerald-400 bg-emerald-500/10' : 'text-gray-500 hover:bg-white/5'
+                }`}
+              >
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  isDone ? 'bg-emerald-500 text-white' : isActive ? 'bg-indigo-500 text-white' : 'bg-gray-700 text-gray-400'
+                }`}>
+                  {isDone ? '✓' : step.id}
+                </span>
+                {step.label}
+              </button>
+              {i < STEPS.length - 1 && <div className="w-4 h-px bg-gray-700" />}
             </div>
-          </div>
+          );
+        })}
+      </div>
 
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>Meta Ads</p>
-            <div className="space-y-1">
-              {metaTools.map(tool => {
-                const Icon = tool.icon;
-                const count = assets.filter(a => a.tool === tool.id).length;
-                return (
-                  <button
-                    key={tool.id}
-                    onClick={() => handleToolClick(tool.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left ${
-                      activeTool === tool.id ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-300 hover:bg-white/5'
-                    }`}
-                  >
-                    <Icon size={14} />
-                    <span className="flex-1">{tool.label}</span>
-                    {count > 0 && <span className="text-xs px-1.5 py-0.5 rounded bg-white/10">{count}</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Left Panel */}
+        <div className="lg:col-span-2 space-y-4">
+          {activeStep === 1 && (
+            <StepAudience
+              project={project}
+              intelligence={intelligence}
+              input={input}
+              setInput={setInput}
+              onGenerate={() => handleGenerate('audience')}
+              generatedOptions={generatedOptions as AudienceProfile[] | null}
+              selectedAudience={selectedAudience}
+              setSelectedAudience={setSelectedAudience}
+              onSave={(val) => saveMutation.mutate({ tool: 'audience', value: val })}
+              isGenerating={generateMutation.isPending}
+              isSaving={saveMutation.isPending}
+              activeTool={activeTool}
+            />
+          )}
 
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>Google Ads</p>
-            <div className="space-y-1">
-              {googleTools.map(tool => {
-                const Icon = tool.icon;
-                const count = assets.filter(a => a.tool === tool.id).length;
-                return (
-                  <button
-                    key={tool.id}
-                    onClick={() => handleToolClick(tool.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left ${
-                      activeTool === tool.id ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-300 hover:bg-white/5'
-                    }`}
-                  >
-                    <Icon size={14} />
-                    <span className="flex-1">{tool.label}</span>
-                    {count > 0 && <span className="text-xs px-1.5 py-0.5 rounded bg-white/10">{count}</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+          {activeStep === 2 && (
+            <StepFoundation
+              intelligence={intelligence}
+              input={input}
+              setInput={setInput}
+              onGenerate={handleGenerate}
+              generatedOptions={generatedOptions}
+              selectedItems={selectedItems}
+              setSelectedItems={setSelectedItems}
+              selectedAngles={selectedAngles}
+              setSelectedAngles={setSelectedAngles}
+              onSave={(tool, val) => saveMutation.mutate({ tool, value: val })}
+              isGenerating={generateMutation.isPending}
+              isSaving={saveMutation.isPending}
+              activeTool={activeTool}
+              setActiveTool={setActiveTool}
+            />
+          )}
 
-        {/* Right: Active tool workspace */}
-        <div className="lg:col-span-2">
-          {!activeTool ? (
-            <div className="rounded-xl p-8 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <Zap size={32} className="mx-auto text-indigo-400 mb-3" />
-              <h2 className="text-lg font-semibold mb-1">Advolt AI</h2>
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                Select a tool to start generating. Build your foundation first for better results.
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <div>
-                <h2 className="text-lg font-semibold">{TOOLS.find(t => t.id === activeTool)?.label}</h2>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{TOOLS.find(t => t.id === activeTool)?.desc}</p>
-              </div>
+          {activeStep === 3 && (
+            <StepPlatforms
+              projectId={projectId!}
+              assets={assets}
+              activePlatform={activePlatform}
+              setActivePlatform={setActivePlatform}
+              onCopy={copyText}
+              copied={copied}
+            />
+          )}
 
-              {/* Missing dependencies */}
-              {missingDeps && missingDeps.length > 0 && (
-                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <p className="text-sm text-amber-300 mb-2">We need a few things first:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {missingDeps.map((dep: string) => (
-                      <button
-                        key={dep}
-                        onClick={() => handleResolveDep(dep)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-colors"
-                      >
-                        {TOOLS.find(t => t.id === dep)?.label} <ArrowRight size={10} />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Input area */}
-              {!missingDeps && !generatedOptions && !generatedAsset && (
-                <div className="space-y-3">
-                  {/* Pre-suggestions from ai_analysis */}
-                  {activeTool === 'audience' && !intelligence.audience && project.ai_analysis?.suggested_audiences && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Suggested from your project analysis:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {project.ai_analysis.suggested_audiences.map((aud, i) => (
-                          <span key={i} className="px-3 py-1.5 rounded-lg text-xs bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                            {aud}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTool === 'pain_points' && !intelligence.pain_points?.length && project.ai_analysis?.pain_points && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Suggested from your project analysis:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {project.ai_analysis.pain_points.map((pp, i) => (
-                          <span key={i} className="px-3 py-1.5 rounded-lg text-xs bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                            {pp}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTool === 'emotional_angles' && !intelligence.emotional_angles?.length && project.ai_analysis?.content_angles && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Content angles from your analysis:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {project.ai_analysis.content_angles.map((angle, i) => (
-                          <span key={i} className="px-3 py-1.5 rounded-lg text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                            {angle}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTool === 'objections' && !intelligence.objections?.length && intelligence.audience?.objections && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>From your audience profile:</p>
-                      <p className="text-xs px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                        {intelligence.audience.objections}
-                      </p>
-                    </div>
-                  )}
-
-                  {activeTool === 'audience' && (
-                    <div>
-                      <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Describe your ideal customer (optional)</label>
-                      <textarea
-                        value={input.description || ''}
-                        onChange={(e) => setInput({ ...input, description: e.target.value })}
-                        placeholder="e.g. Small business owners aged 25-45 who struggle with marketing..."
-                        rows={2}
-                        className="w-full px-3 py-2 rounded-lg text-sm resize-none"
-                        style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                      />
-                    </div>
-                  )}
-
-                  {['pain_points', 'desires', 'objections', 'emotional_angles'].includes(activeTool) && (
-                    <div>
-                      <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Add your own (optional)</label>
-                      <textarea
-                        value={input.custom || ''}
-                        onChange={(e) => setInput({ ...input, custom: e.target.value })}
-                        placeholder="Add any specific ones you know about..."
-                        rows={2}
-                        className="w-full px-3 py-2 rounded-lg text-sm resize-none"
-                        style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                      />
-                    </div>
-                  )}
-
-                  {['meta_hooks', 'meta_primary_text', 'meta_headlines', 'meta_ctas', 'meta_creatives', 'google_keywords', 'google_headlines', 'google_descriptions', 'google_extensions', 'google_ctas', 'google_landing_match'].includes(activeTool) && (
-                    <div>
-                      <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Additional instructions (optional)</label>
-                      <textarea
-                        value={input.instruction || ''}
-                        onChange={(e) => setInput({ ...input, instruction: e.target.value })}
-                        placeholder="e.g. Focus on urgency, use casual tone..."
-                        rows={2}
-                        className="w-full px-3 py-2 rounded-lg text-sm resize-none"
-                        style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                      />
-                    </div>
-                  )}
-
-                  {activeTool === 'meta_creatives' && (
-                    <div>
-                      <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Upload reference image (optional)</label>
-                      <div className="flex items-center gap-3">
-                        <label className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium cursor-pointer hover:bg-white/5 transition-colors" style={{ border: '1px solid var(--border)' }}>
-                          <Image size={14} />
-                          {input.image_base64 ? 'Image uploaded ✓' : 'Choose image'}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              const reader = new FileReader();
-                              reader.onload = () => {
-                                const base64 = (reader.result as string).split(',')[1];
-                                setInput({ ...input, image_base64: base64, image_mime: file.type });
-                              };
-                              reader.readAsDataURL(file);
-                            }}
-                          />
-                        </label>
-                        {input.image_base64 && (
-                          <button
-                            onClick={() => { const { image_base64, image_mime, ...rest } = input; setInput(rest); }}
-                            className="text-xs text-red-400 hover:text-red-300"
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </div>
-                      {input.image_base64 && (
-                        <p className="text-xs mt-1 text-emerald-400">AI will analyze this image and generate concepts in a similar style.</p>
-                      )}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handleGenerate}
-                    disabled={generateMutation.isPending}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-indigo-500 hover:bg-indigo-600 text-white transition-colors disabled:opacity-50"
-                  >
-                    {generateMutation.isPending ? (
-                      <><Loader2 size={14} className="animate-spin" /> Generating...</>
-                    ) : (
-                      <><Wand2 size={14} /> Generate</>
-                    )}
-                  </button>
-
-                  {/* Show current foundation value */}
-                  {TOOLS.find(t => t.id === activeTool)?.category === 'foundation' && getFoundationStatus(activeTool) && (
-                    <div className="p-3 rounded-lg mt-3" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                      <p className="text-xs font-medium mb-2 text-emerald-400 flex items-center gap-1"><Check size={10} /> Current</p>
-                      <CurrentValue tool={activeTool} intelligence={intelligence} />
-                    </div>
-                  )}
-
-                  {/* Platform targeting tabs (after audience is set) */}
-                  {activeTool === 'audience' && getFoundationStatus('audience') && (
-                    <PlatformTargeting
-                      projectId={projectId!}
-                      assets={assets}
-                      onCopy={copyText}
-                      copied={copied}
-                    />
-                  )}
-
-                  {/* Previous assets */}
-                  {TOOLS.find(t => t.id === activeTool)?.category !== 'foundation' && (
-                    <PreviousAssets assets={assets.filter(a => a.tool === activeTool)} onCopy={copyText} copied={copied} />
-                  )}
-                </div>
-              )}
-
-              {/* Audience options */}
-              {generatedOptions && activeTool === 'audience' && (
-                <div className="space-y-3">
-                  <p className="text-sm font-medium">Pick your target audience:</p>
-                  {(generatedOptions as AudienceProfile[]).map((opt, i) => (
-                    <div
-                      key={i}
-                      onClick={() => setSelectedAudience(opt)}
-                      className={`p-4 rounded-lg cursor-pointer transition-colors ${
-                        selectedAudience === opt ? 'bg-indigo-500/20' : 'hover:bg-white/5'
-                      }`}
-                      style={{ border: selectedAudience === opt ? '1px solid rgba(99,102,241,0.4)' : '1px solid var(--border)' }}
-                    >
-                      <p className="text-sm font-semibold">{opt.label}</p>
-                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{opt.demographics}</p>
-                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}><span className="text-gray-300">Situation:</span> {opt.situation}</p>
-                      {opt.goals && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}><span className="text-gray-300">Goals:</span> {opt.goals}</p>}
-                      {opt.buying_triggers && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}><span className="text-gray-300">Trigger:</span> {opt.buying_triggers}</p>}
-                      <p className="text-xs mt-1 italic text-indigo-300">{opt.awareness_level}</p>
-                    </div>
-                  ))}
-                  <NotesAndRegenerate
-                    showNotes={showNotes}
-                    notes={notes}
-                    onToggleNotes={() => setShowNotes(!showNotes)}
-                    onNotesChange={setNotes}
-                    onRegenerate={handleGenerate}
-                    isRegenerating={generateMutation.isPending}
-                  />
-                  <button
-                    onClick={() => selectedAudience && saveMutation.mutate({ tool: 'audience', value: selectedAudience })}
-                    disabled={!selectedAudience || saveMutation.isPending}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
-                  >
-                    {saveMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Confirm
-                  </button>
-                </div>
-              )}
-
-              {/* Pain points / desires / objections options */}
-              {generatedOptions && activeTool && ['pain_points', 'desires', 'objections'].includes(activeTool) && (
-                <div className="space-y-3">
-                  <p className="text-sm font-medium">Select the ones that apply:</p>
-                  <div className="space-y-1.5">
-                    {(generatedOptions as string[]).map((item, i) => (
-                      <label key={i} className="flex items-start gap-2 p-2 rounded-lg hover:bg-white/5 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.includes(item)}
-                          onChange={() => setSelectedItems(prev => prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item])}
-                          className="mt-0.5 rounded"
-                        />
-                        <span className="text-sm">{item}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <NotesAndRegenerate
-                    showNotes={showNotes}
-                    notes={notes}
-                    onToggleNotes={() => setShowNotes(!showNotes)}
-                    onNotesChange={setNotes}
-                    onRegenerate={handleGenerate}
-                    isRegenerating={generateMutation.isPending}
-                  />
-                  <button
-                    onClick={() => saveMutation.mutate({ tool: activeTool, value: selectedItems })}
-                    disabled={selectedItems.length === 0 || saveMutation.isPending}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
-                  >
-                    {saveMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save ({selectedItems.length})
-                  </button>
-                </div>
-              )}
-
-              {/* Emotional angles options */}
-              {generatedOptions && activeTool === 'emotional_angles' && (
-                <div className="space-y-3">
-                  <p className="text-sm font-medium">Select emotional angles to use:</p>
-                  <div className="space-y-2">
-                    {(generatedOptions as EmotionalAngle[]).map((opt, i) => (
-                      <label
-                        key={i}
-                        className={`flex items-start gap-2 p-3 rounded-lg cursor-pointer transition-colors ${
-                          selectedAngles.includes(opt) ? 'bg-indigo-500/10' : 'hover:bg-white/5'
-                        }`}
-                        style={{ border: selectedAngles.includes(opt) ? '1px solid rgba(99,102,241,0.3)' : '1px solid var(--border)' }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedAngles.includes(opt)}
-                          onChange={() => setSelectedAngles(prev => prev.includes(opt) ? prev.filter(a => a !== opt) : [...prev, opt])}
-                          className="mt-0.5 rounded"
-                        />
-                        <div>
-                          <p className="text-sm font-medium capitalize">{opt.emotion}</p>
-                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{opt.angle}</p>
-                          <p className="text-xs italic mt-0.5 text-indigo-300">&quot;{opt.example_hook}&quot;</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                  <NotesAndRegenerate
-                    showNotes={showNotes}
-                    notes={notes}
-                    onToggleNotes={() => setShowNotes(!showNotes)}
-                    onNotesChange={setNotes}
-                    onRegenerate={handleGenerate}
-                    isRegenerating={generateMutation.isPending}
-                  />
-                  <button
-                    onClick={() => saveMutation.mutate({ tool: 'emotional_angles', value: selectedAngles })}
-                    disabled={selectedAngles.length === 0 || saveMutation.isPending}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
-                  >
-                    {saveMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save ({selectedAngles.length})
-                  </button>
-                </div>
-              )}
-
-              {/* Generated asset */}
-              {generatedAsset && (
-                <div className="space-y-3">
-                  <p className="text-sm font-medium text-emerald-400">Generated:</p>
-                  <div className="space-y-2">
-                    {generatedAsset.items.map((item, i) => {
-                      const key = `new_${i}`;
-
-                      if (typeof item === 'object' && item !== null) {
-                        const obj = item as Record<string, unknown>;
-                        const copyVal = Object.entries(obj)
-                          .map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
-                          .join('\n');
-                        return (
-                          <div key={i} className="p-3 rounded-lg relative group space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                            {Object.entries(obj).map(([field, value]) => (
-                              <div key={field}>
-                                <p className="text-xs font-medium text-gray-400 capitalize">{field.replace(/_/g, ' ')}</p>
-                                <p className="text-sm mt-0.5">{typeof value === 'string' ? value : Array.isArray(value) ? (value as string[]).join(', ') : JSON.stringify(value)}</p>
-                              </div>
-                            ))}
-                            <button
-                              onClick={() => copyText(copyVal, key)}
-                              className="absolute top-2 right-2 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
-                            >
-                              {copied === key ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                            </button>
-                          </div>
-                        );
-                      }
-
-                      const text = item as string;
-                      return (
-                        <div key={i} className="p-3 rounded-lg relative group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                          <p className="text-sm pr-8 whitespace-pre-wrap">{text}</p>
-                          <button
-                            onClick={() => copyText(text, key)}
-                            className="absolute top-2 right-2 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
-                          >
-                            {copied === key ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <NotesAndRegenerate
-                    showNotes={showNotes}
-                    notes={notes}
-                    onToggleNotes={() => setShowNotes(!showNotes)}
-                    onNotesChange={setNotes}
-                    onRegenerate={() => { setGeneratedAsset(null); handleGenerate(); }}
-                    isRegenerating={generateMutation.isPending}
-                    label="Generate More"
-                  />
-                </div>
-              )}
-            </div>
+          {activeStep === 4 && (
+            <StepDesignAds
+              projectId={projectId!}
+              assets={assets}
+              activePlatform={activePlatform}
+              setActivePlatform={setActivePlatform}
+              activeTool={activeTool}
+              setActiveTool={setActiveTool}
+              input={input}
+              setInput={setInput}
+              onGenerate={handleGenerate}
+              generatedAsset={generatedAsset}
+              setGeneratedAsset={setGeneratedAsset}
+              isGenerating={generateMutation.isPending}
+              onCopy={copyText}
+              copied={copied}
+            />
           )}
         </div>
-      </div>
-    </div>
-  );
-}
 
-function CurrentValue({ tool, intelligence }: { tool: string; intelligence: Intelligence }) {
-  if (tool === 'audience' && intelligence.audience) {
-    return (
-      <div className="text-xs space-y-1" style={{ color: 'var(--text-muted)' }}>
-        <p className="font-medium text-white">{intelligence.audience.label}</p>
-        <p>{intelligence.audience.demographics}</p>
-        <p>{intelligence.audience.situation}</p>
-        {intelligence.audience.goals && <p><span className="text-gray-300">Goals:</span> {intelligence.audience.goals}</p>}
-        {intelligence.audience.buying_triggers && <p><span className="text-gray-300">Trigger:</span> {intelligence.audience.buying_triggers}</p>}
-      </div>
-    );
-  }
-  const val = (intelligence as Record<string, unknown>)[tool];
-  if (Array.isArray(val)) {
-    return (
-      <div className="flex flex-wrap gap-1.5">
-        {val.map((item: unknown, i: number) => (
-          <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-indigo-500/20 text-indigo-300">
-            {typeof item === 'string' ? item : (item as EmotionalAngle).emotion || ''}
-          </span>
-        ))}
-      </div>
-    );
-  }
-  return null;
-}
+        {/* Right Panel — Targeting & Intelligence */}
+        <div className="lg:col-span-3 space-y-4">
+          <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <h3 className="text-sm font-semibold mb-3">Targeting & Audience Intelligence</h3>
 
-function PreviousAssets({ assets, onCopy, copied }: { assets: Asset[]; onCopy: (t: string, k: string) => void; copied: string }) {
-  if (assets.length === 0) return null;
-  return (
-    <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
-      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Previously generated:</p>
-      {assets.slice().reverse().map((asset) => (
-        <div key={asset.id} className="space-y-2">
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{new Date(asset.created_at).toLocaleDateString()}</p>
-          {asset.items.map((item, i) => {
-            const key = `${asset.id}_${i}`;
-
-            // Structured object (short_copy, ad_brief, etc.)
-            if (typeof item === 'object' && item !== null) {
-              const obj = item as Record<string, unknown>;
-              const copyText = Object.entries(obj)
-                .map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`)
-                .join('\n');
-              return (
-                <div key={i} className="p-3 rounded-lg relative group space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                  {Object.entries(obj).map(([field, value]) => (
-                    <div key={field}>
-                      <p className="text-xs font-medium text-gray-400 capitalize">{field.replace(/_/g, ' ')}</p>
-                      <p className="text-sm mt-0.5">{typeof value === 'string' ? value : JSON.stringify(value)}</p>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => onCopy(copyText, key)}
-                    className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
-                  >
-                    {copied === key ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
-                  </button>
+            {intelligence.audience ? (
+              <div className="space-y-4">
+                {/* Audience summary */}
+                <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'var(--surface-2)' }}>
+                  <UserCircle size={32} className="text-indigo-400" />
+                  <div>
+                    <p className="text-sm font-medium">{intelligence.audience.label}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{intelligence.audience.demographics}</p>
+                  </div>
                 </div>
-              );
-            }
 
-            // Plain string
-            const text = item as string;
-            return (
-              <div key={i} className="p-2.5 rounded-lg relative group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                <p className="text-sm pr-6 whitespace-pre-wrap">{text}</p>
-                <button
-                  onClick={() => onCopy(text, key)}
-                  className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
-                >
-                  {copied === key ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
-                </button>
+                {/* Platform tabs */}
+                <div className="flex gap-1">
+                  {(['meta', 'google'] as const).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setActivePlatform(p)}
+                      className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
+                        activePlatform === p ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-400 hover:bg-white/5'
+                      }`}
+                    >
+                      {p === 'meta' ? '◎ Meta' : 'G Google'}
+                      {assets.some(a => a.tool === `audience_${p}`) && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Platform targeting content */}
+                <PlatformContent projectId={projectId!} platform={activePlatform} assets={assets} onCopy={copyText} copied={copied} />
+
+                {/* Foundation summary */}
+                {(intelligence.pain_points?.length || intelligence.desires?.length || intelligence.emotional_angles?.length) && (
+                  <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                    <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Foundation</p>
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      {intelligence.pain_points && intelligence.pain_points.length > 0 && (
+                        <div>
+                          <p className="font-medium text-amber-300 mb-1">Pain Points</p>
+                          {intelligence.pain_points.slice(0, 3).map((p, i) => <p key={i} style={{ color: 'var(--text-muted)' }}>• {p}</p>)}
+                        </div>
+                      )}
+                      {intelligence.desires && intelligence.desires.length > 0 && (
+                        <div>
+                          <p className="font-medium text-emerald-300 mb-1">Desires</p>
+                          {intelligence.desires.slice(0, 3).map((d, i) => <p key={i} style={{ color: 'var(--text-muted)' }}>• {d}</p>)}
+                        </div>
+                      )}
+                    </div>
+                    {intelligence.emotional_angles && intelligence.emotional_angles.length > 0 && (
+                      <div className="mt-2">
+                        <p className="font-medium text-xs text-purple-300 mb-1">Emotional Angles</p>
+                        <div className="flex flex-wrap gap-1">
+                          {intelligence.emotional_angles.map((a, i) => (
+                            <span key={i} className="px-2 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300">{a.emotion}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            );
-          })}
+            ) : (
+              <div className="text-center py-8">
+                <Users size={32} className="mx-auto text-gray-600 mb-2" />
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Define your audience to see targeting intelligence</p>
+              </div>
+            )}
+          </div>
         </div>
-      ))}
-    </div>
-  );
-}
-
-
-function NotesAndRegenerate({ showNotes, notes, onToggleNotes, onNotesChange, onRegenerate, isRegenerating, label }: {
-  showNotes: boolean;
-  notes: string;
-  onToggleNotes: () => void;
-  onNotesChange: (v: string) => void;
-  onRegenerate: () => void;
-  isRegenerating: boolean;
-  label?: string;
-}) {
-  return (
-    <div className="space-y-2 pt-2">
-      {showNotes && (
-        <textarea
-          value={notes}
-          onChange={(e) => onNotesChange(e.target.value)}
-          placeholder="Any suggestions or notes for regeneration? e.g. Make it more specific to B2B, focus on cost savings..."
-          rows={2}
-          className="w-full px-3 py-2 rounded-lg text-xs resize-none"
-          style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-          autoFocus
-        />
-      )}
-      <div className="flex gap-2">
-        <button
-          onClick={onToggleNotes}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:bg-white/5 transition-colors"
-        >
-          {showNotes ? 'Hide notes' : '+ Add notes'}
-        </button>
-        <button
-          onClick={onRegenerate}
-          disabled={isRegenerating}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-indigo-300 hover:bg-indigo-500/10 transition-colors disabled:opacity-50"
-        >
-          {isRegenerating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} {label || 'Regenerate'}
-        </button>
       </div>
     </div>
   );
 }
 
 
-function PlatformTargeting({ projectId, assets, onCopy, copied }: {
-  projectId: string;
-  assets: Asset[];
-  onCopy: (text: string, key: string) => void;
-  copied: string;
+// ── Step 1: Define Audience ──
+function StepAudience({ project, intelligence, input, setInput, onGenerate, generatedOptions, selectedAudience, setSelectedAudience, onSave, isGenerating, isSaving, activeTool }: {
+  project: Project; intelligence: Intelligence; input: Record<string, string>; setInput: (v: Record<string, string>) => void;
+  onGenerate: () => void; generatedOptions: AudienceProfile[] | null; selectedAudience: AudienceProfile | null;
+  setSelectedAudience: (v: AudienceProfile | null) => void; onSave: (v: unknown) => void; isGenerating: boolean; isSaving: boolean; activeTool: string | null;
 }) {
-  const [activeTab, setActiveTab] = useState<'meta' | 'google' | 'linkedin'>('meta');
-  const [notes, setNotes] = useState('');
-  const [showNotes, setShowNotes] = useState(false);
-  const queryClient = useQueryClient();
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <h3 className="text-sm font-semibold mb-3">Define your ideal customer</h3>
+        <textarea
+          value={input.description || ''}
+          onChange={(e) => setInput({ ...input, description: e.target.value })}
+          placeholder="e.g. Small business owners aged 25-45 who struggle with marketing..."
+          rows={3}
+          className="w-full px-3 py-2 rounded-lg text-sm resize-none mb-3"
+          style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+        />
 
-  const generateMutation = useMutation({
-    mutationFn: (platform: string) =>
-      projectsApi.generate(projectId, `audience_${platform}`, notes ? { custom: notes } : undefined).then((r) => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
-      setNotes('');
-      setShowNotes(false);
-    },
-  });
-
-  const tabs = [
-    { id: 'meta' as const, label: 'Meta' },
-    { id: 'google' as const, label: 'Google' },
-    { id: 'linkedin' as const, label: 'LinkedIn' },
-  ];
-
-  const platformAssets = assets.filter(a => a.tool === `audience_${activeTab}`);
-  const latestAsset = platformAssets.length > 0 ? platformAssets[platformAssets.length - 1] : null;
-
-  const renderTargetingData = (data: Record<string, unknown>) => {
-    return Object.entries(data).map(([key, value]) => {
-      const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      const sectionKey = `platform_${activeTab}_${key}`;
-
-      if (Array.isArray(value)) {
-        const copyVal = (value as string[]).join(', ');
-        return (
-          <div key={key} className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-gray-300">{label}</p>
-              <button
-                onClick={() => onCopy(copyVal, sectionKey)}
-                className="p-1 rounded text-gray-500 hover:text-white transition-colors"
-              >
-                {copied === sectionKey ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
-              </button>
-            </div>
+        {project.ai_analysis?.suggested_audiences && !intelligence.audience && (
+          <div className="mb-3">
+            <p className="text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Suggestions:</p>
             <div className="flex flex-wrap gap-1.5">
-              {(value as string[]).map((item, i) => (
-                <span key={i} className="px-2 py-0.5 rounded text-xs bg-white/5 text-gray-300 border border-white/10">
-                  {item}
-                </span>
+              {project.ai_analysis.suggested_audiences.map((a, i) => (
+                <span key={i} className="px-2 py-0.5 rounded text-xs bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">{a}</span>
               ))}
             </div>
           </div>
-        );
-      }
+        )}
 
-      if (typeof value === 'string') {
-        return (
-          <div key={key} className="space-y-1">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-gray-300">{label}</p>
-              <button
-                onClick={() => onCopy(value, sectionKey)}
-                className="p-1 rounded text-gray-500 hover:text-white transition-colors"
-              >
-                {copied === sectionKey ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
-              </button>
-            </div>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{value}</p>
-          </div>
-        );
-      }
-
-      return null;
-    });
-  };
-
-  return (
-    <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
-      <p className="text-sm font-medium mb-3">Platform Targeting</p>
-
-      <div className="flex gap-1 mb-4">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
-              activeTab === tab.id ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-400 hover:bg-white/5'
-            }`}
-          >
-            {tab.label}
-            {assets.filter(a => a.tool === `audience_${tab.id}`).length > 0 && (
-              <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-            )}
-          </button>
-        ))}
+        <button onClick={onGenerate} disabled={isGenerating} className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
+          {isGenerating ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><Wand2 size={14} /> Generate</>}
+        </button>
       </div>
 
-      {latestAsset ? (
-        <div className="space-y-4">
-          {latestAsset.items.map((item, i) => {
-            if (typeof item === 'object' && item !== null) {
-              return (
-                <div key={i} className="space-y-4 p-4 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                  {renderTargetingData(item as Record<string, unknown>)}
-                </div>
-              );
-            }
-            const text = typeof item === 'string' ? item : JSON.stringify(item, null, 2);
-            return (
-              <div key={i} className="p-3 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                <p className="text-xs whitespace-pre-wrap">{text}</p>
-              </div>
-            );
-          })}
+      {/* Generated options */}
+      {generatedOptions && activeTool === 'audience' && (
+        <div className="rounded-xl p-5 space-y-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <p className="text-sm font-medium">AI Persona Generation</p>
+          {(generatedOptions as AudienceProfile[]).map((opt, i) => (
+            <div key={i} onClick={() => setSelectedAudience(opt)}
+              className={`p-4 rounded-lg cursor-pointer transition-colors ${selectedAudience === opt ? 'bg-indigo-500/15 border-indigo-500/40' : 'hover:bg-white/5'}`}
+              style={{ border: selectedAudience === opt ? '1px solid rgba(99,102,241,0.4)' : '1px solid var(--border)' }}>
+              <p className="text-sm font-semibold">{opt.label}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{opt.demographics}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{opt.situation}</p>
+              {opt.goals && <p className="text-xs mt-1"><span className="text-gray-400">Goals:</span> {opt.goals}</p>}
+              {opt.buying_triggers && <p className="text-xs mt-1"><span className="text-gray-400">Trigger:</span> {opt.buying_triggers}</p>}
+            </div>
+          ))}
+          <button onClick={() => selectedAudience && onSave(selectedAudience)} disabled={!selectedAudience || isSaving}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
+            {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Confirm Selection
+          </button>
+        </div>
+      )}
 
-          <div className="space-y-2 pt-2">
-            {showNotes && (
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any notes for regeneration? e.g. Focus on retargeting, exclude certain demographics..."
-                rows={2}
-                className="w-full px-3 py-2 rounded-lg text-xs resize-none"
-                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-              />
-            )}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowNotes(!showNotes)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:bg-white/5"
-              >
-                {showNotes ? 'Hide notes' : '+ Add notes'}
-              </button>
-              <button
-                onClick={() => generateMutation.mutate(activeTab)}
-                disabled={generateMutation.isPending}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-indigo-300 hover:bg-indigo-500/10 disabled:opacity-50"
-              >
-                {generateMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Regenerate
-              </button>
+      {/* Current audience */}
+      {intelligence.audience && !generatedOptions && (
+        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-3 mb-3">
+            <UserCircle size={40} className="text-indigo-400" />
+            <div>
+              <p className="text-sm font-bold">{intelligence.audience.label}</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{intelligence.audience.demographics}</p>
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {showNotes && (
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any specific targeting notes? e.g. Focus on B2B, exclude students..."
-              rows={2}
-              className="w-full px-3 py-2 rounded-lg text-xs resize-none"
-              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-            />
-          )}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowNotes(!showNotes)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:bg-white/5"
-            >
-              {showNotes ? 'Hide notes' : '+ Add notes'}
-            </button>
-            <button
-              onClick={() => generateMutation.mutate(activeTab)}
-              disabled={generateMutation.isPending}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50"
-            >
-              {generateMutation.isPending ? (
-                <><Loader2 size={12} className="animate-spin" /> Generating...</>
-              ) : (
-                <><Wand2 size={12} /> Generate {tabs.find(t => t.id === activeTab)?.label} Targeting</>
-              )}
-            </button>
+          <div className="space-y-2 text-xs">
+            <div><span className="font-medium text-gray-300">Situation:</span> <span style={{ color: 'var(--text-muted)' }}>{intelligence.audience.situation}</span></div>
+            {intelligence.audience.goals && <div><span className="font-medium text-gray-300">Goals:</span> <span style={{ color: 'var(--text-muted)' }}>{intelligence.audience.goals}</span></div>}
+            {intelligence.audience.buying_triggers && <div><span className="font-medium text-gray-300">Trigger:</span> <span style={{ color: 'var(--text-muted)' }}>{intelligence.audience.buying_triggers}</span></div>}
+            {intelligence.audience.objections && <div><span className="font-medium text-gray-300">Objections:</span> <span style={{ color: 'var(--text-muted)' }}>{intelligence.audience.objections}</span></div>}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Step 2: Set Foundation ──
+function StepFoundation({ intelligence, input, setInput, onGenerate, generatedOptions, selectedItems, setSelectedItems, selectedAngles, setSelectedAngles, onSave, isGenerating, isSaving, activeTool, setActiveTool }: {
+  intelligence: Intelligence; input: Record<string, string>; setInput: (v: Record<string, string>) => void;
+  onGenerate: (tool: string) => void; generatedOptions: unknown; selectedItems: string[]; setSelectedItems: (v: string[]) => void;
+  selectedAngles: EmotionalAngle[]; setSelectedAngles: (v: EmotionalAngle[]) => void;
+  onSave: (tool: string, val: unknown) => void; isGenerating: boolean; isSaving: boolean; activeTool: string | null; setActiveTool: (v: string | null) => void;
+}) {
+  const tools = [
+    { id: 'pain_points', label: 'Pain Points', icon: AlertTriangle, done: !!intelligence.pain_points?.length },
+    { id: 'desires', label: 'Desires', icon: Heart, done: !!intelligence.desires?.length },
+    { id: 'objections', label: 'Objections', icon: Target, done: !!intelligence.objections?.length },
+    { id: 'emotional_angles', label: 'Emotional Angles', icon: Flame, done: !!intelligence.emotional_angles?.length },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <h3 className="text-sm font-semibold mb-3">Build Your Foundation</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {tools.map(t => (
+            <button key={t.id} onClick={() => { setActiveTool(t.id); setInput({}); }}
+              className={`flex items-center gap-2 p-3 rounded-lg text-xs font-medium transition-colors text-left ${
+                activeTool === t.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'hover:bg-white/5'
+              }`} style={{ border: activeTool !== t.id ? '1px solid var(--border)' : undefined }}>
+              <t.icon size={14} />
+              <span className="flex-1">{t.label}</span>
+              {t.done && <Check size={12} className="text-emerald-400" />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeTool && ['pain_points', 'desires', 'objections'].includes(activeTool) && (
+        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <textarea value={input.custom || ''} onChange={(e) => setInput({ custom: e.target.value })}
+            placeholder="Add your own (optional)..." rows={2}
+            className="w-full px-3 py-2 rounded-lg text-sm resize-none mb-3"
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+          <button onClick={() => onGenerate(activeTool)} disabled={isGenerating}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
+            {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} Generate
+          </button>
+
+          {generatedOptions && Array.isArray(generatedOptions) && typeof generatedOptions[0] === 'string' && (
+            <div className="mt-3 space-y-1.5">
+              {(generatedOptions as string[]).map((item, i) => (
+                <label key={i} className="flex items-start gap-2 p-2 rounded hover:bg-white/5 cursor-pointer">
+                  <input type="checkbox" checked={selectedItems.includes(item)}
+                    onChange={() => setSelectedItems(selectedItems.includes(item) ? selectedItems.filter(x => x !== item) : [...selectedItems, item])}
+                    className="mt-0.5 rounded" />
+                  <span className="text-xs">{item}</span>
+                </label>
+              ))}
+              <button onClick={() => onSave(activeTool, selectedItems)} disabled={selectedItems.length === 0 || isSaving}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-500 text-white disabled:opacity-50 mt-2">
+                {isSaving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />} Save ({selectedItems.length})
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTool === 'emotional_angles' && (
+        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <button onClick={() => onGenerate('emotional_angles')} disabled={isGenerating}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50 mb-3">
+            {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} Generate Angles
+          </button>
+          {generatedOptions && Array.isArray(generatedOptions) && typeof generatedOptions[0] === 'object' && 'emotion' in (generatedOptions[0] as object) && (
+            <div className="space-y-2">
+              {(generatedOptions as EmotionalAngle[]).map((opt, i) => (
+                <label key={i} className={`flex items-start gap-2 p-3 rounded-lg cursor-pointer ${selectedAngles.includes(opt) ? 'bg-indigo-500/10' : 'hover:bg-white/5'}`}
+                  style={{ border: selectedAngles.includes(opt) ? '1px solid rgba(99,102,241,0.3)' : '1px solid var(--border)' }}>
+                  <input type="checkbox" checked={selectedAngles.includes(opt)}
+                    onChange={() => setSelectedAngles(selectedAngles.includes(opt) ? selectedAngles.filter(a => a !== opt) : [...selectedAngles, opt])}
+                    className="mt-0.5 rounded" />
+                  <div>
+                    <p className="text-xs font-medium capitalize">{opt.emotion}</p>
+                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{opt.angle}</p>
+                  </div>
+                </label>
+              ))}
+              <button onClick={() => onSave('emotional_angles', selectedAngles)} disabled={selectedAngles.length === 0 || isSaving}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-500 text-white disabled:opacity-50">
+                {isSaving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />} Save ({selectedAngles.length})
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Step 3: Select Platforms (Targeting) ──
+function StepPlatforms({ projectId, assets, activePlatform, setActivePlatform, onCopy, copied }: {
+  projectId: string; assets: Asset[]; activePlatform: 'meta' | 'google'; setActivePlatform: (v: 'meta' | 'google') => void;
+  onCopy: (t: string, k: string) => void; copied: string;
+}) {
+  return (
+    <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <h3 className="text-sm font-semibold mb-3">Platform Targeting</h3>
+      <div className="flex gap-1 mb-4">
+        {(['meta', 'google'] as const).map(p => (
+          <button key={p} onClick={() => setActivePlatform(p)}
+            className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${activePlatform === p ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-400 hover:bg-white/5'}`}>
+            {p === 'meta' ? '◎ Meta' : 'G Google'}
+          </button>
+        ))}
+      </div>
+      <PlatformContent projectId={projectId} platform={activePlatform} assets={assets} onCopy={onCopy} copied={copied} />
+    </div>
+  );
+}
+
+// ── Step 4: Design Ads ──
+function StepDesignAds({ projectId, assets, activePlatform, setActivePlatform, activeTool, setActiveTool, input, setInput, onGenerate, generatedAsset, setGeneratedAsset, isGenerating, onCopy, copied }: {
+  projectId: string; assets: Asset[]; activePlatform: 'meta' | 'google'; setActivePlatform: (v: 'meta' | 'google') => void;
+  activeTool: string | null; setActiveTool: (v: string | null) => void; input: Record<string, string>; setInput: (v: Record<string, string>) => void;
+  onGenerate: (tool: string) => void; generatedAsset: Asset | null; setGeneratedAsset: (v: Asset | null) => void; isGenerating: boolean;
+  onCopy: (t: string, k: string) => void; copied: string;
+}) {
+  const metaTools = [
+    { id: 'meta_hooks', label: 'Hooks' }, { id: 'meta_primary_text', label: 'Primary Text' },
+    { id: 'meta_headlines', label: 'Headlines' }, { id: 'meta_ctas', label: 'CTAs' }, { id: 'meta_creatives', label: 'Creatives' },
+  ];
+  const googleTools = [
+    { id: 'google_keywords', label: 'Keywords' }, { id: 'google_headlines', label: 'Headlines' },
+    { id: 'google_descriptions', label: 'Descriptions' }, { id: 'google_extensions', label: 'Extensions' },
+    { id: 'google_ctas', label: 'CTAs' }, { id: 'google_landing_match', label: 'Landing Match' },
+  ];
+  const tools = activePlatform === 'meta' ? metaTools : googleTools;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="flex gap-1 mb-4">
+          {(['meta', 'google'] as const).map(p => (
+            <button key={p} onClick={() => { setActivePlatform(p); setActiveTool(null); setGeneratedAsset(null); }}
+              className={`px-4 py-2 rounded-lg text-xs font-medium ${activePlatform === p ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-400 hover:bg-white/5'}`}>
+              {p === 'meta' ? '◎ Meta Ads' : 'G Google Ads'}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {tools.map(t => {
+            const count = assets.filter(a => a.tool === t.id).length;
+            return (
+              <button key={t.id} onClick={() => { setActiveTool(t.id); setGeneratedAsset(null); setInput({}); }}
+                className={`p-2.5 rounded-lg text-xs font-medium transition-colors ${activeTool === t.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'text-gray-300 hover:bg-white/5 border border-transparent'}`}
+                style={{ borderColor: activeTool !== t.id ? 'var(--border)' : undefined }}>
+                {t.label} {count > 0 && <span className="ml-1 text-[10px] text-gray-500">{count}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {activeTool && (
+        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <textarea value={input.instruction || ''} onChange={(e) => setInput({ ...input, instruction: e.target.value })}
+            placeholder="Additional instructions (optional)..." rows={2}
+            className="w-full px-3 py-2 rounded-lg text-sm resize-none mb-3"
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+          <button onClick={() => onGenerate(activeTool)} disabled={isGenerating}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
+            {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} Generate
+          </button>
+
+          {generatedAsset && (
+            <div className="mt-3 space-y-2">
+              {generatedAsset.items.map((item, i) => {
+                const text = typeof item === 'string' ? item : Object.entries(item as Record<string, unknown>).map(([k, v]) => `${k}: ${v}`).join('\n');
+                const key = `gen_${i}`;
+                return (
+                  <div key={i} className="p-3 rounded-lg relative group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                    {typeof item === 'object' && item !== null ? (
+                      Object.entries(item as Record<string, unknown>).map(([field, value]) => (
+                        <div key={field} className="mb-1">
+                          <span className="text-[10px] font-medium text-gray-400 capitalize">{field.replace(/_/g, ' ')}: </span>
+                          <span className="text-xs">{typeof value === 'string' ? value : Array.isArray(value) ? (value as string[]).join(', ') : JSON.stringify(value)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs">{text}</p>
+                    )}
+                    <button onClick={() => onCopy(text, key)} className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white">
+                      {copied === key ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Previous assets */}
+          {assets.filter(a => a.tool === activeTool).length > 0 && !generatedAsset && (
+            <div className="mt-3 pt-3 border-t space-y-2" style={{ borderColor: 'var(--border)' }}>
+              <p className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>Previously generated:</p>
+              {assets.filter(a => a.tool === activeTool).slice(-1).map(asset => (
+                asset.items.map((item, i) => {
+                  const text = typeof item === 'string' ? item : JSON.stringify(item, null, 2);
+                  const key = `prev_${asset.id}_${i}`;
+                  return (
+                    <div key={key} className="p-2 rounded-lg relative group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                      {typeof item === 'object' && item !== null ? (
+                        Object.entries(item as Record<string, unknown>).map(([field, value]) => (
+                          <div key={field} className="mb-0.5">
+                            <span className="text-[10px] text-gray-400 capitalize">{field.replace(/_/g, ' ')}: </span>
+                            <span className="text-[11px]">{typeof value === 'string' ? value : Array.isArray(value) ? (value as string[]).join(', ') : JSON.stringify(value)}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-[11px]">{text}</p>
+                      )}
+                      <button onClick={() => onCopy(text, key)} className="absolute top-1 right-1 p-1 rounded opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white">
+                        {copied === key ? <Check size={8} className="text-emerald-400" /> : <Copy size={8} />}
+                      </button>
+                    </div>
+                  );
+                })
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Platform Content (targeting display) ──
+function PlatformContent({ projectId, platform, assets, onCopy, copied }: {
+  projectId: string; platform: 'meta' | 'google'; assets: Asset[]; onCopy: (t: string, k: string) => void; copied: string;
+}) {
+  const queryClient = useQueryClient();
+  const [notes, setNotes] = useState('');
+
+  const generateMutation = useMutation({
+    mutationFn: () => projectsApi.generate(projectId, `audience_${platform}`, notes ? { custom: notes } : undefined).then((r) => r.data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['project', projectId] }); setNotes(''); },
+  });
+
+  const platformAssets = assets.filter(a => a.tool === `audience_${platform}`);
+  const latest = platformAssets.length > 0 ? platformAssets[platformAssets.length - 1] : null;
+
+  if (!latest) {
+    return (
+      <div className="space-y-2">
+        <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Targeting notes (optional)..."
+          className="w-full px-3 py-2 rounded-lg text-xs" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+        <button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
+          {generateMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} Generate {platform === 'meta' ? 'Meta' : 'Google'} Targeting
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {latest.items.map((item, i) => {
+        if (typeof item === 'object' && item !== null) {
+          return (
+            <div key={i} className="grid grid-cols-2 gap-3">
+              {Object.entries(item as Record<string, unknown>).map(([key, value]) => {
+                const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                const sKey = `tgt_${platform}_${key}`;
+                return (
+                  <div key={key} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-medium text-gray-400">{label}</p>
+                      <button onClick={() => onCopy(Array.isArray(value) ? (value as string[]).join(', ') : String(value), sKey)} className="p-0.5 text-gray-600 hover:text-white">
+                        {copied === sKey ? <Check size={8} className="text-emerald-400" /> : <Copy size={8} />}
+                      </button>
+                    </div>
+                    {Array.isArray(value) ? (
+                      <div className="flex flex-wrap gap-1">
+                        {(value as string[]).slice(0, 6).map((v, j) => (
+                          <span key={j} className="px-1.5 py-0.5 rounded text-[10px] bg-white/5 text-gray-300">{v}</span>
+                        ))}
+                        {(value as string[]).length > 6 && <span className="text-[10px] text-gray-500">+{(value as string[]).length - 6}</span>}
+                      </div>
+                    ) : (
+                      <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{String(value)}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        }
+        return null;
+      })}
+      <button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium text-indigo-300 hover:bg-indigo-500/10 disabled:opacity-50">
+        {generateMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />} Regenerate
+      </button>
     </div>
   );
 }
