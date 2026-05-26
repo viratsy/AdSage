@@ -289,79 +289,176 @@ export default function ProjectStudioPage() {
           )}
         </div>
 
-        {/* Right Panel — Targeting & Intelligence */}
-        <div className="lg:col-span-3 space-y-4">
-          <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <h3 className="text-sm font-semibold mb-3">Targeting & Audience Intelligence</h3>
+        {/* Right Panel — Dashboard-style Intelligence */}
+        <div className="lg:col-span-3 space-y-4 max-h-[calc(100vh-180px)] overflow-y-auto">
+          {/* Platform toggle */}
+          <div className="flex justify-end">
+            <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+              {(['meta', 'google'] as const).map(p => (
+                <button key={p} onClick={() => setActivePlatform(p)}
+                  className={`px-4 py-2 text-xs font-medium transition-colors ${activePlatform === p ? 'bg-indigo-500 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+                  {p === 'meta' ? '◎ Meta Ads' : 'G Google Ads'}
+                </button>
+              ))}
+            </div>
+          </div>
 
-            {intelligence.audience ? (
-              <div className="space-y-4">
-                {/* Audience summary */}
-                <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'var(--surface-2)' }}>
-                  <UserCircle size={32} className="text-indigo-400" />
+          {intelligence.audience ? (
+            <div className="space-y-4">
+              {/* Ideal Audience Card */}
+              <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0">
+                    <UserCircle size={24} className="text-indigo-400" />
+                  </div>
                   <div>
-                    <p className="text-sm font-medium">{intelligence.audience.label}</p>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{intelligence.audience.demographics}</p>
+                    <h3 className="text-base font-bold">Ideal Audience</h3>
+                    <p className="text-sm mt-1 text-gray-300">{intelligence.audience.situation || intelligence.audience.demographics}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {intelligence.audience.demographics?.split(',').slice(0, 4).map((tag, i) => (
+                        <span key={i} className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-white/5 text-gray-300 border border-white/10">
+                          {tag.trim()}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Platform tabs */}
-                <div className="flex gap-1">
-                  {(['meta', 'google'] as const).map(p => (
-                    <button
-                      key={p}
-                      onClick={() => setActivePlatform(p)}
-                      className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
-                        activePlatform === p ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-400 hover:bg-white/5'
-                      }`}
-                    >
-                      {p === 'meta' ? '◎ Meta' : 'G Google'}
-                      {assets.some(a => a.tool === `audience_${p}`) && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Platform targeting content */}
-                <PlatformContent projectId={projectId!} platform={activePlatform} assets={assets} onCopy={copyText} copied={copied} />
-
-                {/* Foundation summary */}
-                {(intelligence.pain_points?.length || intelligence.desires?.length || intelligence.emotional_angles?.length) && (
-                  <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
-                    <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Foundation</p>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      {intelligence.pain_points && intelligence.pain_points.length > 0 && (
-                        <div>
-                          <p className="font-medium text-amber-300 mb-1">Pain Points</p>
-                          {intelligence.pain_points.slice(0, 3).map((p, i) => <p key={i} style={{ color: 'var(--text-muted)' }}>• {p}</p>)}
-                        </div>
-                      )}
-                      {intelligence.desires && intelligence.desires.length > 0 && (
-                        <div>
-                          <p className="font-medium text-emerald-300 mb-1">Desires</p>
-                          {intelligence.desires.slice(0, 3).map((d, i) => <p key={i} style={{ color: 'var(--text-muted)' }}>• {d}</p>)}
-                        </div>
-                      )}
+              {/* Pain Points & Desires */}
+              {(intelligence.pain_points?.length || intelligence.desires?.length) && (
+                <div className="grid grid-cols-2 gap-4">
+                  {intelligence.pain_points && intelligence.pain_points.length > 0 && (
+                    <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle size={14} className="text-red-400" />
+                        <span className="text-xs font-semibold">Pain Points</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {intelligence.pain_points.slice(0, 4).map((p, i) => (
+                          <p key={i} className="text-xs text-gray-300">• {p}</p>
+                        ))}
+                      </div>
                     </div>
-                    {intelligence.emotional_angles && intelligence.emotional_angles.length > 0 && (
-                      <div className="mt-2">
-                        <p className="font-medium text-xs text-purple-300 mb-1">Emotional Angles</p>
-                        <div className="flex flex-wrap gap-1">
-                          {intelligence.emotional_angles.map((a, i) => (
-                            <span key={i} className="px-2 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300">{a.emotion}</span>
+                  )}
+                  {intelligence.desires && intelligence.desires.length > 0 && (
+                    <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Heart size={14} className="text-emerald-400" />
+                        <span className="text-xs font-semibold">Desires</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {intelligence.desires.slice(0, 4).map((d, i) => (
+                          <p key={i} className="text-xs text-gray-300">• {d}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Interests & Behaviors from platform targeting */}
+              {(() => {
+                const platformAssets = assets.filter(a => a.tool === `audience_${activePlatform}`);
+                const latest = platformAssets.length > 0 ? platformAssets[platformAssets.length - 1] : null;
+                const data = latest?.items?.[0] as Record<string, string[]> | undefined;
+                if (!data) return null;
+                const interests = Array.isArray(data.interests) ? data.interests : [];
+                const behaviors = Array.isArray(data.behaviors) ? data.behaviors : [];
+                if (!interests.length && !behaviors.length) return null;
+                return (
+                  <div className="grid grid-cols-2 gap-4">
+                    {interests.length > 0 && (
+                      <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Zap size={14} className="text-yellow-400" />
+                          <span className="text-xs font-semibold">Interests</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {interests.slice(0, 6).map((item: string, i: number) => (
+                            <span key={i} className="px-2 py-0.5 rounded text-[10px] bg-white/5 text-gray-300 border border-white/10">{item}</span>
                           ))}
+                          {interests.length > 6 && (
+                            <span className="px-2 py-0.5 rounded text-[10px] text-gray-500">+{interests.length - 6} more</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {behaviors.length > 0 && (
+                      <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Users size={14} className="text-blue-400" />
+                          <span className="text-xs font-semibold">Behaviors</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {behaviors.slice(0, 5).map((item: string, i: number) => (
+                            <span key={i} className="px-2 py-0.5 rounded text-[10px] bg-white/5 text-gray-300 border border-white/10">{item}</span>
+                          ))}
+                          {behaviors.length > 5 && (
+                            <span className="px-2 py-0.5 rounded text-[10px] text-gray-500">+{behaviors.length - 5} more</span>
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Users size={32} className="mx-auto text-gray-600 mb-2" />
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Define your audience to see targeting intelligence</p>
-              </div>
-            )}
-          </div>
+                );
+              })()}
+
+              {/* Emotional Angles */}
+              {intelligence.emotional_angles && intelligence.emotional_angles.length > 0 && (
+                <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Flame size={14} className="text-orange-400" />
+                    <span className="text-xs font-semibold">Emotional Angles</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {intelligence.emotional_angles.slice(0, 6).map((a, i) => {
+                      const colors = ['text-cyan-300 bg-cyan-500/10 border-cyan-500/20', 'text-amber-300 bg-amber-500/10 border-amber-500/20', 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20', 'text-red-300 bg-red-500/10 border-red-500/20', 'text-purple-300 bg-purple-500/10 border-purple-500/20', 'text-blue-300 bg-blue-500/10 border-blue-500/20'];
+                      return (
+                        <div key={i} className={`p-2.5 rounded-lg border ${colors[i % colors.length]}`}>
+                          <p className="text-[10px] font-bold capitalize">{a.emotion}</p>
+                          <p className="text-[9px] mt-0.5 opacity-70">{a.angle?.slice(0, 40)}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Budget & Audience Size */}
+              {(() => {
+                const platformAssets = assets.filter(a => a.tool === `audience_${activePlatform}`);
+                const latest = platformAssets.length > 0 ? platformAssets[platformAssets.length - 1] : null;
+                const data = latest?.items?.[0] as Record<string, unknown> | undefined;
+                if (!data?.budget_recommendation) return null;
+                return (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <DollarSign size={14} className="text-emerald-400" />
+                        <span className="text-xs font-semibold">Budget Recommendation</span>
+                      </div>
+                      <p className="text-sm font-bold text-white">{String(data.budget_recommendation).split(',')[0]}</p>
+                      <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>{String(data.budget_recommendation).split(',').slice(1).join(',').trim()}</p>
+                    </div>
+                    <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <MapPin size={14} className="text-indigo-400" />
+                        <span className="text-xs font-semibold">Demographics</span>
+                      </div>
+                      <p className="text-xs text-gray-300">{data.demographics_targeting ? String(data.demographics_targeting) : 'Generate targeting to see'}</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="rounded-xl p-8 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <Users size={32} className="mx-auto text-gray-600 mb-2" />
+              <p className="text-sm font-medium text-gray-400">Define your audience first</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Complete Step 1 to see targeting intelligence here</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -547,18 +644,100 @@ function StepPlatforms({ projectId, assets, activePlatform, setActivePlatform, o
   projectId: string; assets: Asset[]; activePlatform: 'meta' | 'google'; setActivePlatform: (v: 'meta' | 'google') => void;
   onCopy: (t: string, k: string) => void; copied: string;
 }) {
+  const queryClient = useQueryClient();
+  const [notes, setNotes] = useState('');
+
+  const generateMutation = useMutation({
+    mutationFn: () => projectsApi.generate(projectId, `audience_${activePlatform}`, notes ? { custom: notes } : undefined).then((r) => r.data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['project', projectId] }); setNotes(''); },
+  });
+
+  const platformAssets = assets.filter(a => a.tool === `audience_${activePlatform}`);
+  const latest = platformAssets.length > 0 ? platformAssets[platformAssets.length - 1] : null;
+  const data = latest?.items?.[0] as Record<string, unknown> | undefined;
+
+  // Extract counts from data
+  const getCount = (key: string) => {
+    if (!data || !data[key]) return 0;
+    return Array.isArray(data[key]) ? (data[key] as unknown[]).length : 1;
+  };
+
   return (
-    <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      <h3 className="text-sm font-semibold mb-3">Platform Targeting</h3>
-      <div className="flex gap-1 mb-4">
-        {(['meta', 'google'] as const).map(p => (
-          <button key={p} onClick={() => setActivePlatform(p)}
-            className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${activePlatform === p ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-400 hover:bg-white/5'}`}>
-            {p === 'meta' ? '◎ Meta' : 'G Google'}
+    <div className="space-y-4">
+      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <h3 className="text-sm font-semibold mb-1">Audience Builder</h3>
+        <p className="text-[10px] mb-4" style={{ color: 'var(--text-muted)' }}>Configure your audience inputs</p>
+
+        {/* Audience Sources */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Users size={12} className="text-indigo-400" />
+            <span className="text-xs font-medium">Audience Sources</span>
+          </div>
+          <div className="space-y-1.5 pl-5">
+            <div className="flex items-center justify-between text-xs">
+              <span style={{ color: 'var(--text-muted)' }}>Lookalike Audiences</span>
+              <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-medium">{getCount('lookalike_suggestions')}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span style={{ color: 'var(--text-muted)' }}>Custom Audiences</span>
+              <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-medium">{getCount('custom_audience_ideas')}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Targeting */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Target size={12} className="text-indigo-400" />
+            <span className="text-xs font-medium">Targeting</span>
+          </div>
+          <div className="space-y-1.5 pl-5">
+            <div className="flex items-center justify-between text-xs">
+              <span style={{ color: 'var(--text-muted)' }}>Demographics</span>
+              <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-medium">{data?.demographics_targeting ? 1 : 0}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span style={{ color: 'var(--text-muted)' }}>Behaviors</span>
+              <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-medium">{getCount('behaviors')}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span style={{ color: 'var(--text-muted)' }}>Interests</span>
+              <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-medium">{getCount('interests')}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Optimization */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Wand2 size={12} className="text-indigo-400" />
+            <span className="text-xs font-medium">Optimization</span>
+          </div>
+          <div className="space-y-1.5 pl-5">
+            <div className="flex items-center justify-between text-xs">
+              <span style={{ color: 'var(--text-muted)' }}>Exclusions</span>
+              <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px] font-medium">{getCount('exclusions')}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span style={{ color: 'var(--text-muted)' }}>Budget & Bidding</span>
+              <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{data?.budget_recommendation ? '✓' : '—'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Generate / Regenerate */}
+        <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+          <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Targeting notes (optional)..."
+            className="w-full px-3 py-2 rounded-lg text-xs mb-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+          <button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-medium bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 transition-colors disabled:opacity-50">
+            {generateMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            {latest ? 'Regenerate Audience' : 'Generate Audience'}
           </button>
-        ))}
+          <p className="text-[9px] text-center mt-1.5" style={{ color: 'var(--text-muted)' }}>AI will {latest ? 'reanalyze and refine' : 'generate'} audience insights</p>
+        </div>
       </div>
-      <PlatformContent projectId={projectId} platform={activePlatform} assets={assets} onCopy={onCopy} copied={copied} />
     </div>
   );
 }
@@ -654,7 +833,7 @@ function StepDesignAds({ projectId, assets, activePlatform, setActivePlatform, a
 
           {/* Previous assets */}
           {assets.filter(a => a.tool === activeTool).length > 0 && !generatedAsset && (
-            <div className="mt-4 pt-4 border-t space-y-3" style={{ borderColor: 'var(--border)' }}>
+            <div className="mt-4 pt-4 border-t space-y-3 max-h-[60vh] overflow-y-auto" style={{ borderColor: 'var(--border)' }}>
               <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Previously generated</p>
               {assets.filter(a => a.tool === activeTool).slice().reverse().slice(0, 2).map(asset => (
                 <div key={asset.id} className="space-y-2">
@@ -669,14 +848,14 @@ function StepDesignAds({ projectId, assets, activePlatform, setActivePlatform, a
                             return (
                               <div key={field} className={isLong ? '' : 'flex items-baseline gap-2'}>
                                 <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0">{field.replace(/_/g, ' ')}</span>
-                                <p className={`text-xs leading-relaxed ${isLong ? 'mt-0.5' : ''}`} style={{ color: 'var(--text-muted)' }}>
+                                <p className={`text-sm leading-relaxed text-gray-200 ${isLong ? 'mt-0.5' : ''}`}>
                                   {typeof value === 'string' ? value : Array.isArray(value) ? (value as string[]).join(', ') : JSON.stringify(value)}
                                 </p>
                               </div>
                             );
                           })
                         ) : (
-                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{text}</p>
+                          <p className="text-sm text-gray-200">{text}</p>
                         )}
                         <button onClick={() => onCopy(text, key)} className="absolute top-2.5 right-2.5 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10 transition-all">
                           {copied === key ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
