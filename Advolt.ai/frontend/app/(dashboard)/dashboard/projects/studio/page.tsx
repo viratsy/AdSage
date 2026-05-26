@@ -618,57 +618,73 @@ function StepDesignAds({ projectId, assets, activePlatform, setActivePlatform, a
           </button>
 
           {generatedAsset && (
-            <div className="mt-3 space-y-2">
+            <div className="mt-4 space-y-3">
+              <p className="text-xs font-medium text-emerald-400">✓ Generated</p>
               {generatedAsset.items.map((item, i) => {
                 const text = typeof item === 'string' ? item : Object.entries(item as Record<string, unknown>).map(([k, v]) => `${k}: ${v}`).join('\n');
                 const key = `gen_${i}`;
                 return (
-                  <div key={i} className="p-3 rounded-lg relative group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                  <div key={i} className="p-4 rounded-xl relative group space-y-2.5" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
                     {typeof item === 'object' && item !== null ? (
-                      Object.entries(item as Record<string, unknown>).map(([field, value]) => (
-                        <div key={field} className="mb-1">
-                          <span className="text-[10px] font-medium text-gray-400 capitalize">{field.replace(/_/g, ' ')}: </span>
-                          <span className="text-xs">{typeof value === 'string' ? value : Array.isArray(value) ? (value as string[]).join(', ') : JSON.stringify(value)}</span>
-                        </div>
-                      ))
+                      Object.entries(item as Record<string, unknown>).map(([field, value]) => {
+                        const isLong = typeof value === 'string' && value.length > 60;
+                        return (
+                          <div key={field} className={isLong ? '' : 'flex items-baseline gap-2'}>
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-400 shrink-0">{field.replace(/_/g, ' ')}</span>
+                            <p className={`text-sm leading-relaxed ${isLong ? 'mt-1' : ''}`} style={{ color: 'var(--text)' }}>
+                              {typeof value === 'string' ? value : Array.isArray(value) ? (value as string[]).join(', ') : JSON.stringify(value)}
+                            </p>
+                          </div>
+                        );
+                      })
                     ) : (
-                      <p className="text-xs">{text}</p>
+                      <p className="text-sm leading-relaxed">{text}</p>
                     )}
-                    <button onClick={() => onCopy(text, key)} className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white">
-                      {copied === key ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                    <button onClick={() => onCopy(text, key)} className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+                      {copied === key ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                     </button>
                   </div>
                 );
               })}
+              <button onClick={() => setGeneratedAsset(null)} className="text-xs text-indigo-300 hover:text-indigo-200 mt-2">
+                ↻ Generate more
+              </button>
             </div>
           )}
 
           {/* Previous assets */}
           {assets.filter(a => a.tool === activeTool).length > 0 && !generatedAsset && (
-            <div className="mt-3 pt-3 border-t space-y-2" style={{ borderColor: 'var(--border)' }}>
-              <p className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>Previously generated:</p>
-              {assets.filter(a => a.tool === activeTool).slice(-1).map(asset => (
-                asset.items.map((item, i) => {
-                  const text = typeof item === 'string' ? item : JSON.stringify(item, null, 2);
-                  const key = `prev_${asset.id}_${i}`;
-                  return (
-                    <div key={key} className="p-2 rounded-lg relative group" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                      {typeof item === 'object' && item !== null ? (
-                        Object.entries(item as Record<string, unknown>).map(([field, value]) => (
-                          <div key={field} className="mb-0.5">
-                            <span className="text-[10px] text-gray-400 capitalize">{field.replace(/_/g, ' ')}: </span>
-                            <span className="text-[11px]">{typeof value === 'string' ? value : Array.isArray(value) ? (value as string[]).join(', ') : JSON.stringify(value)}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-[11px]">{text}</p>
-                      )}
-                      <button onClick={() => onCopy(text, key)} className="absolute top-1 right-1 p-1 rounded opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white">
-                        {copied === key ? <Check size={8} className="text-emerald-400" /> : <Copy size={8} />}
-                      </button>
-                    </div>
-                  );
-                })
+            <div className="mt-4 pt-4 border-t space-y-3" style={{ borderColor: 'var(--border)' }}>
+              <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Previously generated</p>
+              {assets.filter(a => a.tool === activeTool).slice().reverse().slice(0, 2).map(asset => (
+                <div key={asset.id} className="space-y-2">
+                  {asset.items.map((item, i) => {
+                    const text = typeof item === 'string' ? item : Object.entries(item as Record<string, unknown>).map(([k, v]) => `${k}: ${v}`).join('\n');
+                    const key = `prev_${asset.id}_${i}`;
+                    return (
+                      <div key={key} className="p-3.5 rounded-xl relative group space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                        {typeof item === 'object' && item !== null ? (
+                          Object.entries(item as Record<string, unknown>).map(([field, value]) => {
+                            const isLong = typeof value === 'string' && value.length > 60;
+                            return (
+                              <div key={field} className={isLong ? '' : 'flex items-baseline gap-2'}>
+                                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 shrink-0">{field.replace(/_/g, ' ')}</span>
+                                <p className={`text-xs leading-relaxed ${isLong ? 'mt-0.5' : ''}`} style={{ color: 'var(--text-muted)' }}>
+                                  {typeof value === 'string' ? value : Array.isArray(value) ? (value as string[]).join(', ') : JSON.stringify(value)}
+                                </p>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{text}</p>
+                        )}
+                        <button onClick={() => onCopy(text, key)} className="absolute top-2.5 right-2.5 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+                          {copied === key ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               ))}
             </div>
           )}
