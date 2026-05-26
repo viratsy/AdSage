@@ -451,7 +451,7 @@ function StepAudience({ project, intelligence, input, setInput, onGenerate, gene
 // ── Step 2: Set Foundation ──
 function StepFoundation({ intelligence, input, setInput, onGenerate, generatedOptions, selectedItems, setSelectedItems, selectedAngles, setSelectedAngles, onSave, isGenerating, isSaving, activeTool, setActiveTool }: {
   intelligence: Intelligence; input: Record<string, string>; setInput: (v: Record<string, string>) => void;
-  onGenerate: (tool: string) => void; generatedOptions: unknown; selectedItems: string[]; setSelectedItems: (v: string[]) => void;
+  onGenerate: (tool: string) => void; generatedOptions: AudienceProfile[] | string[] | EmotionalAngle[] | null; selectedItems: string[]; setSelectedItems: (v: string[]) => void;
   selectedAngles: EmotionalAngle[]; setSelectedAngles: (v: EmotionalAngle[]) => void;
   onSave: (tool: string, val: unknown) => void; isGenerating: boolean; isSaving: boolean; activeTool: string | null; setActiveTool: (v: string | null) => void;
 }) {
