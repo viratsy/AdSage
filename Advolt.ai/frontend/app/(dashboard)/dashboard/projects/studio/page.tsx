@@ -283,162 +283,173 @@ export default function ProjectStudioPage() {
 
       {/* Step 2: Generate Ads */}
       {activeStep === 2 && (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Left: Audience context */}
-          <div className="lg:col-span-2 space-y-4">
-            {intelligence.audience && (
-              <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div className="flex items-center gap-3 mb-3">
-                  <UserCircle size={20} className="text-indigo-400" />
-                  <div>
-                    <p className="text-sm font-bold text-white">{intelligence.audience.label}</p>
-                    <p className="text-[10px] text-gray-400">{intelligence.audience.demographics}</p>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-300 mb-3">{intelligence.audience.situation}</p>
-                {intelligence.audience.goals && <p className="text-[10px] text-gray-400"><span className="text-emerald-400">Goals:</span> {intelligence.audience.goals}</p>}
-              </div>
-            )}
+        <div className="space-y-5">
+          {/* Platform toggle + Tone + Generate */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex gap-2">
+              {(['meta', 'google'] as const).map(p => (
+                <button key={p} onClick={() => { setActivePlatform(p); setGeneratedAsset(null); }}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${activePlatform === p ? 'bg-indigo-500/15 text-white border border-indigo-500/25' : 'text-gray-400 hover:bg-white/5 border border-white/10'}`}>
+                  {p === 'meta' ? '◎ Meta Ads (Facebook & Instagram)' : 'G Google Ads (Search)'}
+                </button>
+              ))}
+            </div>
+            <select value={input.tone || ''} onChange={(e) => setInput({ ...input, tone: e.target.value })}
+              className="ml-auto px-3 py-2 rounded-lg text-xs bg-transparent border border-white/10 text-gray-300 outline-none">
+              <option value="">Tone: Auto</option>
+              {tones.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <button
+              onClick={() => generateMutation.mutate({ tool: activePlatform === 'meta' ? 'meta_campaign' : 'google_campaign', input: Object.keys(input).length > 0 ? input : undefined })}
+              disabled={generateMutation.isPending}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50">
+              {generateMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><RefreshCw size={14} /> Generate</>}
+            </button>
           </div>
 
-          {/* Right: Campaign generation */}
-          <div className="lg:col-span-3 space-y-4">
-            <div className="rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              {/* Platform toggle */}
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex gap-2">
-                  {(['meta', 'google'] as const).map(p => (
-                    <button key={p} onClick={() => { setActivePlatform(p); setGeneratedAsset(null); }}
-                      className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${activePlatform === p ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:bg-white/5 border border-white/10'}`}>
-                      {p === 'meta' ? '◎ Meta Ads' : 'G Google Ads'}
+          {/* 3-column layout when campaign is generated */}
+          {generatedAsset && generatedAsset.items.length > 0 ? (() => {
+            const campaign = (typeof generatedAsset.items[0] === 'object' && generatedAsset.items[0] !== null ? generatedAsset.items[0] : {}) as Record<string, unknown>;
+            const targeting = (campaign.targeting || {}) as Record<string, unknown>;
+            const placements = (campaign.placements || []) as string[];
+            const allText = Object.entries(campaign).filter(([k]) => !['targeting', 'placements'].includes(k)).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
+
+            return (
+              <div className="space-y-5">
+                <div className="grid grid-cols-12 gap-5">
+                  {/* Left: Campaign Brief */}
+                  <div className="col-span-3 space-y-4">
+                    <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <h3 className="text-sm font-bold text-white mb-4">Campaign Brief</h3>
+                      <div className="space-y-3 text-xs">
+                        <div><span className="text-indigo-400 font-medium">Audience</span><p className="text-gray-300 mt-0.5">{intelligence.audience?.label}</p><p className="text-gray-500 text-[10px]">{intelligence.audience?.demographics}</p></div>
+                        <div><span className="text-indigo-400 font-medium">Goal</span><p className="text-gray-300 mt-0.5">{intelligence.audience?.goals || 'Conversions'}</p></div>
+                        <div><span className="text-indigo-400 font-medium">Platform</span><p className="text-gray-300 mt-0.5">{activePlatform === 'meta' ? 'Meta Ads (Facebook & Instagram)' : 'Google Ads (Search)'}</p></div>
+                        <div><span className="text-indigo-400 font-medium">Tone</span><p className="text-gray-300 mt-0.5">{input.tone || 'Auto'}</p></div>
+                        {input.instruction ? <div><span className="text-indigo-400 font-medium">Instructions</span><p className="text-gray-300 mt-0.5">{input.instruction}</p></div> : null}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2"><Wand2 size={12} className="text-indigo-400" /> AI Suggestions</h4>
+                      <ul className="space-y-2 text-[11px] text-gray-400">
+                        <li>• Use urgency in hooks</li>
+                        <li>• Highlight limited time benefits</li>
+                        <li>• Showcase real results</li>
+                        <li>• Add social proof elements</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Center: Creative + Copy */}
+                  <div className="col-span-5">
+                    <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div className="flex items-center justify-between px-5 py-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <h3 className="text-sm font-bold text-white">{campaign.campaign_name ? String(campaign.campaign_name) : 'Campaign Concept'}</h3>
+                        <span className="px-2.5 py-1 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300">Best Match</span>
+                      </div>
+                      <div className="relative h-44 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                        <div className="text-center">
+                          <p className="text-xs text-gray-500 mb-2">Ad Creative Preview</p>
+                          <div className="flex gap-2 justify-center">
+                            <button className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Generate Image</button>
+                            <button className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-white/5 text-gray-400 border border-white/10">Generate Prompt</button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-5 space-y-3">
+                        {campaign.hook ? <div><p className="text-[10px] font-bold uppercase text-indigo-400">Hook</p><p className="text-sm font-semibold text-white">{String(campaign.hook)}</p></div> : null}
+                        {campaign.primary_text ? <div><p className="text-[10px] font-bold uppercase text-indigo-400">Primary Text</p><p className="text-xs text-gray-300 leading-relaxed whitespace-pre-line">{String(campaign.primary_text)}</p></div> : null}
+                        {campaign.headline ? <div><p className="text-[10px] font-bold uppercase text-indigo-400">Headline</p><p className="text-sm font-medium text-white">{String(campaign.headline)}</p></div> : null}
+                        {campaign.cta ? <div><p className="text-[10px] font-bold uppercase text-indigo-400">CTA</p><p className="text-sm text-white">{String(campaign.cta)}</p></div> : null}
+                        {campaign.description ? <div><p className="text-[10px] font-bold uppercase text-amber-400">Description</p><p className="text-xs text-gray-400">{String(campaign.description)}</p></div> : null}
+                        {campaign.display_url ? <div><p className="text-[10px] font-bold uppercase text-amber-400">Display URL</p><p className="text-xs text-gray-400">{String(campaign.display_url)}</p></div> : null}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Target Audience */}
+                  <div className="col-span-4">
+                    <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <h3 className="text-sm font-bold text-white mb-4">Target Audience</h3>
+                      <div className="space-y-4 text-xs">
+                        {targeting.demographics ? <div><span className="text-indigo-400 font-medium flex items-center gap-1"><Users size={10} /> Demographics</span><p className="text-gray-300 mt-1">{String(targeting.demographics)}</p></div> : null}
+                        {targeting.interests && Array.isArray(targeting.interests) ? <div><span className="text-purple-400 font-medium">Interests</span><p className="text-gray-300 mt-1">{(targeting.interests as string[]).join(', ')}</p></div> : null}
+                        {targeting.behaviors && Array.isArray(targeting.behaviors) ? <div><span className="text-emerald-400 font-medium">Behaviors</span><p className="text-gray-300 mt-1">{(targeting.behaviors as string[]).join(', ')}</p></div> : null}
+                        {targeting.custom_audiences && Array.isArray(targeting.custom_audiences) ? <div><span className="text-amber-400 font-medium">Custom Audiences</span><p className="text-gray-300 mt-1">{(targeting.custom_audiences as string[]).join(', ')}</p></div> : null}
+                        {targeting.lookalike_audiences && Array.isArray(targeting.lookalike_audiences) ? <div><span className="text-cyan-400 font-medium">Lookalike Audiences</span><p className="text-gray-300 mt-1">{(targeting.lookalike_audiences as string[]).join(', ')}</p></div> : null}
+                      </div>
+                    </div>
+                    {campaign.budget_recommendation ? <div className="rounded-2xl p-4 mt-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <p className="text-[10px] font-bold uppercase text-emerald-400">Budget</p>
+                      <p className="text-xs text-gray-300 mt-1">{String(campaign.budget_recommendation)}</p>
+                    </div> : null}
+                  </div>
+                </div>
+
+                {/* Bottom cards */}
+                <div className="grid grid-cols-4 gap-4">
+                  {campaign.emotional_angle ? <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <p className="text-[10px] font-bold text-white mb-1">🔥 Emotional Angle</p>
+                    <p className="text-xs text-gray-200">{String(campaign.emotional_angle)}</p>
+                    {campaign.emotional_angle_description ? <p className="text-[10px] text-gray-400 mt-1">{String(campaign.emotional_angle_description)}</p> : null}
+                  </div> : null}
+                  {campaign.creative_direction ? <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <p className="text-[10px] font-bold text-white mb-1">🎬 Creative Direction</p>
+                    <p className="text-[10px] text-gray-300">{String(campaign.creative_direction)}</p>
+                  </div> : null}
+                  {campaign.offer ? <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <p className="text-[10px] font-bold text-white mb-1">🎁 Offer</p>
+                    <p className="text-[10px] text-gray-300">{String(campaign.offer)}</p>
+                  </div> : null}
+                  {campaign.why_it_works ? <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <p className="text-[10px] font-bold text-white mb-1">⭐ Why It Works</p>
+                    <p className="text-[10px] text-gray-300">{String(campaign.why_it_works)}</p>
+                  </div> : null}
+                </div>
+
+                {/* Placements */}
+                {placements.length > 0 && (
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-[10px] font-bold text-gray-400">Recommended Placements:</span>
+                    {placements.map((p, i) => <span key={i} className="px-2.5 py-1 rounded-lg text-[10px] bg-white/5 text-gray-300 border border-white/10">{p}</span>)}
+                  </div>
+                )}
+
+                {/* Bottom action bar */}
+                <div className="flex items-center justify-between p-4 rounded-2xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <p className="text-sm text-gray-400">Need more options?</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => copyText(allText, 'full_campaign')} className="px-4 py-2 rounded-xl text-xs font-medium text-gray-400 border border-white/10 hover:bg-white/5">
+                      {copied === 'full_campaign' ? '✓ Copied All' : 'Copy All'}
                     </button>
-                  ))}
+                    <button
+                      onClick={() => { setGeneratedAsset(null); generateMutation.mutate({ tool: activePlatform === 'meta' ? 'meta_campaign' : 'google_campaign', input: Object.keys(input).length > 0 ? input : undefined }); }}
+                      disabled={generateMutation.isPending}
+                      className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50">
+                      <Wand2 size={12} /> Generate More
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              {/* Tone selector */}
-              <div className="mb-4">
-                <p className="text-xs text-gray-400 mb-2">Tone:</p>
-                <div className="flex flex-wrap gap-2">
-                  {tones.map(t => (
-                    <button key={t} onClick={() => setInput({ ...input, tone: input.tone === t ? '' : t })}
-                      className={`px-3 py-1.5 rounded-lg text-xs transition-all ${input.tone === t ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'text-gray-400 border border-white/10 hover:bg-white/5'}`}>
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Instructions */}
+            );
+          })() : (
+            /* Empty state - show generate form */
+            <div className="rounded-2xl p-10 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <Wand2 size={32} className="mx-auto text-gray-600 mb-3" />
+              <p className="text-base font-medium text-gray-400">Generate your campaign</p>
+              <p className="text-sm text-gray-500 mt-1">Select a platform and click Generate to create a complete campaign with targeting</p>
               <textarea value={input.instruction || ''} onChange={(e) => setInput({ ...input, instruction: e.target.value })}
-                placeholder="Additional instructions (optional)... e.g. Focus on festival season, target college students"
-                rows={2} className="w-full px-4 py-3 rounded-xl text-sm resize-none mb-4"
+                placeholder="Additional instructions (optional)..."
+                rows={2} className="w-full max-w-md mx-auto mt-4 px-4 py-3 rounded-xl text-sm resize-none"
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }} />
-
-              {/* Generate button */}
               <button
                 onClick={() => generateMutation.mutate({ tool: activePlatform === 'meta' ? 'meta_campaign' : 'google_campaign', input: Object.keys(input).length > 0 ? input : undefined })}
                 disabled={generateMutation.isPending}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50 transition-all"
-              >
-                {generateMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Generating Campaign...</> : <><Wand2 size={14} /> Generate Campaign Concept</>}
+                className="mt-4 flex items-center justify-center gap-2 mx-auto px-6 py-3 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50">
+                {generateMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><Wand2 size={14} /> Generate Campaign</>}
               </button>
             </div>
-
-            {/* Generated campaigns */}
-            {generatedAsset && (
-              <div className="space-y-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-bold text-white">Generated Campaign Concept</h3>
-                    <p className="text-xs text-gray-400">Campaign generated for your audience</p>
-                  </div>
-                  <button onClick={() => setGeneratedAsset(null)} className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1">
-                    <RefreshCw size={10} /> Generate Another
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 gap-4">
-                  {generatedAsset.items.map((item, i) => {
-                    const obj = (typeof item === 'object' && item !== null ? item : {}) as Record<string, unknown>;
-                    const text = Object.entries(obj).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
-                    const key = `gen_${i}`;
-                    const borderColors = ['border-indigo-500/30', 'border-purple-500/30', 'border-emerald-500/30'];
-                    const badgeColors = ['bg-indigo-500/20 text-indigo-300', 'bg-purple-500/20 text-purple-300', 'bg-emerald-500/20 text-emerald-300'];
-                    return (
-                      <div key={i} className={`rounded-2xl overflow-hidden border ${borderColors[i]}`} style={{ background: 'rgba(255,255,255,0.02)' }}>
-                        {/* Image placeholder */}
-                        <div className="relative h-40 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500 mb-2">Ad Creative Preview</p>
-                            <div className="flex gap-2 justify-center">
-                              <button className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30">
-                                Generate Image
-                              </button>
-                              <button className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10">
-                                Generate Prompt
-                              </button>
-                            </div>
-                          </div>
-                          <span className={`absolute top-3 left-3 px-2 py-0.5 rounded text-[9px] font-bold ${badgeColors[i]}`}>
-                            Campaign {i + 1}
-                          </span>
-                          {i === 0 && <span className="absolute top-3 right-3 px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300">Best Match</span>}
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-4 space-y-2.5">
-                          {obj.emotional_angle ? <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-semibold ${badgeColors[i]}`}>{String(obj.emotional_angle)}</span> : null}
-
-                          {obj.hook ? <div><p className="text-[9px] font-semibold uppercase text-indigo-400">Hook</p><p className="text-xs text-white font-medium">{String(obj.hook)}</p></div> : null}
-
-                          {obj.primary_text ? <div><p className="text-[9px] font-semibold uppercase text-indigo-400">Primary Text</p><p className="text-[11px] text-gray-300 leading-relaxed">{String(obj.primary_text).slice(0, 120)}{String(obj.primary_text).length > 120 ? '...' : ''}</p></div> : null}
-
-                          {obj.headline ? <div><p className="text-[9px] font-semibold uppercase text-indigo-400">Headline</p><p className="text-xs text-white font-medium">{String(obj.headline)}</p></div> : null}
-
-                          {obj.cta ? <div><p className="text-[9px] font-semibold uppercase text-indigo-400">CTA</p><p className="text-xs text-white">{String(obj.cta)}</p></div> : null}
-
-                          {/* Buttons */}
-                          <div className="flex gap-2 pt-2">
-                            <button onClick={() => copyText(text, key)} className="flex-1 py-2 rounded-xl text-[11px] font-medium text-gray-400 border border-white/10 hover:bg-white/5 transition-all">
-                              {copied === key ? '✓ Copied' : 'View Details'}
-                            </button>
-                            <button onClick={() => copyText(text, key)} className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-indigo-500 text-white hover:bg-indigo-600 transition-all">
-                              Use This Campaign
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Previous campaigns */}
-            {!generatedAsset && assets.filter(a => a.tool === `${activePlatform}_campaign`).length > 0 && (
-              <div className="space-y-4">
-                <p className="text-sm font-medium text-gray-400">Previous campaigns</p>
-                {assets.filter(a => a.tool === `${activePlatform}_campaign`).slice().reverse().slice(0, 3).map(asset =>
-                  asset.items.map((item, i) => {
-                    const obj = (typeof item === 'object' && item !== null ? item : {}) as Record<string, unknown>;
-                    const text = Object.entries(obj).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
-                    const key = `prev_${asset.id}_${i}`;
-                    return (
-                      <div key={key} className="rounded-2xl p-5 relative group" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                        {obj.campaign_name ? <p className="text-sm font-bold text-gray-200">{String(obj.campaign_name)}</p> : null}
-                        {obj.hook ? <p className="text-xs text-gray-300 mt-1"><span className="text-indigo-400">Hook:</span> {String(obj.hook)}</p> : null}
-                        {obj.headline ? <p className="text-xs text-gray-300"><span className="text-indigo-400">Headline:</span> {String(obj.headline)}</p> : null}
-                        {obj.cta ? <p className="text-xs text-gray-300"><span className="text-indigo-400">CTA:</span> {String(obj.cta)}</p> : null}
-                        <button onClick={() => copyText(text, key)} className="absolute top-3 right-3 p-1.5 rounded opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white">
-                          {copied === key ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
-                        </button>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
+          )}
         </div>
       )}
     </div>
