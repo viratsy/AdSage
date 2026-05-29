@@ -46,7 +46,6 @@ export default function CreatorStudioPage() {
   const [prefillSource, setPrefillSource] = useState('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [openProjectId, setOpenProjectId] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -74,7 +73,6 @@ export default function CreatorStudioPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setSelectedProject(null);
-      setMenuOpen(null);
     },
   });
 

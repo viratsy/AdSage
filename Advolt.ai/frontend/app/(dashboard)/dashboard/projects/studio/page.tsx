@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api';
 import {
   Zap, Users, Loader2, Check, ChevronLeft, RefreshCw, Copy, Wand2,
-  UserCircle, Target, Heart, AlertTriangle, Flame, DollarSign
+  UserCircle, Target, AlertTriangle
 } from 'lucide-react';
 
 interface AudienceProfile {
@@ -73,7 +73,6 @@ export default function ProjectStudioPage() {
   const [selectedAudience, setSelectedAudience] = useState<AudienceProfile | null>(null);
   const [copied, setCopied] = useState('');
   const [activePlatform, setActivePlatform] = useState<'meta' | 'google'>('meta');
-  const [activeTool, setActiveTool] = useState<string | null>(null);
 
   const { data: project, isLoading } = useQuery<Project>({
     queryKey: ['project', projectId],
@@ -275,7 +274,7 @@ export default function ProjectStudioPage() {
               <div className="rounded-2xl p-10 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <Users size={40} className="mx-auto text-gray-600 mb-3" />
                 <p className="text-base font-medium text-gray-400">Generate your audience personas</p>
-                <p className="text-sm text-gray-500 mt-1">Click "Generate Personas" to get AI-powered audience profiles</p>
+                <p className="text-sm text-gray-500 mt-1">Click &quot;Generate Personas&quot; to get AI-powered audience profiles</p>
               </div>
             )}
           </div>
