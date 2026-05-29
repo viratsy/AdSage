@@ -178,41 +178,42 @@ export default function ProjectStudioPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl 2xl:max-w-[1400px] mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => router.push('/dashboard/projects')} className="text-gray-400 hover:text-white transition-colors">
-          <ChevronLeft size={20} />
+      <div className="flex items-center gap-4">
+        <button onClick={() => router.push('/dashboard/projects')} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+          <ChevronLeft size={16} />
         </button>
         <div className="flex-1">
-          <h1 className="text-lg font-bold">The Campaign Builder</h1>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{project.project_name} · {project.business_name}</p>
+          <h1 className="text-xl font-bold text-white">Campaign Builder</h1>
+          <p className="text-sm text-gray-400">{project.project_name} · {project.business_name}</p>
         </div>
       </div>
 
       {/* Step Progress */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {STEPS.map((step, i) => {
           const current = getCurrentStep();
           const isActive = step.id === activeStep;
           const isDone = step.id < current;
           return (
-            <div key={step.id} className="flex items-center gap-2 flex-1">
+            <div key={step.id} className="flex items-center gap-3 flex-1">
               <button
                 onClick={() => setActiveStep(step.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors w-full ${
-                  isActive ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' :
-                  isDone ? 'text-emerald-400 bg-emerald-500/10' : 'text-gray-500 hover:bg-white/5'
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all w-full ${
+                  isActive ? 'bg-indigo-500/15 text-white shadow-sm' :
+                  isDone ? 'text-emerald-300 bg-emerald-500/10' : 'text-gray-500 hover:bg-white/5'
                 }`}
+                style={{ border: isActive ? '1px solid rgba(99,102,241,0.25)' : isDone ? '1px solid rgba(16,185,129,0.15)' : '1px solid rgba(255,255,255,0.06)' }}
               >
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  isDone ? 'bg-emerald-500 text-white' : isActive ? 'bg-indigo-500 text-white' : 'bg-gray-700 text-gray-400'
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                  isDone ? 'bg-emerald-500 text-white' : isActive ? 'bg-indigo-500 text-white' : 'bg-gray-700/50 text-gray-400'
                 }`}>
                   {isDone ? '✓' : step.id}
                 </span>
                 {step.label}
               </button>
-              {i < STEPS.length - 1 && <div className="w-4 h-px bg-gray-700" />}
+              {i < STEPS.length - 1 && <div className="w-6 h-px bg-white/10" />}
             </div>
           );
         })}
