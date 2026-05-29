@@ -290,7 +290,8 @@ export default function ProjectStudioPage() {
               {(['meta', 'google'] as const).map(p => (
                 <button key={p} onClick={() => { setActivePlatform(p); setGeneratedAsset(null); }}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${activePlatform === p ? 'bg-indigo-500/15 text-white border border-indigo-500/25' : 'text-gray-400 hover:bg-white/5 border border-white/10'}`}>
-                  {p === 'meta' ? '◎ Meta Ads (Facebook & Instagram)' : 'G Google Ads (Search)'}
+                  <img src={p === 'meta' ? '/meta.svg' : '/google.svg'} alt={p} className="w-5 h-5" />
+                  {p === 'meta' ? 'Meta Ads (Facebook & Instagram)' : 'Google Ads (Search)'}
                 </button>
               ))}
             </div>
