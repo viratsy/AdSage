@@ -38,7 +38,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-7 py-2">
+    <div className="max-w-7xl mx-auto space-y-7 py-2 2xl:max-w-[1400px]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -51,23 +51,23 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-4 2xl:gap-5">
         {stats.map(({ label, value, icon: Icon, gradient, iconBg, iconColor }) => (
-          <div key={label} className={`rounded-2xl p-5 bg-gradient-to-br ${gradient}`} style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div key={label} className={`rounded-2xl p-5 2xl:p-6 bg-gradient-to-br ${gradient}`} style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center`}>
+              <div className={`w-10 h-10 2xl:w-12 2xl:h-12 rounded-xl ${iconBg} flex items-center justify-center`}>
                 <Icon size={18} className={iconColor} />
               </div>
               <TrendingUp size={14} className="text-emerald-400" />
             </div>
-            <p className="text-3xl font-bold text-white">{value}</p>
-            <p className="text-xs text-gray-400 mt-1.5">{label}</p>
+            <p className="text-3xl 2xl:text-4xl font-bold text-white">{value}</p>
+            <p className="text-xs 2xl:text-sm text-gray-400 mt-1.5">{label}</p>
           </div>
         ))}
       </div>
 
       {/* Main content */}
-      <div className="grid grid-cols-5 gap-6">
+      <div className="grid grid-cols-5 gap-6 2xl:gap-8">
         {/* Recent Projects */}
         <div className="col-span-3 space-y-4">
           <div className="flex items-center justify-between">
