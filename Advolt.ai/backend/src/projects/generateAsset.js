@@ -18,7 +18,7 @@ const TABLE = process.env.DYNAMODB_TABLE_PROJECTS;
 
 const callGemini = async (prompt, maxTokens = 2000) => {
   const key = process.env.GEMINI_API_KEY;
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${key}`, {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -37,7 +37,7 @@ const callGemini = async (prompt, maxTokens = 2000) => {
 
 const callGeminiVision = async (imageBase64, mimeType, prompt) => {
   const key = process.env.GEMINI_API_KEY;
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${key}`, {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -169,7 +169,7 @@ ${input?.tone ? `Tone: ${input.tone}` : ''}
 ${input?.angle ? `Focus on this emotional angle: ${input.angle}` : ''}
 ${input?.avoid ? `DO NOT use these angles or approaches (already tested): ${input.avoid}` : ''}
 
-Generate 3 COMPLETE Meta ad campaign concepts. Each campaign is a full, ready-to-launch ad concept.
+Generate 1 COMPLETE Meta ad campaign concept. This campaign should be a full, ready-to-launch ad concept.
 
 STEP 1 — CLASSIFY THE NICHE (do this silently before writing any copy):
 - Is this fashion/streetwear/lifestyle/DTC physical product? → Style: Brand voice, slang, identity language, drop culture
@@ -180,7 +180,7 @@ STEP 1 — CLASSIFY THE NICHE (do this silently before writing any copy):
 
 Once classified, apply that style to EVERY element: hook, copy, headline, CTA, creative direction.
 
-Each campaign MUST use a DIFFERENT emotional angle and creative approach.
+The campaign should use a strong emotional angle and creative approach.
 
 WRITE LIKE THIS (match your niche):
 - Fashion: "Your wardrobe called. It's bored." / CTA: "Cop the Drop"
@@ -219,7 +219,7 @@ ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 ${input?.tone ? `Tone: ${input.tone}` : ''}
 ${input?.avoid ? `DO NOT use these angles or approaches (already tested): ${input.avoid}` : ''}
 
-Generate 3 COMPLETE Google Search ad campaign concepts. Each is a full responsive search ad setup.
+Generate 1 COMPLETE Google Search ad campaign concept. This should be a full responsive search ad setup.
 
 RULES:
 - Headlines: Max 30 characters each. BEFORE returning, count characters — rewrite if over 30.
@@ -505,3 +505,5 @@ Return JSON: { "style_analysis": "brief style description", "items": [{ "concept
     return res.serverError(err.message);
   }
 };
+
+

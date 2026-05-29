@@ -341,7 +341,7 @@ export default function ProjectStudioPage() {
                 disabled={generateMutation.isPending}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50 transition-all"
               >
-                {generateMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Generating Campaigns...</> : <><Wand2 size={14} /> Generate 3 Campaign Concepts</>}
+                {generateMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Generating Campaign...</> : <><Wand2 size={14} /> Generate Campaign Concept</>}
               </button>
             </div>
 
@@ -350,14 +350,14 @@ export default function ProjectStudioPage() {
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-bold text-white">Generated Campaign Concepts</h3>
-                    <p className="text-xs text-gray-400">3 unique campaigns generated for your audience</p>
+                    <h3 className="text-base font-bold text-white">Generated Campaign Concept</h3>
+                    <p className="text-xs text-gray-400">Campaign generated for your audience</p>
                   </div>
                   <button onClick={() => setGeneratedAsset(null)} className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1">
-                    <RefreshCw size={10} /> Regenerate
+                    <RefreshCw size={10} /> Generate Another
                   </button>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   {generatedAsset.items.map((item, i) => {
                     const obj = (typeof item === 'object' && item !== null ? item : {}) as Record<string, unknown>;
                     const text = Object.entries(obj).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
