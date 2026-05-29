@@ -347,43 +347,70 @@ export default function ProjectStudioPage() {
 
             {/* Generated campaigns */}
             {generatedAsset && (
-              <div className="space-y-4">
-                {generatedAsset.items.map((item, i) => {
-                  const obj = (typeof item === 'object' && item !== null ? item : {}) as Record<string, unknown>;
-                  const text = Object.entries(obj).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
-                  const key = `gen_${i}`;
-                  const colors = ['border-indigo-500/20', 'border-purple-500/20', 'border-emerald-500/20'];
-                  return (
-                    <div key={i} className={`rounded-2xl p-6 relative group border ${colors[i]}`} style={{ background: 'rgba(255,255,255,0.02)' }}>
-                      {obj.campaign_name ? <p className="text-lg font-bold text-white mb-1">{String(obj.campaign_name)}</p> : null}
-                      {obj.emotional_angle ? <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 mb-3">{String(obj.emotional_angle)}</span> : null}
-
-                      <div className="space-y-3">
-                        {Object.entries(obj).filter(([k]) => !['campaign_name', 'emotional_angle', 'search_intent'].includes(k)).map(([field, value]) => {
-                          const isArray = Array.isArray(value);
-                          const isLong = typeof value === 'string' && value.length > 60;
-                          return (
-                            <div key={field}>
-                              <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-400 mb-0.5">{field.replace(/_/g, ' ')}</p>
-                              {isArray ? (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {(value as string[]).map((v, j) => <span key={j} className="px-2 py-0.5 rounded text-xs bg-white/5 text-gray-200">{v}</span>)}
-                                </div>
-                              ) : (
-                                <p className={`text-sm text-gray-200 leading-relaxed ${isLong ? 'whitespace-pre-line' : ''}`}>{String(value)}</p>
-                              )}
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-white">Generated Campaign Concepts</h3>
+                    <p className="text-xs text-gray-400">3 unique campaigns generated for your audience</p>
+                  </div>
+                  <button onClick={() => setGeneratedAsset(null)} className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1">
+                    <RefreshCw size={10} /> Regenerate
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  {generatedAsset.items.map((item, i) => {
+                    const obj = (typeof item === 'object' && item !== null ? item : {}) as Record<string, unknown>;
+                    const text = Object.entries(obj).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
+                    const key = `gen_${i}`;
+                    const borderColors = ['border-indigo-500/30', 'border-purple-500/30', 'border-emerald-500/30'];
+                    const badgeColors = ['bg-indigo-500/20 text-indigo-300', 'bg-purple-500/20 text-purple-300', 'bg-emerald-500/20 text-emerald-300'];
+                    return (
+                      <div key={i} className={`rounded-2xl overflow-hidden border ${borderColors[i]}`} style={{ background: 'rgba(255,255,255,0.02)' }}>
+                        {/* Image placeholder */}
+                        <div className="relative h-40 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                          <div className="text-center">
+                            <p className="text-xs text-gray-500 mb-2">Ad Creative Preview</p>
+                            <div className="flex gap-2 justify-center">
+                              <button className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30">
+                                Generate Image
+                              </button>
+                              <button className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10">
+                                Generate Prompt
+                              </button>
                             </div>
-                          );
-                        })}
-                      </div>
+                          </div>
+                          <span className={`absolute top-3 left-3 px-2 py-0.5 rounded text-[9px] font-bold ${badgeColors[i]}`}>
+                            Campaign {i + 1}
+                          </span>
+                          {i === 0 && <span className="absolute top-3 right-3 px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300">Best Match</span>}
+                        </div>
 
-                      <button onClick={() => copyText(text, key)} className="absolute top-4 right-4 p-2 rounded-lg opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10 transition-all">
-                        {copied === key ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                      </button>
-                    </div>
-                  );
-                })}
-                <button onClick={() => setGeneratedAsset(null)} className="text-sm text-indigo-400 hover:text-indigo-300 font-medium">↻ Generate more campaigns</button>
+                        {/* Content */}
+                        <div className="p-4 space-y-2.5">
+                          {obj.emotional_angle ? <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-semibold ${badgeColors[i]}`}>{String(obj.emotional_angle)}</span> : null}
+
+                          {obj.hook ? <div><p className="text-[9px] font-semibold uppercase text-indigo-400">Hook</p><p className="text-xs text-white font-medium">{String(obj.hook)}</p></div> : null}
+
+                          {obj.primary_text ? <div><p className="text-[9px] font-semibold uppercase text-indigo-400">Primary Text</p><p className="text-[11px] text-gray-300 leading-relaxed">{String(obj.primary_text).slice(0, 120)}{String(obj.primary_text).length > 120 ? '...' : ''}</p></div> : null}
+
+                          {obj.headline ? <div><p className="text-[9px] font-semibold uppercase text-indigo-400">Headline</p><p className="text-xs text-white font-medium">{String(obj.headline)}</p></div> : null}
+
+                          {obj.cta ? <div><p className="text-[9px] font-semibold uppercase text-indigo-400">CTA</p><p className="text-xs text-white">{String(obj.cta)}</p></div> : null}
+
+                          {/* Buttons */}
+                          <div className="flex gap-2 pt-2">
+                            <button onClick={() => copyText(text, key)} className="flex-1 py-2 rounded-xl text-[11px] font-medium text-gray-400 border border-white/10 hover:bg-white/5 transition-all">
+                              {copied === key ? '✓ Copied' : 'View Details'}
+                            </button>
+                            <button onClick={() => copyText(text, key)} className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-indigo-500 text-white hover:bg-indigo-600 transition-all">
+                              Use This Campaign
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

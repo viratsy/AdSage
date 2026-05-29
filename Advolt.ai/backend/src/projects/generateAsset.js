@@ -16,33 +16,28 @@ const { getUserFromEvent } = require('/opt/nodejs/lib/getUserFromEvent');
 
 const TABLE = process.env.DYNAMODB_TABLE_PROJECTS;
 
-const callGroq = async (prompt, maxTokens = 2000, model = 'llama-3.1-8b-instant') => {
-  const key = process.env.GROQ_API_KEY;
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+const callGemini = async (prompt, maxTokens = 2000) => {
+  const key = process.env.GEMINI_API_KEY;
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${key}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: 'You are an expert ad strategist and copywriter. Always respond with valid JSON only.' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.8,
-      max_tokens: maxTokens,
-      response_format: { type: 'json_object' },
+      contents: [{ parts: [{ text: `You are an expert ad strategist and copywriter. Always respond with valid JSON only.\n\n${prompt}` }] }],
+      generationConfig: { temperature: 0.8, maxOutputTokens: maxTokens, responseMimeType: 'application/json' },
     }),
   });
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Groq error: ${response.status} — ${err.slice(0, 200)}`);
+    throw new Error(`Gemini error: ${response.status} — ${err.slice(0, 200)}`);
   }
   const data = await response.json();
-  return JSON.parse(data.choices[0].message.content);
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  return JSON.parse(text);
 };
 
 const callGeminiVision = async (imageBase64, mimeType, prompt) => {
   const key = process.env.GEMINI_API_KEY;
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${key}`, {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${key}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -58,7 +53,7 @@ const callGeminiVision = async (imageBase64, mimeType, prompt) => {
   return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text);
 };
 
-const PREMIUM_TOOLS = ['audience', 'audience_meta', 'audience_google', 'meta_primary_text', 'meta_hooks', 'meta_creatives', 'meta_campaign', 'google_campaign', 'google_keywords', 'google_descriptions', 'google_landing_match'];
+// All generation now uses Gemini
 
 const DEPENDENCIES = {
   audience: [],
@@ -475,9 +470,8 @@ Return JSON: { "style_analysis": "brief style description", "items": [{ "concept
     } else {
       const ctx = buildContext(project);
       const prompt = PROMPTS[tool](ctx, input);
-      const model = PREMIUM_TOOLS.includes(tool) ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
       const tokens = (tool === 'meta_campaign' || tool === 'google_campaign') ? 3000 : 2000;
-      aiResult = await callGroq(prompt, tokens, model);
+      aiResult = await callGemini(prompt, tokens);
     }
 
     // Save result
