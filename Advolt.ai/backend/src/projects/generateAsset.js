@@ -102,7 +102,11 @@ const buildContext = (project) => {
   if (intel.pain_points?.length) parts.push(`Pain Points: ${intel.pain_points.join(', ')}`);
   if (intel.desires?.length) parts.push(`Desires: ${intel.desires.join(', ')}`);
   if (intel.objections?.length) parts.push(`Objections: ${intel.objections.join(', ')}`);
-  if (intel.emotional_angles?.length) parts.push(`Emotional Angles: ${JSON.stringify(intel.emotional_angles)}`);
+  if (intel.emotional_angles?.length) {
+    parts.push(`Emotional Angles with example hooks:\n${intel.emotional_angles
+      .map(a => `- [${a.emotion}] ${a.angle} → Hook example: "${a.example_hook || ''}"`)
+      .join('\n')}`);
+  }
   return parts.join('\n');
 };
 
@@ -168,30 +172,46 @@ ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 ${input?.tone ? `Tone: ${input.tone}` : ''}
 ${input?.angle ? `Focus on this emotional angle: ${input.angle}` : ''}
+${input?.avoid ? `DO NOT use these angles or approaches (already tested): ${input.avoid}` : ''}
 
-Generate 3 COMPLETE Meta ad campaign concepts. Each campaign is a full, ready-to-launch ad concept with all components.
+Generate 3 COMPLETE Meta ad campaign concepts. Each campaign is a full, ready-to-launch ad concept.
+
+STEP 1 — CLASSIFY THE NICHE (do this silently before writing any copy):
+- Is this fashion/streetwear/lifestyle/DTC physical product? → Style: Brand voice, slang, identity language, drop culture
+- Is this SaaS/B2B/software/agency? → Style: Outcomes, metrics, ROI, founder tone
+- Is this education/coaching/info product? → Style: Transformation, before/after, mentor voice
+- Is this local service/offline business? → Style: Trust, proximity, community language
+- Is this e-commerce/marketplace/product? → Style: Sensory, specific features, lifestyle imagery
+
+Once classified, apply that style to EVERY element: hook, copy, headline, CTA, creative direction.
 
 Each campaign MUST use a DIFFERENT emotional angle and creative approach.
 
+WRITE LIKE THIS (match your niche):
+- Fashion: "Your wardrobe called. It's bored." / CTA: "Cop the Drop"
+- SaaS: "₹10L wasted on ads last month?" / CTA: "Fix My Ads"
+- Education: "I made ₹50L after this one course." / CTA: "See the Curriculum"
+- Service: "3 of your neighbours switched last month." / CTA: "Get My Quote"
+- E-commerce: "This sold out in 4 hours last time." / CTA: "Grab Yours"
+
 RULES:
-- Hook: Max 10 words. Scroll-stopping. No clichés.
-- Primary text: Max 80 words. Use \\n for line breaks. Conversational, not corporate.
-- Headline: Max 40 characters. Specific to the product.
-- CTA: 2-4 words.
-- Creative direction: Specific visual concept, not vague.
-- Video flow: 5-step storyboard if applicable.
-- Match the TONE of the industry (fashion = cool/vibe, SaaS = benefit/outcome, education = transformation).
+- Hook: Max 10 words. Scroll-stopping. SPECIFIC to this product.
+- Primary text: 50-80 words. Use \\n for line breaks every 1-2 sentences. Conversational.
+- Headline: Max 40 characters. BEFORE returning, count characters — rewrite if over 40.
+- CTA: 2-4 words. Creative and specific to the niche.
+- Creative direction: Specific enough that a designer could execute it.
+- Video flow: 5 concrete steps with specific actions, not vague descriptions.
 
 Return JSON: { "items": [
   {
     "campaign_name": "A memorable 2-3 word campaign name",
     "emotional_angle": "which angle this uses",
-    "hook": "scroll-stopping first line",
-    "primary_text": "full ad copy with \\n line breaks (max 80 words)",
+    "hook": "scroll-stopping first line (max 10 words)",
+    "primary_text": "full ad copy with \\n line breaks (50-80 words)",
     "headline": "below-creative headline (max 40 chars)",
-    "cta": "call to action (2-4 words)",
+    "cta": "creative call to action (2-4 words, niche-specific)",
     "creative_style": "UGC/Static/Carousel/Reel/Meme",
-    "visual_direction": "specific visual concept description",
+    "visual_direction": "specific visual concept a designer could execute",
     "thumbnail_text": "max 6 words for image overlay",
     "video_flow": ["step 1", "step 2", "step 3", "step 4", "step 5"],
     "why_it_works": "1 sentence on why this campaign will perform"
@@ -202,22 +222,29 @@ Return JSON: { "items": [
 ${ctx}
 ${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
 ${input?.tone ? `Tone: ${input.tone}` : ''}
+${input?.avoid ? `DO NOT use these angles or approaches (already tested): ${input.avoid}` : ''}
 
 Generate 3 COMPLETE Google Search ad campaign concepts. Each is a full responsive search ad setup.
 
 RULES:
-- Headlines: Max 30 characters each. Clear, specific, benefit-driven. NOT emotional.
-- Descriptions: Max 90 characters each. ROI/trust/benefit focused.
-- Focus on: clarity, specificity, search intent, trust signals.
+- Headlines: Max 30 characters each. BEFORE returning, count characters — rewrite if over 30.
+- Descriptions: Max 90 characters each. Count and verify.
 - Each campaign targets a different search intent (transactional, commercial, informational).
+
+INTENT MATCHING (critical):
+- Transactional ("buy", "order", "near me", "price"): Lead with price/availability/action. CTA = direct purchase.
+- Commercial ("best", "vs", "review", "top"): Lead with differentiator/proof/comparison. CTA = evaluation.
+- Informational ("how to", "what is", "guide"): Lead with education hook → soft conversion. CTA = learn/discover.
+
+Focus on: clarity, specificity, search intent, trust signals. NOT emotional storytelling.
 
 Return JSON: { "items": [
   {
     "campaign_name": "descriptive campaign name",
     "search_intent": "transactional/commercial/informational",
+    "target_keywords": ["5 keywords this ad targets"],
     "headlines": ["headline 1 (max 30 chars)", "headline 2", "headline 3"],
     "descriptions": ["description 1 (max 90 chars)", "description 2"],
-    "keywords": ["5 target keywords for this campaign"],
     "negative_keywords": ["3 negatives"],
     "cta": "landing page CTA suggestion",
     "landing_page_headline": "suggested landing page H1",
