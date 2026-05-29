@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { billingApi, adsApi, projectsApi } from '@/lib/api';
-import { Zap, BookImage, FolderKanban, TrendingUp, Plus, Wand2, Chrome, Search } from 'lucide-react';
+import { Zap, BookImage, FolderKanban, TrendingUp, Plus, Wand2, Globe, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 
@@ -125,7 +125,7 @@ export default function DashboardPage() {
             </Link>
             <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05))', border: '1px solid rgba(99,102,241,0.2)' }}>
               <div className="w-9 h-9 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                <Chrome size={14} className="text-indigo-400" />
+                <Globe size={14} className="text-indigo-400" />
               </div>
               <div>
                 <p className="text-sm font-medium text-white">Chrome Extension</p>

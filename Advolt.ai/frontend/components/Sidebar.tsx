@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, FolderKanban, Wand2, Library, Search,
-  Palette, MessageSquare, Settings, LogOut, Zap, Chrome, User
+  Palette, MessageSquare, Settings, LogOut, Zap, Globe, User
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
@@ -86,7 +86,7 @@ export default function Sidebar() {
       {/* Chrome Extension CTA */}
       <div className="mx-1 mb-4 p-3 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05))', border: '1px solid rgba(99,102,241,0.2)' }}>
         <div className="flex items-center gap-2 mb-1.5">
-          <Chrome size={14} className="text-indigo-400" />
+          <Globe size={14} className="text-indigo-400" />
           <span className="text-xs font-medium text-white">Chrome Extension</span>
         </div>
         <p className="text-[10px] text-gray-400 leading-relaxed">Capture ads in one click from Meta Ad Library</p>
