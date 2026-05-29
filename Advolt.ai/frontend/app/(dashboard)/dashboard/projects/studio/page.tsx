@@ -369,7 +369,7 @@ export default function ProjectStudioPage() {
               {(intelligence.pain_points?.length || intelligence.desires?.length) && (
                 <div className="grid grid-cols-2 gap-5">
                   {intelligence.pain_points && intelligence.pain_points.length > 0 && (
-                    <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                    <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                       <div className="flex items-center gap-2 mb-4">
                         <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center">
                           <AlertTriangle size={12} className="text-red-400" />
@@ -384,7 +384,7 @@ export default function ProjectStudioPage() {
                     </div>
                   )}
                   {intelligence.desires && intelligence.desires.length > 0 && (
-                    <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                    <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                       <div className="flex items-center gap-2 mb-4">
                         <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
                           <Heart size={12} className="text-emerald-400" />
@@ -413,7 +413,7 @@ export default function ProjectStudioPage() {
                 return (
                   <div className="grid grid-cols-2 gap-5">
                     {interests.length > 0 && (
-                      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                         <div className="flex items-center gap-2 mb-4">
                           <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center">
                             <Zap size={12} className="text-yellow-400" />
@@ -431,7 +431,7 @@ export default function ProjectStudioPage() {
                       </div>
                     )}
                     {behaviors.length > 0 && (
-                      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                         <div className="flex items-center gap-2 mb-4">
                           <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
                             <Users size={12} className="text-blue-400" />
@@ -454,7 +454,7 @@ export default function ProjectStudioPage() {
 
               {/* Emotional Angles — 5 column */}
               {intelligence.emotional_angles && intelligence.emotional_angles.length > 0 && (
-                <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center">
                       <Flame size={12} className="text-orange-400" />
@@ -492,7 +492,7 @@ export default function ProjectStudioPage() {
                 return (
                   <div className="grid grid-cols-2 gap-5">
                     {data.estimated_audience_size && (
-                      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                         <div className="flex items-center gap-2 mb-3">
                           <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
                             <Users size={12} className="text-emerald-400" />
@@ -508,7 +508,7 @@ export default function ProjectStudioPage() {
                         )}
                       </div>
                     )}
-                    <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                    <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center">
                           <DollarSign size={12} className="text-indigo-400" />
@@ -551,7 +551,7 @@ function StepAudience({ project, intelligence, input, setInput, onGenerate, gene
 }) {
   return (
     <div className="space-y-4">
-      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <h3 className="text-sm font-semibold mb-3">Define your ideal customer</h3>
         <textarea
           value={input.description || ''}
@@ -594,7 +594,7 @@ function StepAudience({ project, intelligence, input, setInput, onGenerate, gene
             </div>
           ))}
           <button onClick={() => selectedAudience && onSave(selectedAudience)} disabled={!selectedAudience || isSaving}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 text-white disabled:opacity-50">
             {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Confirm Selection
           </button>
         </div>
@@ -602,7 +602,7 @@ function StepAudience({ project, intelligence, input, setInput, onGenerate, gene
 
       {/* Current audience */}
       {intelligence.audience && !generatedOptions && (
-        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-center gap-3 mb-3">
             <UserCircle size={40} className="text-indigo-400" />
             <div>
@@ -638,7 +638,7 @@ function StepFoundation({ intelligence, input, setInput, onGenerate, generatedOp
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <h3 className="text-sm font-semibold mb-3">Build Your Foundation</h3>
         <div className="grid grid-cols-2 gap-2">
           {tools.map(t => (
@@ -655,13 +655,13 @@ function StepFoundation({ intelligence, input, setInput, onGenerate, generatedOp
       </div>
 
       {activeTool && ['pain_points', 'desires', 'objections'].includes(activeTool) && (
-        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <textarea value={input.custom || ''} onChange={(e) => setInput({ custom: e.target.value })}
             placeholder="Add your own (optional)..." rows={2}
             className="w-full px-3 py-2 rounded-lg text-sm resize-none mb-3"
             style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
           <button onClick={() => onGenerate(activeTool)} disabled={isGenerating}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 text-white disabled:opacity-50">
             {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} Generate
           </button>
 
@@ -685,9 +685,9 @@ function StepFoundation({ intelligence, input, setInput, onGenerate, generatedOp
       )}
 
       {activeTool === 'emotional_angles' && (
-        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <button onClick={() => onGenerate('emotional_angles')} disabled={isGenerating}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50 mb-3">
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 text-white disabled:opacity-50 mb-3">
             {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} Generate Angles
           </button>
           {generatedOptions && Array.isArray(generatedOptions) && typeof generatedOptions[0] === 'object' && 'emotion' in (generatedOptions[0] as object) && (
@@ -741,7 +741,7 @@ function StepPlatforms({ projectId, assets, activePlatform, setActivePlatform, o
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <h3 className="text-sm font-semibold mb-1">Audience Builder</h3>
         <p className="text-[10px] mb-4" style={{ color: 'var(--text-muted)' }}>Configure your audience inputs</p>
 
@@ -846,7 +846,7 @@ function StepDesignAds({ projectId, assets, activePlatform, setActivePlatform, a
   return (
     <div className="space-y-4">
       {/* Platform + Mode toggle */}
-      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-1">
             {(['meta', 'google'] as const).map(p => (
@@ -910,7 +910,7 @@ function StepDesignAds({ projectId, assets, activePlatform, setActivePlatform, a
                   placeholder="Instructions (optional)..." rows={2} className="w-full px-3 py-2 rounded-lg text-sm resize-none"
                   style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
                 <button onClick={() => onGenerate(activeTool)} disabled={isGenerating}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 text-white disabled:opacity-50">
                   {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} Generate
                 </button>
               </>
@@ -1021,7 +1021,7 @@ function PlatformContent({ projectId, platform, assets, onCopy, copied }: {
         <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Targeting notes (optional)..."
           className="w-full px-3 py-2 rounded-lg text-xs" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
         <button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50">
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 text-white disabled:opacity-50">
           {generateMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />} Generate {platform === 'meta' ? 'Meta' : 'Google'} Targeting
         </button>
       </div>
@@ -1070,3 +1070,5 @@ function PlatformContent({ projectId, platform, assets, onCopy, copied }: {
     </div>
   );
 }
+
+
