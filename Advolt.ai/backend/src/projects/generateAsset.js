@@ -69,8 +69,8 @@ const DEPENDENCIES = {
   objections: ['audience', 'pain_points'],
   emotional_angles: ['audience', 'pain_points', 'desires'],
   // Campaign concepts
-  meta_campaign: ['audience', 'pain_points', 'emotional_angles'],
-  google_campaign: ['audience', 'pain_points'],
+  meta_campaign: ['audience'],
+  google_campaign: ['audience'],
   // Meta individual tools
   meta_hooks: ['audience', 'pain_points', 'emotional_angles'],
   meta_primary_text: ['audience', 'pain_points', 'emotional_angles'],
