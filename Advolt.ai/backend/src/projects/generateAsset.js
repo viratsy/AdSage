@@ -169,7 +169,7 @@ ${input?.tone ? `Tone: ${input.tone}` : ''}
 ${input?.angle ? `Focus on this emotional angle: ${input.angle}` : ''}
 ${input?.avoid ? `DO NOT use these angles or approaches (already tested): ${input.avoid}` : ''}
 
-Generate 1 COMPLETE Meta ad campaign concept. This campaign should be a full, ready-to-launch ad concept.
+Generate 1 COMPLETE Meta ad campaign with ALL elements needed to set up in Meta Ads Manager.
 
 STEP 1 — CLASSIFY THE NICHE (do this silently before writing any copy):
 - Is this fashion/streetwear/lifestyle/DTC physical product? → Style: Brand voice, slang, identity language, drop culture
@@ -178,7 +178,7 @@ STEP 1 — CLASSIFY THE NICHE (do this silently before writing any copy):
 - Is this local service/offline business? → Style: Trust, proximity, community language
 - Is this e-commerce/marketplace/product? → Style: Sensory, specific features, lifestyle imagery
 
-Once classified, apply that style to EVERY element: hook, copy, headline, CTA, creative direction.
+Once classified, apply that style to EVERY element.
 
 The campaign should use a strong emotional angle and creative approach.
 
@@ -194,22 +194,34 @@ RULES:
 - Primary text: 50-80 words. Use \\n for line breaks every 1-2 sentences. Conversational.
 - Headline: Max 40 characters. BEFORE returning, count characters — rewrite if over 40.
 - CTA: 2-4 words. Creative and specific to the niche.
-- Creative direction: Specific enough that a designer could execute it.
-- Video flow: 5 concrete steps with specific actions, not vague descriptions.
+- Description: 1-2 sentences for the ad description field.
+- Targeting: Be specific with interests, behaviors based on the audience data provided.
 
 Return JSON: { "items": [
   {
     "campaign_name": "A memorable 2-3 word campaign name",
     "emotional_angle": "which angle this uses",
+    "emotional_angle_description": "1 sentence explaining the emotional strategy",
     "hook": "scroll-stopping first line (max 10 words)",
     "primary_text": "full ad copy with \\n line breaks (50-80 words)",
     "headline": "below-creative headline (max 40 chars)",
-    "cta": "creative call to action (2-4 words, niche-specific)",
+    "cta": "creative call to action (2-4 words)",
+    "description": "optional ad description (1-2 sentences)",
+    "display_url": "suggested display URL path",
     "creative_style": "UGC/Static/Carousel/Reel/Meme",
-    "visual_direction": "specific visual concept a designer could execute",
+    "creative_direction": "specific visual concept for the designer (2-3 sentences)",
     "thumbnail_text": "max 6 words for image overlay",
-    "video_flow": ["step 1", "step 2", "step 3", "step 4", "step 5"],
-    "why_it_works": "1 sentence on why this campaign will perform"
+    "offer": "what the user gets (product/service/discount details)",
+    "why_it_works": "1 sentence on why this campaign will perform",
+    "targeting": {
+      "demographics": "Age range, Gender, Location, Language",
+      "interests": ["5-8 specific interests to target"],
+      "behaviors": ["4-6 specific behaviors"],
+      "custom_audiences": ["2-3 custom audience ideas"],
+      "lookalike_audiences": ["2-3 lookalike suggestions"]
+    },
+    "placements": ["Facebook Feed", "Instagram Feed", "Instagram Reels", "Facebook Stories", "Instagram Stories"],
+    "budget_recommendation": "daily budget range and bidding strategy"
   }
 ] }`,
 
