@@ -512,6 +512,29 @@ Return JSON: { "style_analysis": "brief style description", "items": [{ "concept
         ExpressionAttributeValues: { ':intel': currentIntel, ':now': new Date().toISOString() },
       }));
       return res.ok({ status: 'options', tool, options: value });
+    } else if (tool === 'campaign_section' && input?.asset_id && input.asset_id !== '') {
+      // Update existing campaign in-place
+      const items = aiResult.items || [aiResult];
+      const currentAssets = project.assets || [];
+      const assetIndex = currentAssets.findIndex(a => a.id === input.asset_id);
+      if (assetIndex >= 0 && items[0]) {
+        // Find which item in the asset to update (use campaign_index if provided)
+        const itemIndex = parseInt(input.campaign_item_index || '0', 10);
+        if (currentAssets[assetIndex].items[itemIndex]) {
+          // Merge the regenerated section into the existing campaign
+          const existingItem = currentAssets[assetIndex].items[itemIndex];
+          const updatedItem = typeof items[0] === 'object' ? { ...existingItem, ...items[0] } : items[0];
+          currentAssets[assetIndex].items[itemIndex] = updatedItem;
+          currentAssets[assetIndex].updated_at = new Date().toISOString();
+        }
+      }
+      await ddb.send(new UpdateCommand({
+        TableName: TABLE,
+        Key: { project_id: projectId },
+        UpdateExpression: 'SET assets = :assets, updated_at = :now',
+        ExpressionAttributeValues: { ':assets': currentAssets, ':now': new Date().toISOString() },
+      }));
+      return res.ok({ status: 'updated', tool, asset: currentAssets[assetIndex] });
     } else {
       const items = aiResult.items || [aiResult];
       const timestamp = new Date().toISOString();

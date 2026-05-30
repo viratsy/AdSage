@@ -93,6 +93,9 @@ export default function ProjectStudioPage() {
       if (data.status === 'options') {
         setGeneratedOptions(data.options as AudienceProfile[]);
         setGeneratedAsset(null);
+      } else if (data.status === 'updated') {
+        // Section was updated in-place — just refresh the data
+        queryClient.invalidateQueries({ queryKey: ['project', projectId] });
       } else if (data.status === 'generated') {
         setGeneratedAsset(data.asset);
         setGeneratedOptions(null);
@@ -505,8 +508,20 @@ export default function ProjectStudioPage() {
                                   />
                                   <button
                                     onClick={() => {
+                                      // Find which asset contains the current campaign item
+                                      let foundAssetId = '';
+                                      let foundItemIndex = 0;
+                                      let itemCount = 0;
+                                      for (const a of savedCampaigns) {
+                                        if (campaignIndex >= itemCount && campaignIndex < itemCount + a.items.length) {
+                                          foundAssetId = a.id;
+                                          foundItemIndex = campaignIndex - itemCount;
+                                          break;
+                                        }
+                                        itemCount += a.items.length;
+                                      }
                                       const existingCampaign = JSON.stringify(campaign);
-                                      generateMutation.mutate({ tool: 'campaign_section', input: { existing_campaign: existingCampaign, section: field, instruction: regenInput } });
+                                      generateMutation.mutate({ tool: 'campaign_section', input: { existing_campaign: existingCampaign, section: field, instruction: regenInput, asset_id: foundAssetId, campaign_item_index: String(foundItemIndex) } });
                                       setRegenSection(null);
                                       setRegenInput('');
                                     }}
@@ -548,8 +563,19 @@ export default function ProjectStudioPage() {
                           />
                           <button
                             onClick={() => {
+                              let foundAssetId = '';
+                              let foundItemIndex = 0;
+                              let itemCount = 0;
+                              for (const a of savedCampaigns) {
+                                if (campaignIndex >= itemCount && campaignIndex < itemCount + a.items.length) {
+                                  foundAssetId = a.id;
+                                  foundItemIndex = campaignIndex - itemCount;
+                                  break;
+                                }
+                                itemCount += a.items.length;
+                              }
                               const existingCampaign = JSON.stringify(campaign);
-                              generateMutation.mutate({ tool: 'campaign_section', input: { existing_campaign: existingCampaign, section: 'targeting', instruction: regenInput } });
+                              generateMutation.mutate({ tool: 'campaign_section', input: { existing_campaign: existingCampaign, section: 'targeting', instruction: regenInput, asset_id: foundAssetId, campaign_item_index: String(foundItemIndex) } });
                               setRegenSection(null);
                               setRegenInput('');
                             }}
