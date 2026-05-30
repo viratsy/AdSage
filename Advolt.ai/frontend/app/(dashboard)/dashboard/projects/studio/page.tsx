@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api';
 import {
   Zap, Users, Loader2, Check, ChevronLeft, RefreshCw, Copy, Wand2,
-  UserCircle, Target, AlertTriangle
+  UserCircle, Target, AlertTriangle, ArrowRight
 } from 'lucide-react';
 
 interface AudienceProfile {
