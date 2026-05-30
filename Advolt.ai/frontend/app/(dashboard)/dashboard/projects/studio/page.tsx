@@ -137,7 +137,7 @@ export default function ProjectStudioPage() {
         </button>
         <div className="flex-1">
           <h1 className="text-xl font-bold text-white">Campaign Builder</h1>
-          <p className="text-sm text-gray-400">{project.project_name} · {project.business_name}</p>
+          <p className="text-base text-gray-400">{project.project_name} · {project.business_name}</p>
         </div>
       </div>
 
@@ -150,19 +150,19 @@ export default function ProjectStudioPage() {
             <div key={step.id} className="flex items-center gap-4 flex-1">
               <button
                 onClick={() => setActiveStep(step.id)}
-                className={`flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-medium transition-all w-full ${
+                className={`flex items-center gap-3 px-5 py-3 rounded-2xl text-base font-medium transition-all w-full ${
                   isActive ? 'bg-indigo-500/15 text-white' : isDone ? 'bg-emerald-500/10 text-emerald-300' : 'text-gray-500 hover:bg-white/5'
                 }`}
                 style={{ border: isActive ? '1px solid rgba(99,102,241,0.25)' : isDone ? '1px solid rgba(16,185,129,0.15)' : '1px solid rgba(255,255,255,0.06)' }}
               >
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
                   isDone ? 'bg-emerald-500 text-white' : isActive ? 'bg-indigo-500 text-white' : 'bg-gray-700/50 text-gray-400'
                 }`}>
                   {isDone ? '✓' : step.id}
                 </span>
                 <div className="text-left">
                   <p className="font-semibold">{step.label}</p>
-                  <p className="text-[10px] text-gray-400">{step.desc}</p>
+                  <p className="text-sm text-gray-400">{step.desc}</p>
                 </div>
               </button>
               {i < STEPS.length - 1 && <div className="w-8 h-px bg-white/10" />}
@@ -177,19 +177,19 @@ export default function ProjectStudioPage() {
           {/* Left: Business info + Generate */}
           <div className="lg:col-span-2 space-y-4">
             <div className="rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <h3 className="text-base font-bold text-white mb-4">Tell us about your business</h3>
-              <div className="space-y-3 text-sm">
-                <div><span className="text-gray-500 text-xs">Business / Brand Name</span><p className="text-white font-medium">{project.business_name}</p></div>
-                <div><span className="text-gray-500 text-xs">Niche / Industry</span><p className="text-white font-medium">{project.business_niche}</p></div>
-                <div><span className="text-gray-500 text-xs">Product / Service</span><p className="text-white font-medium">{project.product_name}</p></div>
-                {project.usp && <div><span className="text-gray-500 text-xs">USP</span><p className="text-gray-300 text-xs">{project.usp}</p></div>}
-                {project.target_location && <div><span className="text-gray-500 text-xs">Target Location</span><p className="text-white font-medium">{project.target_location}</p></div>}
-                {project.target_audience_hint && <div><span className="text-gray-500 text-xs">Ideal Customer Hint</span><p className="text-gray-300 text-xs">{project.target_audience_hint}</p></div>}
+              <h3 className="text-lg font-bold text-white mb-4">Tell us about your business</h3>
+              <div className="space-y-3 text-base">
+                <div><span className="text-gray-500 text-sm">Business / Brand Name</span><p className="text-white font-medium">{project.business_name}</p></div>
+                <div><span className="text-gray-500 text-sm">Niche / Industry</span><p className="text-white font-medium">{project.business_niche}</p></div>
+                <div><span className="text-gray-500 text-sm">Product / Service</span><p className="text-white font-medium">{project.product_name}</p></div>
+                {project.usp && <div><span className="text-gray-500 text-sm">USP</span><p className="text-gray-300 text-sm">{project.usp}</p></div>}
+                {project.target_location && <div><span className="text-gray-500 text-sm">Target Location</span><p className="text-white font-medium">{project.target_location}</p></div>}
+                {project.target_audience_hint && <div><span className="text-gray-500 text-sm">Ideal Customer Hint</span><p className="text-gray-300 text-sm">{project.target_audience_hint}</p></div>}
               </div>
               <button
                 onClick={() => generateMutation.mutate({ tool: 'audience', input: input.description ? { description: input.description } : undefined })}
                 disabled={generateMutation.isPending}
-                className="w-full mt-5 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50 transition-all"
+                className="w-full mt-5 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-base font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50 transition-all"
               >
                 {generateMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><Wand2 size={14} /> Generate Personas ✨</>}
               </button>
@@ -201,8 +201,8 @@ export default function ProjectStudioPage() {
             {generatedOptions && generatedOptions.length > 0 ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-white">AI Generated {generatedOptions.length} Audience Personas</h3>
-                  <button onClick={() => generateMutation.mutate({ tool: 'audience' })} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                  <h3 className="text-lg font-bold text-white">AI Generated {generatedOptions.length} Audience Personas</h3>
+                  <button onClick={() => generateMutation.mutate({ tool: 'audience' })} className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
                     <RefreshCw size={10} /> Regenerate
                   </button>
                 </div>
@@ -216,16 +216,16 @@ export default function ProjectStudioPage() {
                         className={`rounded-2xl p-4 cursor-pointer transition-all hover:scale-[1.02] ${isSelected ? 'ring-2 ring-indigo-500 ' + colors[i] : colors[i]}`}
                         style={{ border: `1px solid ${isSelected ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.08)'}` }}>
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] font-semibold text-gray-400">Persona {i + 1}</span>
+                          <span className="text-sm font-semibold text-gray-400">Persona {i + 1}</span>
                           {isSelected && <Check size={14} className="text-indigo-400" />}
                         </div>
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center mb-3 mx-auto">
                           <UserCircle size={24} className="text-indigo-300" />
                         </div>
-                        <p className="text-sm font-bold text-white text-center">{persona.label}</p>
-                        <p className="text-[10px] text-gray-400 text-center mt-0.5">{persona.demographics?.split(',')[0]}</p>
+                        <p className="text-base font-bold text-white text-center">{persona.label}</p>
+                        <p className="text-sm text-gray-400 text-center mt-0.5">{persona.demographics?.split(',')[0]}</p>
 
-                        <div className="mt-4 space-y-2 text-[11px]">
+                        <div className="mt-4 space-y-2 text-sm">
                           {persona.situation && <div className="flex gap-2"><AlertTriangle size={10} className="text-red-400 shrink-0 mt-0.5" /><div><span className="text-gray-500">Pain Points</span><p className="text-gray-300">{persona.situation.slice(0, 60)}</p></div></div>}
                           {persona.goals && <div className="flex gap-2"><Target size={10} className="text-emerald-400 shrink-0 mt-0.5" /><div><span className="text-gray-500">Goals</span><p className="text-gray-300">{persona.goals.slice(0, 60)}</p></div></div>}
                           {persona.buying_triggers && <div className="flex gap-2"><Zap size={10} className="text-amber-400 shrink-0 mt-0.5" /><div><span className="text-gray-500">Triggers</span><p className="text-gray-300">{persona.buying_triggers.slice(0, 60)}</p></div></div>}
@@ -235,7 +235,7 @@ export default function ProjectStudioPage() {
                         <button
                           onClick={(e) => { e.stopPropagation(); setSelectedAudience(persona); saveMutation.mutate({ tool: 'audience', value: persona }); }}
                           disabled={saveMutation.isPending}
-                          className={`w-full mt-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                          className={`w-full mt-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                             isSelected ? 'bg-indigo-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'
                           }`}>
                           {isSelected && saveMutation.isPending ? 'Saving...' : isSelected ? 'Selected ✓' : 'Select'}
@@ -253,19 +253,19 @@ export default function ProjectStudioPage() {
                   </div>
                   <div>
                     <p className="text-lg font-bold text-white">{intelligence.audience!.label}</p>
-                    <p className="text-sm text-gray-400">{intelligence.audience!.demographics}</p>
+                    <p className="text-base text-gray-400">{intelligence.audience!.demographics}</p>
                   </div>
                 </div>
-                <p className="text-sm text-gray-300 mb-4">{intelligence.audience!.situation}</p>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <p className="text-base text-gray-300 mb-4">{intelligence.audience!.situation}</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
                   {intelligence.audience!.goals && <div><span className="text-emerald-400 font-medium">Goals:</span> <span className="text-gray-300">{intelligence.audience!.goals}</span></div>}
                   {intelligence.audience!.buying_triggers && <div><span className="text-amber-400 font-medium">Triggers:</span> <span className="text-gray-300">{intelligence.audience!.buying_triggers}</span></div>}
                 </div>
                 <div className="flex gap-3 mt-5">
-                  <button onClick={() => setActiveStep(2)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">
+                  <button onClick={() => setActiveStep(2)} className="flex-1 py-2.5 rounded-xl text-base font-semibold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">
                     Generate Ads →
                   </button>
-                  <button onClick={() => generateMutation.mutate({ tool: 'audience' })} className="px-4 py-2.5 rounded-xl text-sm text-gray-400 hover:bg-white/5 border border-white/10">
+                  <button onClick={() => generateMutation.mutate({ tool: 'audience' })} className="px-4 py-2.5 rounded-xl text-base text-gray-400 hover:bg-white/5 border border-white/10">
                     <RefreshCw size={14} />
                   </button>
                 </div>
@@ -273,8 +273,8 @@ export default function ProjectStudioPage() {
             ) : (
               <div className="rounded-2xl p-10 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <Users size={40} className="mx-auto text-gray-600 mb-3" />
-                <p className="text-base font-medium text-gray-400">Generate your audience personas</p>
-                <p className="text-sm text-gray-500 mt-1">Click &quot;Generate Personas&quot; to get AI-powered audience profiles</p>
+                <p className="text-lg font-medium text-gray-400">Generate your audience personas</p>
+                <p className="text-base text-gray-500 mt-1">Click &quot;Generate Personas&quot; to get AI-powered audience profiles</p>
               </div>
             )}
           </div>
@@ -289,21 +289,21 @@ export default function ProjectStudioPage() {
             <div className="flex gap-2">
               {(['meta', 'google'] as const).map(p => (
                 <button key={p} onClick={() => { setActivePlatform(p); setGeneratedAsset(null); }}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${activePlatform === p ? 'bg-indigo-500/15 text-white border border-indigo-500/25' : 'text-gray-400 hover:bg-white/5 border border-white/10'}`}>
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-base font-medium transition-all ${activePlatform === p ? 'bg-indigo-500/15 text-white border border-indigo-500/25' : 'text-gray-400 hover:bg-white/5 border border-white/10'}`}>
                   <img src={p === 'meta' ? '/meta.svg' : '/google.svg'} alt={p} className="w-5 h-5" />
                   {p === 'meta' ? 'Meta Ads (Facebook & Instagram)' : 'Google Ads (Search)'}
                 </button>
               ))}
             </div>
             <select value={input.tone || ''} onChange={(e) => setInput({ ...input, tone: e.target.value })}
-              className="ml-auto px-3 py-2 rounded-lg text-xs bg-transparent border border-white/10 text-gray-300 outline-none">
+              className="ml-auto px-3 py-2 rounded-lg text-sm bg-transparent border border-white/10 text-gray-300 outline-none">
               <option value="">Tone: Auto</option>
               {tones.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <button
               onClick={() => generateMutation.mutate({ tool: activePlatform === 'meta' ? 'meta_campaign' : 'google_campaign', input: Object.keys(input).length > 0 ? input : undefined })}
               disabled={generateMutation.isPending}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50">
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-base font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50">
               {generateMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><RefreshCw size={14} /> Generate</>}
             </button>
           </div>
@@ -321,9 +321,9 @@ export default function ProjectStudioPage() {
                   {/* Left: Campaign Brief */}
                   <div className="col-span-3 space-y-4">
                     <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <h3 className="text-sm font-bold text-white mb-4">Campaign Brief</h3>
-                      <div className="space-y-3 text-xs">
-                        <div><span className="text-indigo-400 font-medium">Audience</span><p className="text-gray-300 mt-0.5">{intelligence.audience?.label}</p><p className="text-gray-500 text-[10px]">{intelligence.audience?.demographics}</p></div>
+                      <h3 className="text-base font-bold text-white mb-4">Campaign Brief</h3>
+                      <div className="space-y-3 text-sm">
+                        <div><span className="text-indigo-400 font-medium">Audience</span><p className="text-gray-300 mt-0.5">{intelligence.audience?.label}</p><p className="text-gray-500 text-sm">{intelligence.audience?.demographics}</p></div>
                         <div><span className="text-indigo-400 font-medium">Goal</span><p className="text-gray-300 mt-0.5">{intelligence.audience?.goals || 'Conversions'}</p></div>
                         <div><span className="text-indigo-400 font-medium">Platform</span><p className="text-gray-300 mt-0.5">{activePlatform === 'meta' ? 'Meta Ads (Facebook & Instagram)' : 'Google Ads (Search)'}</p></div>
                         <div><span className="text-indigo-400 font-medium">Tone</span><p className="text-gray-300 mt-0.5">{input.tone || 'Auto'}</p></div>
@@ -331,8 +331,8 @@ export default function ProjectStudioPage() {
                       </div>
                     </div>
                     <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <h4 className="text-xs font-bold text-white mb-3 flex items-center gap-2"><Wand2 size={12} className="text-indigo-400" /> AI Suggestions</h4>
-                      <ul className="space-y-2 text-[11px] text-gray-400">
+                      <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Wand2 size={12} className="text-indigo-400" /> AI Suggestions</h4>
+                      <ul className="space-y-2 text-sm text-gray-400">
                         <li>• Use urgency in hooks</li>
                         <li>• Highlight limited time benefits</li>
                         <li>• Showcase real results</li>
@@ -345,25 +345,25 @@ export default function ProjectStudioPage() {
                   <div className="col-span-5">
                     <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
                       <div className="flex items-center justify-between px-5 py-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                        <h3 className="text-sm font-bold text-white">{campaign.campaign_name ? String(campaign.campaign_name) : 'Campaign Concept'}</h3>
-                        <span className="px-2.5 py-1 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300">Best Match</span>
+                        <h3 className="text-lg font-bold text-white">{campaign.campaign_name ? String(campaign.campaign_name) : 'Campaign Concept'}</h3>
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300">Best Match</span>
                       </div>
                       <div className="relative h-44 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
                         <div className="text-center">
-                          <p className="text-xs text-gray-500 mb-2">Ad Creative Preview</p>
+                          <p className="text-sm text-gray-500 mb-2">Ad Creative Preview</p>
                           <div className="flex gap-2 justify-center">
-                            <button className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Generate Image</button>
-                            <button className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-white/5 text-gray-400 border border-white/10">Generate Prompt</button>
+                            <button className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Generate Image</button>
+                            <button className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white/5 text-gray-400 border border-white/10">Generate Prompt</button>
                           </div>
                         </div>
                       </div>
                       <div className="p-5 space-y-3">
-                        {campaign.hook ? <div><p className="text-[10px] font-bold uppercase text-indigo-400">Hook</p><p className="text-sm font-semibold text-white">{String(campaign.hook)}</p></div> : null}
-                        {campaign.primary_text ? <div><p className="text-[10px] font-bold uppercase text-indigo-400">Primary Text</p><p className="text-xs text-gray-300 leading-relaxed whitespace-pre-line">{String(campaign.primary_text)}</p></div> : null}
-                        {campaign.headline ? <div><p className="text-[10px] font-bold uppercase text-indigo-400">Headline</p><p className="text-sm font-medium text-white">{String(campaign.headline)}</p></div> : null}
-                        {campaign.cta ? <div><p className="text-[10px] font-bold uppercase text-indigo-400">CTA</p><p className="text-sm text-white">{String(campaign.cta)}</p></div> : null}
-                        {campaign.description ? <div><p className="text-[10px] font-bold uppercase text-amber-400">Description</p><p className="text-xs text-gray-400">{String(campaign.description)}</p></div> : null}
-                        {campaign.display_url ? <div><p className="text-[10px] font-bold uppercase text-amber-400">Display URL</p><p className="text-xs text-gray-400">{String(campaign.display_url)}</p></div> : null}
+                        {campaign.hook ? <div><p className="text-sm font-bold uppercase text-indigo-400">Hook</p><p className="text-base font-semibold text-white">{String(campaign.hook)}</p></div> : null}
+                        {campaign.primary_text ? <div><p className="text-sm font-bold uppercase text-indigo-400">Primary Text</p><p className="text-base text-gray-300 leading-relaxed whitespace-pre-line">{String(campaign.primary_text)}</p></div> : null}
+                        {campaign.headline ? <div><p className="text-sm font-bold uppercase text-indigo-400">Headline</p><p className="text-base font-medium text-white">{String(campaign.headline)}</p></div> : null}
+                        {campaign.cta ? <div><p className="text-sm font-bold uppercase text-indigo-400">CTA</p><p className="text-base text-white">{String(campaign.cta)}</p></div> : null}
+                        {campaign.description ? <div><p className="text-sm font-bold uppercase text-amber-400">Description</p><p className="text-sm text-gray-400">{String(campaign.description)}</p></div> : null}
+                        {campaign.display_url ? <div><p className="text-sm font-bold uppercase text-amber-400">Display URL</p><p className="text-sm text-gray-400">{String(campaign.display_url)}</p></div> : null}
                       </div>
                     </div>
                   </div>
@@ -371,8 +371,8 @@ export default function ProjectStudioPage() {
                   {/* Right: Target Audience */}
                   <div className="col-span-4">
                     <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <h3 className="text-sm font-bold text-white mb-4">Target Audience</h3>
-                      <div className="space-y-4 text-xs">
+                      <h3 className="text-base font-bold text-white mb-4">Target Audience</h3>
+                      <div className="space-y-4 text-sm">
                         {targeting.demographics ? <div><span className="text-indigo-400 font-medium flex items-center gap-1"><Users size={10} /> Demographics</span><p className="text-gray-300 mt-1">{String(targeting.demographics)}</p></div> : null}
                         {targeting.interests && Array.isArray(targeting.interests) ? <div><span className="text-purple-400 font-medium">Interests</span><p className="text-gray-300 mt-1">{(targeting.interests as string[]).join(', ')}</p></div> : null}
                         {targeting.behaviors && Array.isArray(targeting.behaviors) ? <div><span className="text-emerald-400 font-medium">Behaviors</span><p className="text-gray-300 mt-1">{(targeting.behaviors as string[]).join(', ')}</p></div> : null}
@@ -381,8 +381,8 @@ export default function ProjectStudioPage() {
                       </div>
                     </div>
                     {campaign.budget_recommendation ? <div className="rounded-2xl p-4 mt-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <p className="text-[10px] font-bold uppercase text-emerald-400">Budget</p>
-                      <p className="text-xs text-gray-300 mt-1">{String(campaign.budget_recommendation)}</p>
+                      <p className="text-sm font-bold uppercase text-emerald-400">Budget</p>
+                      <p className="text-base text-gray-300 mt-1">{String(campaign.budget_recommendation)}</p>
                     </div> : null}
                   </div>
                 </div>
@@ -390,43 +390,43 @@ export default function ProjectStudioPage() {
                 {/* Bottom cards */}
                 <div className="grid grid-cols-4 gap-4">
                   {campaign.emotional_angle ? <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <p className="text-[10px] font-bold text-white mb-1">🔥 Emotional Angle</p>
-                    <p className="text-xs text-gray-200">{String(campaign.emotional_angle)}</p>
-                    {campaign.emotional_angle_description ? <p className="text-[10px] text-gray-400 mt-1">{String(campaign.emotional_angle_description)}</p> : null}
+                    <p className="text-sm font-bold text-white mb-1">🔥 Emotional Angle</p>
+                    <p className="text-sm text-gray-200">{String(campaign.emotional_angle)}</p>
+                    {campaign.emotional_angle_description ? <p className="text-sm text-gray-400 mt-1">{String(campaign.emotional_angle_description)}</p> : null}
                   </div> : null}
                   {campaign.creative_direction ? <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <p className="text-[10px] font-bold text-white mb-1">🎬 Creative Direction</p>
-                    <p className="text-[10px] text-gray-300">{String(campaign.creative_direction)}</p>
+                    <p className="text-sm font-bold text-white mb-1">🎬 Creative Direction</p>
+                    <p className="text-base text-gray-300">{String(campaign.creative_direction)}</p>
                   </div> : null}
                   {campaign.offer ? <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <p className="text-[10px] font-bold text-white mb-1">🎁 Offer</p>
-                    <p className="text-[10px] text-gray-300">{String(campaign.offer)}</p>
+                    <p className="text-sm font-bold text-white mb-1">🎁 Offer</p>
+                    <p className="text-base text-gray-300">{String(campaign.offer)}</p>
                   </div> : null}
                   {campaign.why_it_works ? <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <p className="text-[10px] font-bold text-white mb-1">⭐ Why It Works</p>
-                    <p className="text-[10px] text-gray-300">{String(campaign.why_it_works)}</p>
+                    <p className="text-sm font-bold text-white mb-1">⭐ Why It Works</p>
+                    <p className="text-base text-gray-300">{String(campaign.why_it_works)}</p>
                   </div> : null}
                 </div>
 
                 {/* Placements */}
                 {placements.length > 0 && (
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-[10px] font-bold text-gray-400">Recommended Placements:</span>
-                    {placements.map((p, i) => <span key={i} className="px-2.5 py-1 rounded-lg text-[10px] bg-white/5 text-gray-300 border border-white/10">{p}</span>)}
+                    <span className="text-sm font-bold text-gray-400">Recommended Placements:</span>
+                    {placements.map((p, i) => <span key={i} className="px-2.5 py-1 rounded-lg text-sm bg-white/5 text-gray-300 border border-white/10">{p}</span>)}
                   </div>
                 )}
 
                 {/* Bottom action bar */}
                 <div className="flex items-center justify-between p-4 rounded-2xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <p className="text-sm text-gray-400">Need more options?</p>
+                  <p className="text-base text-gray-400">Need more options?</p>
                   <div className="flex gap-3">
-                    <button onClick={() => copyText(allText, 'full_campaign')} className="px-4 py-2 rounded-xl text-xs font-medium text-gray-400 border border-white/10 hover:bg-white/5">
+                    <button onClick={() => copyText(allText, 'full_campaign')} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-400 border border-white/10 hover:bg-white/5">
                       {copied === 'full_campaign' ? '✓ Copied All' : 'Copy All'}
                     </button>
                     <button
                       onClick={() => { setGeneratedAsset(null); generateMutation.mutate({ tool: activePlatform === 'meta' ? 'meta_campaign' : 'google_campaign', input: Object.keys(input).length > 0 ? input : undefined }); }}
                       disabled={generateMutation.isPending}
-                      className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50">
+                      className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50">
                       <Wand2 size={12} /> Generate More
                     </button>
                   </div>
@@ -437,16 +437,16 @@ export default function ProjectStudioPage() {
             /* Empty state - show generate form */
             <div className="rounded-2xl p-10 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <Wand2 size={32} className="mx-auto text-gray-600 mb-3" />
-              <p className="text-base font-medium text-gray-400">Generate your campaign</p>
-              <p className="text-sm text-gray-500 mt-1">Select a platform and click Generate to create a complete campaign with targeting</p>
+              <p className="text-lg font-medium text-gray-400">Generate your campaign</p>
+              <p className="text-base text-gray-500 mt-1">Select a platform and click Generate to create a complete campaign with targeting</p>
               <textarea value={input.instruction || ''} onChange={(e) => setInput({ ...input, instruction: e.target.value })}
                 placeholder="Additional instructions (optional)..."
-                rows={2} className="w-full max-w-md mx-auto mt-4 px-4 py-3 rounded-xl text-sm resize-none"
+                rows={2} className="w-full max-w-md mx-auto mt-4 px-4 py-3 rounded-xl text-base resize-none"
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }} />
               <button
                 onClick={() => generateMutation.mutate({ tool: activePlatform === 'meta' ? 'meta_campaign' : 'google_campaign', input: Object.keys(input).length > 0 ? input : undefined })}
                 disabled={generateMutation.isPending}
-                className="mt-4 flex items-center justify-center gap-2 mx-auto px-6 py-3 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50">
+                className="mt-4 flex items-center justify-center gap-2 mx-auto px-6 py-3 rounded-xl text-base font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50">
                 {generateMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><Wand2 size={14} /> Generate Campaign</>}
               </button>
             </div>
@@ -456,3 +456,6 @@ export default function ProjectStudioPage() {
     </div>
   );
 }
+
+
+
