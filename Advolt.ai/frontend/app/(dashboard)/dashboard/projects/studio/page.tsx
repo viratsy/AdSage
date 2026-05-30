@@ -73,6 +73,7 @@ export default function ProjectStudioPage() {
   const [selectedAudience, setSelectedAudience] = useState<AudienceProfile | null>(null);
   const [copied, setCopied] = useState('');
   const [activePlatform, setActivePlatform] = useState<'meta' | 'google'>('meta');
+  const [campaignIndex, setCampaignIndex] = useState(0);
 
   const { data: project, isLoading } = useQuery<Project>({
     queryKey: ['project', projectId],
@@ -90,6 +91,7 @@ export default function ProjectStudioPage() {
       } else if (data.status === 'generated') {
         setGeneratedAsset(data.asset);
         setGeneratedOptions(null);
+        setCampaignIndex(0);
         queryClient.invalidateQueries({ queryKey: ['project', projectId] });
       }
     },
@@ -288,7 +290,7 @@ export default function ProjectStudioPage() {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex gap-2">
               {(['meta', 'google'] as const).map(p => (
-                <button key={p} onClick={() => { setActivePlatform(p); setGeneratedAsset(null); }}
+                <button key={p} onClick={() => { setActivePlatform(p); setGeneratedAsset(null); setCampaignIndex(0); }}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-base font-medium transition-all ${activePlatform === p ? 'bg-indigo-500/15 text-white border border-indigo-500/25' : 'text-gray-400 hover:bg-white/5 border border-white/10'}`}>
                   <img src={p === 'meta' ? '/meta.svg' : '/google.svg'} alt={p} className="w-5 h-5" />
                   {p === 'meta' ? 'Meta Ads (Facebook & Instagram)' : 'Google Ads (Search)'}
@@ -308,15 +310,71 @@ export default function ProjectStudioPage() {
             </button>
           </div>
 
-          {/* 3-column layout when campaign is generated */}
-          {generatedAsset && generatedAsset.items.length > 0 ? (() => {
-            const campaign = (typeof generatedAsset.items[0] === 'object' && generatedAsset.items[0] !== null ? generatedAsset.items[0] : {}) as Record<string, unknown>;
+          {/* 3-column layout when campaign exists (generated or saved) */}
+          {(() => {
+            // Use freshly generated asset OR load from saved assets
+            const campaignTool = activePlatform === 'meta' ? 'meta_campaign' : 'google_campaign';
+            const savedCampaigns = assets.filter(a => a.tool === campaignTool);
+            const currentAsset = generatedAsset || (savedCampaigns.length > 0 ? savedCampaigns[savedCampaigns.length - 1] : null);
+            
+            if (!currentAsset || !currentAsset.items.length) {
+              return (
+                <div className="rounded-2xl p-10 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <Wand2 size={32} className="mx-auto text-gray-600 mb-3" />
+                  <p className="text-lg font-medium text-gray-400">Generate your campaign</p>
+                  <p className="text-base text-gray-500 mt-1">Select a platform and click Generate to create a complete campaign with targeting</p>
+                  <textarea value={input.instruction || ''} onChange={(e) => setInput({ ...input, instruction: e.target.value })}
+                    placeholder="Additional instructions (optional)..."
+                    rows={2} className="w-full max-w-md mx-auto mt-4 px-4 py-3 rounded-xl text-base resize-none"
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }} />
+                  <button
+                    onClick={() => generateMutation.mutate({ tool: campaignTool, input: Object.keys(input).length > 0 ? input : undefined })}
+                    disabled={generateMutation.isPending}
+                    className="mt-4 flex items-center justify-center gap-2 mx-auto px-6 py-3 rounded-xl text-base font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50">
+                    {generateMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><Wand2 size={14} /> Generate Campaign</>}
+                  </button>
+                </div>
+              );
+            }
+
+            // Campaign slider — show current campaign with navigation
+            const allCampaignItems = savedCampaigns.flatMap(a => a.items);
+            const totalCampaigns = allCampaignItems.length;
+            const currentCampaignItem = allCampaignItems[campaignIndex] || currentAsset.items[0];
+
+            const campaign = (typeof currentCampaignItem === 'object' && currentCampaignItem !== null ? currentCampaignItem : {}) as Record<string, unknown>;
             const targeting = (campaign.targeting || {}) as Record<string, unknown>;
             const placements = (campaign.placements || []) as string[];
             const allText = Object.entries(campaign).filter(([k]) => !['targeting', 'placements'].includes(k)).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
 
             return (
               <div className="space-y-5">
+                {/* Campaign navigation */}
+                {totalCampaigns > 1 && (
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setCampaignIndex(Math.max(0, campaignIndex - 1))}
+                      disabled={campaignIndex === 0}
+                      className="px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      ← Prev
+                    </button>
+                    <div className="flex items-center gap-2">
+                      {Array.from({ length: totalCampaigns }).map((_, i) => (
+                        <button key={i} onClick={() => setCampaignIndex(i)}
+                          className={`w-2 h-2 rounded-full transition-all ${i === campaignIndex ? 'bg-indigo-400 w-4' : 'bg-gray-600 hover:bg-gray-400'}`} />
+                      ))}
+                      <span className="text-xs text-gray-500 ml-2">{campaignIndex + 1}/{totalCampaigns}</span>
+                    </div>
+                    <button
+                      onClick={() => setCampaignIndex(Math.min(totalCampaigns - 1, campaignIndex + 1))}
+                      disabled={campaignIndex === totalCampaigns - 1}
+                      className="px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
                 <div className="grid grid-cols-12 gap-5">
                   {/* Left: Campaign Brief */}
                   <div className="col-span-3 space-y-4">
@@ -433,24 +491,7 @@ export default function ProjectStudioPage() {
                 </div>
               </div>
             );
-          })() : (
-            /* Empty state - show generate form */
-            <div className="rounded-2xl p-10 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <Wand2 size={32} className="mx-auto text-gray-600 mb-3" />
-              <p className="text-lg font-medium text-gray-400">Generate your campaign</p>
-              <p className="text-base text-gray-500 mt-1">Select a platform and click Generate to create a complete campaign with targeting</p>
-              <textarea value={input.instruction || ''} onChange={(e) => setInput({ ...input, instruction: e.target.value })}
-                placeholder="Additional instructions (optional)..."
-                rows={2} className="w-full max-w-md mx-auto mt-4 px-4 py-3 rounded-xl text-base resize-none"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }} />
-              <button
-                onClick={() => generateMutation.mutate({ tool: activePlatform === 'meta' ? 'meta_campaign' : 'google_campaign', input: Object.keys(input).length > 0 ? input : undefined })}
-                disabled={generateMutation.isPending}
-                className="mt-4 flex items-center justify-center gap-2 mx-auto px-6 py-3 rounded-xl text-base font-semibold bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50">
-                {generateMutation.isPending ? <><Loader2 size={14} className="animate-spin" /> Generating...</> : <><Wand2 size={14} /> Generate Campaign</>}
-              </button>
-            </div>
-          )}
+          })()}
         </div>
       )}
     </div>
