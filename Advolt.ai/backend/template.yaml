@@ -827,6 +827,23 @@ Resources:
             Path: /projects/{id}
             Method: DELETE
 
+  DeleteAssetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-delete-asset-${Stage}"
+      CodeUri: src/projects/
+      Handler: deleteAsset.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /projects/{id}/assets/{assetId}
+            Method: DELETE
+
 # ─────────────────────────────────────────────
 # LAMBDA — MEDIA
 # ─────────────────────────────────────────────

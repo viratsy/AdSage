@@ -102,4 +102,6 @@ export const projectsApi = {
     api.post(`/projects/${id}/generate`, { tool, input }),
   saveIntelligence: (id: string, tool: string, value: unknown) =>
     api.post(`/projects/${id}/intelligence`, { tool, value }),
+  deleteAsset: (id: string, assetId: string) =>
+    api.delete(`/projects/${id}/assets/${assetId}`),
 };
