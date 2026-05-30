@@ -196,7 +196,7 @@ RULES:
 - Headline: Max 40 characters. BEFORE returning, count characters — rewrite if over 40.
 - CTA: 2-4 words. Creative and specific to the niche.
 - Description: 1-2 sentences for the ad description field.
-- Targeting: Be specific with interests, behaviors based on the audience data provided.
+- Targeting: Use ONLY real Meta Ads Manager targeting options that actually exist in the platform. Interests must be real Facebook interest categories (e.g., "Digital marketing", "Entrepreneurship", "Online shopping"). Behaviors must be real Meta behavior categories (e.g., "Small business owners", "Digital Activities: Facebook page admins", "Engaged Shoppers"). Do NOT make up categories.
 
 Return JSON: { "items": [
   {
@@ -216,8 +216,8 @@ Return JSON: { "items": [
     "why_it_works": "1 sentence on why this campaign will perform",
     "targeting": {
       "demographics": "Age range, Gender, Location, Language",
-      "interests": ["5-8 specific interests to target"],
-      "behaviors": ["4-6 specific behaviors"],
+      "interests": ["5-8 REAL Meta Ads Manager interest categories that exist in the platform"],
+      "behaviors": ["4-6 REAL Meta behavior targeting options from Ads Manager"],
       "custom_audiences": ["2-3 custom audience ideas"],
       "lookalike_audiences": ["2-3 lookalike suggestions"]
     },

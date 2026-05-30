@@ -527,7 +527,39 @@ export default function ProjectStudioPage() {
                   {/* Right: Target Audience */}
                   <div className="col-span-4">
                     <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <h3 className="text-base font-bold text-white mb-4">Target Audience</h3>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base font-bold text-white">Target Audience</h3>
+                        <button
+                          onClick={() => setRegenSection(regenSection === 'targeting' ? null : 'targeting')}
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-indigo-300 hover:bg-indigo-500/10 transition-all"
+                          title="Regenerate targeting"
+                        >
+                          <RefreshCw size={12} />
+                        </button>
+                      </div>
+                      {regenSection === 'targeting' && (
+                        <div className="flex gap-2 mb-4">
+                          <input
+                            value={regenInput}
+                            onChange={(e) => setRegenInput(e.target.value)}
+                            placeholder="e.g. target both male & female, add age 18-24..."
+                            className="flex-1 px-3 py-1.5 rounded-lg text-sm"
+                            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                          />
+                          <button
+                            onClick={() => {
+                              const existingCampaign = JSON.stringify(campaign);
+                              generateMutation.mutate({ tool: 'campaign_section', input: { existing_campaign: existingCampaign, section: 'targeting', instruction: regenInput } });
+                              setRegenSection(null);
+                              setRegenInput('');
+                            }}
+                            disabled={generateMutation.isPending}
+                            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50"
+                          >
+                            {generateMutation.isPending ? '...' : '↻'}
+                          </button>
+                        </div>
+                      )}
                       <div className="space-y-4 text-sm">
                         {targeting.demographics ? <div><span className="text-indigo-400 font-medium flex items-center gap-1"><Users size={10} /> Demographics</span><p className="text-gray-300 mt-1">{String(targeting.demographics)}</p></div> : null}
                         {targeting.interests && Array.isArray(targeting.interests) ? <div><span className="text-purple-400 font-medium">Interests</span><p className="text-gray-300 mt-1">{(targeting.interests as string[]).join(', ')}</p></div> : null}
