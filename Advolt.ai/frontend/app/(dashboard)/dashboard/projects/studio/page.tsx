@@ -79,6 +79,7 @@ export default function ProjectStudioPage() {
   const [campaignIndex, setCampaignIndex] = useState(0);
   const [regenSection, setRegenSection] = useState<string | null>(null);
   const [regenInput, setRegenInput] = useState('');
+  const [regeneratingSection, setRegeneratingSection] = useState<string | null>(null);
 
   const { data: project, isLoading } = useQuery<Project>({
     queryKey: ['project', projectId],
@@ -95,11 +96,13 @@ export default function ProjectStudioPage() {
         setGeneratedAsset(null);
       } else if (data.status === 'updated') {
         // Section was updated in-place — just refresh the data
+        setRegeneratingSection(null);
         queryClient.invalidateQueries({ queryKey: ['project', projectId] });
       } else if (data.status === 'generated') {
         setGeneratedAsset(data.asset);
         setGeneratedOptions(null);
         setCampaignIndex(0);
+        setRegeneratingSection(null);
         queryClient.invalidateQueries({ queryKey: ['project', projectId] });
       }
     },
@@ -488,15 +491,18 @@ export default function ProjectStudioPage() {
                                 <p className={`text-sm font-bold uppercase ${color}`}>{label}</p>
                                 <button
                                   onClick={() => setRegenSection(regenSection === field ? null : field)}
-                                  className="p-1 rounded text-gray-500 hover:text-indigo-300 hover:bg-indigo-500/10 transition-all"
+                                  className={`p-1 rounded transition-all ${regeneratingSection === field ? 'text-indigo-400 animate-spin' : 'text-gray-500 hover:text-indigo-300 hover:bg-indigo-500/10'}`}
                                   title={`Regenerate ${label}`}
+                                  disabled={regeneratingSection === field}
                                 >
                                   <RefreshCw size={11} />
                                 </button>
                               </div>
-                              <p className={`${isHook ? 'text-base font-semibold text-white' : 'text-base text-gray-300 leading-relaxed whitespace-pre-line'}`}>
-                                {String(campaign[field])}
-                              </p>
+                              <div className={`${regeneratingSection === field ? 'animate-pulse opacity-50' : ''}`}>
+                                <p className={`${isHook ? 'text-base font-semibold text-white' : 'text-base text-gray-300 leading-relaxed whitespace-pre-line'}`}>
+                                  {regeneratingSection === field ? 'Regenerating...' : String(campaign[field])}
+                                </p>
+                              </div>
                               {regenSection === field && (
                                 <div className="mt-2 flex gap-2">
                                   <input
@@ -522,6 +528,7 @@ export default function ProjectStudioPage() {
                                       }
                                       const existingCampaign = JSON.stringify(campaign);
                                       generateMutation.mutate({ tool: 'campaign_section', input: { existing_campaign: existingCampaign, section: field, instruction: regenInput, asset_id: foundAssetId, campaign_item_index: String(foundItemIndex) } });
+                                      setRegeneratingSection(field);
                                       setRegenSection(null);
                                       setRegenInput('');
                                     }}
@@ -576,6 +583,7 @@ export default function ProjectStudioPage() {
                               }
                               const existingCampaign = JSON.stringify(campaign);
                               generateMutation.mutate({ tool: 'campaign_section', input: { existing_campaign: existingCampaign, section: 'targeting', instruction: regenInput, asset_id: foundAssetId, campaign_item_index: String(foundItemIndex) } });
+                              setRegeneratingSection('targeting');
                               setRegenSection(null);
                               setRegenInput('');
                             }}
