@@ -406,13 +406,32 @@ export default function ProjectStudioPage() {
                     🗑 Delete
                   </button>
                   <button
-                    onClick={() => { setGeneratedAsset(null); generateMutation.mutate({ tool: campaignTool, input: Object.keys(input).length > 0 ? input : undefined }); }}
-                    disabled={generateMutation.isPending}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-indigo-300 hover:text-indigo-200 hover:bg-indigo-500/10 transition-colors disabled:opacity-50"
+                    onClick={() => setRegenSection(regenSection === '__all__' ? null : '__all__')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-indigo-300 hover:text-indigo-200 hover:bg-indigo-500/10 transition-colors"
                   >
                     <RefreshCw size={12} /> Regenerate All
                   </button>
                 </div>
+
+                {/* Regenerate All input */}
+                {regenSection === '__all__' && (
+                  <div className="flex gap-2 px-2">
+                    <input
+                      value={regenInput}
+                      onChange={(e) => setRegenInput(e.target.value)}
+                      placeholder="What would you like to change? e.g. make it more aggressive, target females..."
+                      className="flex-1 px-4 py-2 rounded-xl text-sm"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                    />
+                    <button
+                      onClick={() => { setGeneratedAsset(null); generateMutation.mutate({ tool: campaignTool, input: { ...input, instruction: regenInput || input.instruction } }); setRegenSection(null); setRegenInput(''); }}
+                      disabled={generateMutation.isPending}
+                      className="px-4 py-2 rounded-xl text-sm font-medium bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50"
+                    >
+                      {generateMutation.isPending ? 'Generating...' : 'Regenerate'}
+                    </button>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-12 gap-5">
                   {/* Left: Campaign Brief */}
@@ -466,7 +485,7 @@ export default function ProjectStudioPage() {
                                 <p className={`text-sm font-bold uppercase ${color}`}>{label}</p>
                                 <button
                                   onClick={() => setRegenSection(regenSection === field ? null : field)}
-                                  className="opacity-0 group-hover/section:opacity-100 p-1 rounded text-gray-500 hover:text-indigo-300 hover:bg-indigo-500/10 transition-all"
+                                  className="p-1 rounded text-gray-500 hover:text-indigo-300 hover:bg-indigo-500/10 transition-all"
                                   title={`Regenerate ${label}`}
                                 >
                                   <RefreshCw size={11} />
