@@ -298,9 +298,10 @@ export default function ProjectStudioPage() {
               ))}
             </div>
             <select value={input.tone || ''} onChange={(e) => setInput({ ...input, tone: e.target.value })}
-              className="ml-auto px-3 py-2 rounded-lg text-sm bg-transparent border border-white/10 text-gray-300 outline-none">
-              <option value="">Tone: Auto</option>
-              {tones.map(t => <option key={t} value={t}>{t}</option>)}
+              className="ml-auto px-4 py-2.5 rounded-xl text-sm font-medium bg-white/5 border border-white/10 text-gray-200 outline-none appearance-none cursor-pointer hover:bg-white/8 transition-colors"
+              style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%239ca3af\' stroke-width=\'2\'%3E%3Cpath d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: '36px' }}>
+              <option value="" style={{ background: '#1a1a2e', color: '#e5e7eb' }}>Tone: Auto</option>
+              {tones.map(t => <option key={t} value={t} style={{ background: '#1a1a2e', color: '#e5e7eb' }}>{t}</option>)}
             </select>
             <button
               onClick={() => generateMutation.mutate({ tool: activePlatform === 'meta' ? 'meta_campaign' : 'google_campaign', input: Object.keys(input).length > 0 ? input : undefined })}
@@ -351,27 +352,28 @@ export default function ProjectStudioPage() {
               <div className="space-y-5">
                 {/* Campaign navigation */}
                 {totalCampaigns > 1 && (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between px-2">
                     <button
                       onClick={() => setCampaignIndex(Math.max(0, campaignIndex - 1))}
                       disabled={campaignIndex === 0}
-                      className="px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
-                      ← Prev
+                      <ChevronLeft size={14} /> Prev
                     </button>
-                    <div className="flex items-center gap-2">
-                      {Array.from({ length: totalCampaigns }).map((_, i) => (
+                    <div className="flex items-center gap-1.5">
+                      {Array.from({ length: Math.min(totalCampaigns, 10) }).map((_, i) => (
                         <button key={i} onClick={() => setCampaignIndex(i)}
-                          className={`w-2 h-2 rounded-full transition-all ${i === campaignIndex ? 'bg-indigo-400 w-4' : 'bg-gray-600 hover:bg-gray-400'}`} />
+                          className={`w-2.5 h-2.5 rounded-full transition-all ${i === campaignIndex ? 'bg-indigo-400 scale-125' : 'bg-gray-600 hover:bg-gray-400'}`} />
                       ))}
-                      <span className="text-xs text-gray-500 ml-2">{campaignIndex + 1}/{totalCampaigns}</span>
+                      {totalCampaigns > 10 && <span className="text-xs text-gray-500">...</span>}
+                      <span className="text-sm text-gray-400 ml-3 font-medium">{campaignIndex + 1}/{totalCampaigns}</span>
                     </div>
                     <button
                       onClick={() => setCampaignIndex(Math.min(totalCampaigns - 1, campaignIndex + 1))}
                       disabled={campaignIndex === totalCampaigns - 1}
-                      className="px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
-                      Next →
+                      Next <ArrowRight size={14} />
                     </button>
                   </div>
                 )}
