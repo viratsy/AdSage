@@ -66,7 +66,10 @@ export default function ProjectStudioPage() {
   const projectId = searchParams.get('id');
   const queryClient = useQueryClient();
 
-  const [activeStep, setActiveStep] = useState(1);
+  const [activeStep, setActiveStep] = useState(() => {
+    // Will be updated after project loads
+    return 1;
+  });
   const [input, setInput] = useState<Record<string, string>>({});
   const [generatedOptions, setGeneratedOptions] = useState<AudienceProfile[] | null>(null);
   const [generatedAsset, setGeneratedAsset] = useState<Asset | null>(null);
@@ -116,6 +119,12 @@ export default function ProjectStudioPage() {
   const intelligence = project.intelligence || {};
   const assets = project.assets || [];
   const hasAudience = !!intelligence.audience;
+  const hasCampaigns = assets.some(a => a.tool === 'meta_campaign' || a.tool === 'google_campaign');
+
+  // Auto-advance to Step 2 if audience exists and campaigns exist
+  if (hasAudience && hasCampaigns && activeStep === 1) {
+    setActiveStep(2);
+  }
 
   const copyText = (text: string, key: string) => {
     navigator.clipboard.writeText(text);

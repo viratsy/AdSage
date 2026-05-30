@@ -59,6 +59,7 @@ const DEPENDENCIES = {
   audience: [],
   audience_meta: ['audience'],
   audience_google: ['audience'],
+  campaign_section: ['audience'],
   pain_points: ['audience'],
   desires: ['audience'],
   objections: ['audience', 'pain_points'],
@@ -259,6 +260,19 @@ Return JSON: { "items": [
     "why_it_works": "1 sentence on why this will convert"
   }
 ] }`,
+
+  // ── SECTION REGENERATION ──
+  campaign_section: (ctx, input) => `
+${ctx}
+${input?.existing_campaign ? `EXISTING CAMPAIGN (keep everything else the same, only change the requested section):\n${input.existing_campaign}` : ''}
+${input?.section ? `SECTION TO REGENERATE: ${input.section}` : ''}
+${input?.instruction ? `USER INSTRUCTION FOR THIS SECTION: ${input.instruction}` : ''}
+
+Regenerate ONLY the "${input?.section || 'hook'}" section of this campaign. Keep all other sections exactly the same.
+Apply the user's instruction to improve this specific section.
+
+Return JSON with the FULL campaign object (all fields), but with ONLY the requested section changed:
+{ "items": [{ full campaign object with updated section }] }`,
 
   // ── META ADS (individual tools kept for granular generation) ──
   meta_hooks: (ctx, input) => `
@@ -482,7 +496,7 @@ Return JSON: { "style_analysis": "brief style description", "items": [{ "concept
     } else {
       const ctx = buildContext(project);
       const prompt = PROMPTS[tool](ctx, input);
-      const tokens = (tool === 'meta_campaign' || tool === 'google_campaign') ? 3000 : 2000;
+      const tokens = (tool === 'meta_campaign' || tool === 'google_campaign' || tool === 'campaign_section') ? 3000 : 2000;
       aiResult = await callGemini(prompt, tokens);
     }
 
