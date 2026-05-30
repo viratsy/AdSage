@@ -77,6 +77,8 @@ export default function ProjectStudioPage() {
   const [copied, setCopied] = useState('');
   const [activePlatform, setActivePlatform] = useState<'meta' | 'google'>('meta');
   const [campaignIndex, setCampaignIndex] = useState(0);
+  const [regenSection, setRegenSection] = useState<string | null>(null);
+  const [regenInput, setRegenInput] = useState('');
 
   const { data: project, isLoading } = useQuery<Project>({
     queryKey: ['project', projectId],
@@ -452,13 +454,53 @@ export default function ProjectStudioPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="p-5 space-y-3">
-                        {campaign.hook ? <div><p className="text-sm font-bold uppercase text-indigo-400">Hook</p><p className="text-base font-semibold text-white">{String(campaign.hook)}</p></div> : null}
-                        {campaign.primary_text ? <div><p className="text-sm font-bold uppercase text-indigo-400">Primary Text</p><p className="text-base text-gray-300 leading-relaxed whitespace-pre-line">{String(campaign.primary_text)}</p></div> : null}
-                        {campaign.headline ? <div><p className="text-sm font-bold uppercase text-indigo-400">Headline</p><p className="text-base font-medium text-white">{String(campaign.headline)}</p></div> : null}
-                        {campaign.cta ? <div><p className="text-sm font-bold uppercase text-indigo-400">CTA</p><p className="text-base text-white">{String(campaign.cta)}</p></div> : null}
-                        {campaign.description ? <div><p className="text-sm font-bold uppercase text-amber-400">Description</p><p className="text-sm text-gray-400">{String(campaign.description)}</p></div> : null}
-                        {campaign.display_url ? <div><p className="text-sm font-bold uppercase text-amber-400">Display URL</p><p className="text-sm text-gray-400">{String(campaign.display_url)}</p></div> : null}
+                      <div className="p-5 space-y-4">
+                        {['hook', 'primary_text', 'headline', 'cta', 'description', 'display_url'].map(field => {
+                          if (!campaign[field]) return null;
+                          const label = field.replace(/_/g, ' ').toUpperCase();
+                          const isHook = field === 'hook' || field === 'headline';
+                          const color = ['description', 'display_url'].includes(field) ? 'text-amber-400' : 'text-indigo-400';
+                          return (
+                            <div key={field} className="group/section relative">
+                              <div className="flex items-center gap-2">
+                                <p className={`text-sm font-bold uppercase ${color}`}>{label}</p>
+                                <button
+                                  onClick={() => setRegenSection(regenSection === field ? null : field)}
+                                  className="opacity-0 group-hover/section:opacity-100 p-1 rounded text-gray-500 hover:text-indigo-300 hover:bg-indigo-500/10 transition-all"
+                                  title={`Regenerate ${label}`}
+                                >
+                                  <RefreshCw size={11} />
+                                </button>
+                              </div>
+                              <p className={`${isHook ? 'text-base font-semibold text-white' : 'text-base text-gray-300 leading-relaxed whitespace-pre-line'}`}>
+                                {String(campaign[field])}
+                              </p>
+                              {regenSection === field && (
+                                <div className="mt-2 flex gap-2">
+                                  <input
+                                    value={regenInput}
+                                    onChange={(e) => setRegenInput(e.target.value)}
+                                    placeholder={`How to change ${field.replace(/_/g, ' ')}...`}
+                                    className="flex-1 px-3 py-1.5 rounded-lg text-sm"
+                                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const existingCampaign = JSON.stringify(campaign);
+                                      generateMutation.mutate({ tool: 'campaign_section', input: { existing_campaign: existingCampaign, section: field, instruction: regenInput } });
+                                      setRegenSection(null);
+                                      setRegenInput('');
+                                    }}
+                                    disabled={generateMutation.isPending}
+                                    className="px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50"
+                                  >
+                                    {generateMutation.isPending ? '...' : '↻'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
