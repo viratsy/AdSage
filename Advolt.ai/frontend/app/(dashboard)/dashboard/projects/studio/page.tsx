@@ -386,6 +386,32 @@ export default function ProjectStudioPage() {
                     </button>
                   </div>
                 )}
+
+                {/* Delete & Regenerate buttons */}
+                <div className="flex items-center justify-end gap-2 px-2">
+                  <button
+                    onClick={() => {
+                      const asset = savedCampaigns.find(a => a.items.includes(currentCampaignItem));
+                      if (asset && confirm('Delete this campaign?')) {
+                        projectsApi.deleteAsset(projectId!, asset.id).then(() => {
+                          queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+                          setCampaignIndex(Math.max(0, campaignIndex - 1));
+                        });
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                  >
+                    🗑 Delete
+                  </button>
+                  <button
+                    onClick={() => { setGeneratedAsset(null); generateMutation.mutate({ tool: campaignTool, input: Object.keys(input).length > 0 ? input : undefined }); }}
+                    disabled={generateMutation.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-indigo-300 hover:text-indigo-200 hover:bg-indigo-500/10 transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw size={12} /> Regenerate All
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-12 gap-5">
                   {/* Left: Campaign Brief */}
                   <div className="col-span-3 space-y-4">
