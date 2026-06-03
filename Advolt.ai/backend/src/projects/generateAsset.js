@@ -53,7 +53,38 @@ const callGeminiVision = async (imageBase64, mimeType, prompt) => {
   return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text);
 };
 
-// All generation now uses Gemini
+// Campaign generation uses Claude for better creative quality
+const callClaude = async (prompt, maxTokens = 3000) => {
+  const key = process.env.CLAUDE_API_KEY;
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }],
+      system: 'You are an expert ad strategist, performance marketer, and copywriter. You write like the best DTC brands and growth marketers. Always respond with valid JSON only — no markdown, no explanation, just the JSON object.',
+    }),
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Claude error: ${response.status} — ${err.slice(0, 200)}`);
+  }
+  const data = await response.json();
+  let text = data.content[0].text;
+  // Strip markdown code blocks if present
+  text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+  return JSON.parse(text);
+};
+
+// Tools that use Claude for better creative quality
+const CLAUDE_TOOLS = ['meta_campaign', 'google_campaign', 'meta_campaign_from_ad'];
+
+// All other generation uses Gemini
 
 const DEPENDENCIES = {
   audience: [],
@@ -66,6 +97,7 @@ const DEPENDENCIES = {
   emotional_angles: ['audience', 'pain_points', 'desires'],
   // Campaign concepts
   meta_campaign: ['audience'],
+  meta_campaign_from_ad: ['audience'],
   google_campaign: ['audience'],
   // Meta individual tools
   meta_hooks: ['audience', 'pain_points', 'emotional_angles'],
@@ -222,6 +254,58 @@ Return JSON: { "items": [
       "lookalike_audiences": ["2-3 lookalike suggestions"]
     },
     "placements": ["Facebook Feed", "Instagram Feed", "Instagram Reels", "Facebook Stories", "Instagram Stories"],
+    "budget_recommendation": "daily budget range and bidding strategy"
+  }
+] }`,
+
+  meta_campaign_from_ad: (ctx, input) => `
+${ctx}
+${input?.instruction ? `Additional instruction: ${input.instruction}` : ''}
+${input?.tone ? `Tone: ${input.tone}` : ''}
+
+REFERENCE AD (a competitor/inspiration ad the user saved):
+Advertiser: ${input?.ad_advertiser || 'Unknown'}
+Headline: ${input?.ad_headline || 'N/A'}
+Primary Text: ${input?.ad_primary_text || 'N/A'}
+CTA: ${input?.ad_cta || 'N/A'}
+Platform: ${input?.ad_platform || 'Meta'}
+Landing Page: ${input?.ad_landing_page || 'N/A'}
+
+TASK: Analyze the reference ad above — understand its:
+- Hook strategy (how it grabs attention)
+- Emotional angle (what feeling it triggers)
+- Copy structure (how it's organized)
+- CTA approach (how it drives action)
+- Creative style (what format it uses)
+
+Then generate 1 COMPLETE Meta ad campaign for MY business (described in the context above) that:
+1. Uses the SAME strategic approach as the reference ad (same hook type, same emotional angle, same structure)
+2. But adapts it completely for MY product/audience/niche
+3. Is NOT a copy — it's inspired by the strategy, not the words
+
+Apply the same niche classification rules as meta_campaign.
+
+Return JSON: { "items": [
+  {
+    "campaign_name": "A memorable 2-3 word campaign name",
+    "inspired_by": "1 sentence explaining what strategy was borrowed from the reference ad",
+    "emotional_angle": "which angle this uses",
+    "emotional_angle_description": "1 sentence explaining the emotional strategy",
+    "hook": "scroll-stopping first line (max 10 words)",
+    "primary_text": "full ad copy with \\n line breaks (50-80 words)",
+    "headline": "below-creative headline (max 40 chars)",
+    "cta": "creative call to action (2-4 words)",
+    "description": "optional ad description (1-2 sentences)",
+    "creative_style": "UGC/Static/Carousel/Reel/Meme",
+    "creative_direction": "specific visual concept (2-3 sentences)",
+    "thumbnail_text": "max 6 words for image overlay",
+    "offer": "what the user gets",
+    "why_it_works": "1 sentence on why this campaign will perform",
+    "targeting": {
+      "demographics": "Age range, Gender, Location, Language",
+      "interests": ["5-8 REAL Meta interest categories"],
+      "behaviors": ["4-6 REAL Meta behavior options"]
+    },
     "budget_recommendation": "daily budget range and bidding strategy"
   }
 ] }`,
@@ -497,7 +581,11 @@ Return JSON: { "style_analysis": "brief style description", "items": [{ "concept
       const ctx = buildContext(project);
       const prompt = PROMPTS[tool](ctx, input);
       const tokens = (tool === 'meta_campaign' || tool === 'google_campaign' || tool === 'campaign_section') ? 3000 : 2000;
-      aiResult = await callGemini(prompt, tokens);
+      if (CLAUDE_TOOLS.includes(tool)) {
+        aiResult = await callClaude(prompt, tokens);
+      } else {
+        aiResult = await callGemini(prompt, tokens);
+      }
     }
 
     // Save result
