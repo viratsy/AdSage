@@ -45,6 +45,9 @@ export default function CampaignGenerator({ projectId, assets, activePlatform, s
   const [showAdPicker, setShowAdPicker] = useState(false);
   const [copied, setCopied] = useState('');
   const [campaignIndex, setCampaignIndex] = useState(0);
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState<Record<string, string>>({});
+  const [imageSize, setImageSize] = useState('1024x1024');
   const queryClient = useQueryClient();
 
   // Fetch saved ads for the picker
@@ -86,6 +89,32 @@ export default function CampaignGenerator({ projectId, assets, activePlatform, s
         ad_landing_page: selectedAd.landing_page,
       },
     });
+  };
+
+  const handleGenerateImage = async (campaign: Record<string, unknown>, assetId?: string, itemIndex?: number) => {
+    const creativeDirection = campaign.creative_direction as string || '';
+    const thumbnailText = campaign.thumbnail_text as string || '';
+    const productName = campaign.campaign_name as string || '';
+    
+    const prompt = `Ad creative: ${creativeDirection}. Text overlay: "${thumbnailText}". Style: professional advertising, high quality, modern design.`;
+    
+    setGeneratingImage(true);
+    try {
+      const response = await projectsApi.generateImage(projectId, {
+        prompt,
+        size: imageSize,
+        asset_id: assetId,
+        campaign_index: itemIndex,
+      });
+      const imageUrl = response.data.image_url;
+      const key = `${assetId || 'new'}_${itemIndex || 0}`;
+      setGeneratedImages(prev => ({ ...prev, [key]: imageUrl }));
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+    } catch (err: unknown) {
+      console.error('Image generation failed:', err);
+    } finally {
+      setGeneratingImage(false);
+    }
   };
 
   const copyText = (text: string, key: string) => {
@@ -232,6 +261,10 @@ export default function CampaignGenerator({ projectId, assets, activePlatform, s
             const campaign = (typeof item === 'object' && item !== null ? item : {}) as Record<string, unknown>;
             const text = Object.entries(campaign).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join('\n');
             const key = `campaign_${i}`;
+            const assetId = currentAsset?.id;
+            const imageKey = `${assetId || 'new'}_${i}`;
+            const existingImages = (campaign.generated_images as Array<{ url: string }>) || [];
+            const newImage = generatedImages[imageKey];
 
             return (
               <div key={i} className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -251,7 +284,7 @@ export default function CampaignGenerator({ projectId, assets, activePlatform, s
                   )}
 
                   {Object.entries(campaign)
-                    .filter(([k]) => !['campaign_name', 'emotional_angle', 'emotional_angle_description', 'inspired_by', 'targeting', 'placements'].includes(k))
+                    .filter(([k]) => !['campaign_name', 'emotional_angle', 'emotional_angle_description', 'inspired_by', 'targeting', 'placements', 'generated_images'].includes(k))
                     .map(([field, value]) => {
                       const isArray = Array.isArray(value);
                       const isLong = typeof value === 'string' && value.length > 80;
@@ -260,20 +293,67 @@ export default function CampaignGenerator({ projectId, assets, activePlatform, s
                           <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-1">{field.replace(/_/g, ' ')}</p>
                           {isArray ? (
                             <div className="flex flex-wrap gap-1.5">
-                              {(value as string[]).map((v, j) => <span key={j} className="px-2.5 py-1 rounded-lg text-xs bg-white/5 text-gray-200 border border-white/8">{v}</span>)}
+                              {(value as string[]).map((v: string, j: number) => <span key={j} className="px-2.5 py-1 rounded-lg text-xs bg-white/5 text-gray-200 border border-white/8">{String(v)}</span>)}
                             </div>
                           ) : typeof value === 'object' && value !== null ? (
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               {Object.entries(value as Record<string, unknown>).map(([k2, v2]) => (
-                                <div key={k2}><span className="text-gray-500">{k2}:</span> <span className="text-gray-200">{Array.isArray(v2) ? (v2 as string[]).join(', ') : String(v2)}</span></div>
+                                <div key={k2}><span className="text-gray-500">{k2}:</span> <span className="text-gray-200">{Array.isArray(v2) ? (v2 as string[]).join(', ') : String(v2 ?? '')}</span></div>
                               ))}
                             </div>
                           ) : (
-                            <p className={`text-sm text-gray-200 leading-relaxed ${isLong ? 'whitespace-pre-line' : ''}`}>{String(value)}</p>
+                            <p className={`text-sm text-gray-200 leading-relaxed ${isLong ? 'whitespace-pre-line' : ''}`}>{String(value ?? '')}</p>
                           )}
                         </div>
                       );
                     })}
+
+                  {/* Generate Image Section */}
+                  {(campaign.creative_direction || campaign.thumbnail_text) && (
+                    <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-bold uppercase tracking-wider text-emerald-400">Generate Creative</p>
+                        <select
+                          value={imageSize}
+                          onChange={(e) => setImageSize(e.target.value)}
+                          className="text-xs px-2 py-1 rounded-lg bg-white/5 text-gray-300 border border-white/10"
+                        >
+                          <option value="1024x1024">1:1 Square</option>
+                          <option value="960x1280">3:4 Portrait</option>
+                          <option value="720x1280">9:16 Story</option>
+                          <option value="1280x720">16:9 Landscape</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={() => handleGenerateImage(campaign, assetId, i)}
+                        disabled={generatingImage}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/25 disabled:opacity-50 transition-all"
+                      >
+                        {generatingImage ? (
+                          <><Loader2 size={14} className="animate-spin" /> Generating Image...</>
+                        ) : (
+                          <><ImageIcon size={14} /> Generate Image</>
+                        )}
+                      </button>
+
+                      {/* Show generated images */}
+                      {(newImage || existingImages.length > 0) && (
+                        <div className="mt-3 grid grid-cols-2 gap-3">
+                          {newImage && (
+                            <div className="relative rounded-xl overflow-hidden border border-emerald-500/20">
+                              <img src={newImage} alt="Generated creative" className="w-full h-auto" />
+                              <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] bg-black/60 text-emerald-300">New</span>
+                            </div>
+                          )}
+                          {existingImages.map((img, j) => (
+                            <div key={j} className="relative rounded-xl overflow-hidden border border-white/10">
+                              <img src={img.url} alt="Generated creative" className="w-full h-auto" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );

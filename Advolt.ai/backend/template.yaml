@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Advolt.ai — AI Ad Intelligence SaaS Backend
+Description: Advolt AI — AI Ad Intelligence SaaS Backend
 
 Globals:
   Function:
@@ -23,6 +23,8 @@ Globals:
         AI_PROVIDER: groq
         GEMINI_API_KEY: !Ref GeminiApiKey
         GROQ_API_KEY: !Ref GroqApiKey
+        CLAUDE_API_KEY: !Ref ClaudeApiKey
+        SILICONFLOW_API_KEY: !Ref SiliconFlowApiKey
     Layers:
       - !Ref SharedLayer
 
@@ -62,6 +64,10 @@ Parameters:
     Type: String
     NoEcho: true
     Default: "dummy_payu_salt"
+  SiliconFlowApiKey:
+    Type: String
+    NoEcho: true
+    Default: "dummy_siliconflow_key"
 
 # ─────────────────────────────────────────────
 # API GATEWAY
@@ -791,6 +797,27 @@ Resources:
           Properties:
             RestApiId: !Ref AdvoltApi
             Path: /projects/{id}/generate
+            Method: POST
+
+  GenerateImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "advolt-generate-image-${Stage}"
+      CodeUri: src/projects/
+      Handler: generateImage.handler
+      Timeout: 60
+      MemorySize: 512
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
+        - S3CrudPolicy:
+            BucketName: !Ref MediaBucket
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AdvoltApi
+            Path: /projects/{id}/generate-image
             Method: POST
 
   SaveIntelligenceFunction:

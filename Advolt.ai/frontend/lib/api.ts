@@ -104,4 +104,6 @@ export const projectsApi = {
     api.post(`/projects/${id}/intelligence`, { tool, value }),
   deleteAsset: (id: string, assetId: string) =>
     api.delete(`/projects/${id}/assets/${assetId}`),
+  generateImage: (id: string, data: { prompt: string; size?: string; asset_id?: string; campaign_index?: number }) =>
+    api.post(`/projects/${id}/generate-image`, data),
 };
